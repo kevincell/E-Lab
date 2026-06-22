@@ -1,6 +1,10 @@
-import subprocess
-import tempfile
 import os
+import shutil
+import subprocess
+import uuid
+
+
+SANDBOX_DIR = "/var/elab-sandbox"
 
 
 def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
@@ -10,8 +14,11 @@ def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
     Works on cgroup v1 and v2.
     """
     memory_limit_mb = memory_limit_kb // 1024
+    run_id = str(uuid.uuid4())
+    tmpdir = os.path.join(SANDBOX_DIR, run_id)
+    os.makedirs(tmpdir, exist_ok=True)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
+    try:
         code_file = os.path.join(tmpdir, "main.c")
         with open(code_file, "w") as f:
             f.write(source_code)
@@ -27,13 +34,12 @@ def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
             "--memory-swap", f"{memory_limit_mb}m",
             "--cpus", "0.5",
             "--pids-limit", "64",
-            "--read-only",
             "--cap-drop", "ALL",
             "--security-opt", "no-new-privileges:true",
-            "-v", f"{tmpdir}:/box:ro",
+            "-v", f"{tmpdir}:/box:rw",
             "elab-sandbox",
             "sh", "-c",
-            f"gcc /box/main.c -o /tmp/program 2>&1 && timeout {time_limit}s /tmp/program < /box/input.txt"
+            f"cd /box && gcc main.c -o program 2>&1 && timeout {time_limit}s ./program < input.txt"
         ]
 
         try:
@@ -47,7 +53,6 @@ def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
             stdout = result.stdout.strip()
             stderr = result.stderr.strip()
 
-            # Parse compilation errors
             if "error:" in stdout.lower() or "error:" in stderr.lower():
                 return {
                     "status_id": 6,
@@ -59,7 +64,6 @@ def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
                     "memory": 0,
                 }
 
-            # Parse runtime results
             if result.returncode == 124 or "timeout" in stderr.lower():
                 status_id = 5
                 status_desc = "Time Limit Exceeded"
@@ -82,8 +86,8 @@ def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
                 "stdout": stdout,
                 "stderr": stderr,
                 "compile_output": "",
-                "time": str(time_limit if status_id == 5 else 0.1),  # Approximate
-                "memory": 1024,  # Approximate
+                "time": str(time_limit if status_id == 5 else 0.1),
+                "memory": 1024,
             }
 
         except subprocess.TimeoutExpired:
@@ -96,3 +100,6 @@ def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
                 "time": str(time_limit),
                 "memory": memory_limit_kb,
             }
+
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
