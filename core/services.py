@@ -1,9 +1,7 @@
 from io import BytesIO
 from pathlib import Path
-import time
 
 import qrcode
-import requests
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db.models import Count, Q
@@ -11,6 +9,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import Certificate, Module, Progress, Question, Submission
+from .sandbox import run_c_code
 
 
 JUDGE0_STATUS_MAP = {
@@ -18,30 +17,12 @@ JUDGE0_STATUS_MAP = {
     4: Submission.Status.WRONG_ANSWER,
     5: Submission.Status.TLE,
     6: Submission.Status.COMPILE_ERROR,
+    11: Submission.Status.RUNTIME_ERROR,
 }
 
 
 def normalize_output(value):
     return (value or "").replace("\r\n", "\n").strip()
-
-
-def submit_to_judge0(question, code, stdin, expected_output):
-    payload = {
-        "source_code": code,
-        "language_id": question.language_id,
-        "stdin": stdin,
-        "expected_output": expected_output,
-        "cpu_time_limit": question.time_limit,
-        "memory_limit": question.memory_limit_kb,
-    }
-    response = requests.post(
-        f"{settings.JUDGE0_URL}/submissions",
-        params={"base64_encoded": "false", "wait": "true"},
-        json=payload,
-        timeout=30,
-    )
-    response.raise_for_status()
-    return response.json()
 
 
 def evaluate_submission(submission_id):
@@ -62,15 +43,16 @@ def evaluate_submission(submission_id):
 
     try:
         for test in tests:
-            result = submit_to_judge0(question, submission.code, test.stdin, test.expected_output)
-            status_id = result.get("status", {}).get("id")
-            status = JUDGE0_STATUS_MAP.get(status_id)
-            if status is None:
-                description = result.get("status", {}).get("description", "")
-                status = Submission.Status.RUNTIME_ERROR if status_id and status_id > 6 else Submission.Status.INTERNAL_ERROR
-                outputs.append(description)
-            else:
-                outputs.append(normalize_output(result.get("stdout")))
+            result = run_c_code(
+                source_code=submission.code,
+                stdin=test.stdin,
+                expected_output=test.expected_output,
+                time_limit=question.time_limit,
+                memory_limit_kb=question.memory_limit_kb,
+            )
+            status_id = result.get("status_id")
+            status = JUDGE0_STATUS_MAP.get(status_id, Submission.Status.INTERNAL_ERROR)
+            outputs.append(normalize_output(result.get("stdout")))
 
             max_time = max(max_time, float(result.get("time") or 0))
             max_memory = max(max_memory, int(result.get("memory") or 0))
