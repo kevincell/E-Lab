@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>{{ question.title }}</h1>
+    <p class="muted">{{ question.module.name }} · {{ question.get_difficulty_display }}</p>
+  </div>
+  <a class="secondary as-link" href="{% url 'module_detail' question.module.id %}">Back</a>
+</section>
+
+<section class="grid two">
+  <article class="panel">
+    <h2>Problem</h2>
+    <div class="prose">{{ question.description|linebreaks }}</div>
+    {% if question.sample_input or question.sample_output %}
+      <h3>Sample Input</h3>
+      <pre>{{ question.sample_input }}</pre>
+      <h3>Sample Output</h3>
+      <pre>{{ question.sample_output }}</pre>
+    {% endif %}
+  </article>
+
+  <article class="panel">
+    <h2>Submit Code</h2>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="primary" type="submit">Submit</button>
+    </form>
+    {% if latest_submission %}
+      <p class="muted">Latest: <a href="{% url 'submission_detail' latest_submission.id %}">{{ latest_submission.get_status_display }}</a></p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #1f2937; }
+    .certificate { border: 8px solid #2563eb; padding: 48px; min-height: 620px; text-align: center; }
+    h1 { font-size: 36px; margin: 20px 0; }
+    h2 { font-size: 30px; margin: 16px 0; }
+    p { font-size: 18px; }
+    .meta { margin-top: 28px; }
+    .qr { width: 120px; margin-top: 24px; }
+    .signature { margin-top: 56px; border-top: 1px solid #111827; display: inline-block; padding-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="certificate">
+    <p>{{ site_name }}</p>
+    <h1>Certificate of Completion</h1>
+    <p>This certifies that</p>
+    <h2>{{ student.display_name }}</h2>
+    <p>USN: {{ student.usn }}</p>
+    <p>has successfully completed CCE e-Lab: Programming with C.</p>
+    <p class="meta">Completion: {{ percentage|floatformat:1 }}% · Semester: {{ semester }}</p>
+    {% if certificate.qr_code %}
+      <img class="qr" src="{{ certificate.qr_code.path }}" alt="Verification QR">
+    {% endif %}
+    <p class="meta">{{ verify_url }}</p>
+    <div class="signature">Faculty Coordinator</div>
+  </div>
+</body>
+</html>

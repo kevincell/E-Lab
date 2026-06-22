@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Faculty Dashboard</h1>
+    <p class="muted">{{ students }} students · {{ questions }} questions</p>
+  </div>
+  <div class="actions">
+    <a class="primary as-link" href="{% url 'faculty_question_new' %}">New Question</a>
+    <a class="secondary as-link" href="{% url 'faculty_module_new' %}">New Module</a>
+  </div>
+</section>
+
+<section class="grid two">
+  <div>
+    <h2>Modules</h2>
+    <div class="list">
+      {% for module in modules %}
+        <a class="row-card" href="{% url 'faculty_module_edit' module.id %}">
+          <span>
+            <strong>{{ module.name }}</strong>
+            <small>{{ module.question_count }} questions</small>
+          </span>
+          <span>Edit</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  <div>
+    <h2>Recent Submissions</h2>
+    <div class="list">
+      {% for sub in recent_submissions %}
+        <a class="row-card" href="{% url 'submission_detail' sub.id %}">
+          <span>
+            <strong>{{ sub.student.display_name }}</strong>
+            <small>{{ sub.question.title }}</small>
+          </span>
+          <span>{{ sub.get_status_display }}</span>
+        </a>
+      {% empty %}
+        <p class="muted">No submissions yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

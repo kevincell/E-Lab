@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <h1>Question</h1>
+  {% if question %}
+    <a class="secondary as-link" href="{% url 'faculty_testcase_new' question.id %}">Add Test</a>
+  {% endif %}
+</section>
+
+<section class="grid two">
+  <form method="post" class="form-grid panel">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="primary" type="submit">Save</button>
+  </form>
+  <aside class="panel">
+    <h2>Test Cases</h2>
+    <div class="list">
+      {% for test in tests %}
+        <div class="row-card">
+          <span>
+            <strong>{% if test.is_sample %}Sample{% else %}Hidden{% endif %} #{{ test.order }}</strong>
+            <small>{{ test.expected_output|truncatechars:60 }}</small>
+          </span>
+        </div>
+      {% empty %}
+        <p class="muted">Save the question, then add tests.</p>
+      {% endfor %}
+    </div>
+  </aside>
+</section>
+{% endblock %}

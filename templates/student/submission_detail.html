@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Submission #{{ submission.id }}</h1>
+    <p class="muted">{{ submission.question.title }} · {{ submission.submitted_at }}</p>
+  </div>
+  <a class="secondary as-link" href="{% url 'question_detail' submission.question.id %}">Question</a>
+</section>
+
+<section class="grid two">
+  <article class="panel">
+    <h2>Result</h2>
+    <dl class="stats">
+      <dt>Status</dt><dd>{{ submission.get_status_display }}</dd>
+      <dt>Score</dt><dd>{{ submission.score }}%</dd>
+      <dt>Time</dt><dd>{{ submission.execution_time|default:"-" }}</dd>
+      <dt>Memory</dt><dd>{{ submission.memory_used|default:"-" }}</dd>
+    </dl>
+    {% if submission.judge_output %}
+      <h3>Output</h3>
+      <pre>{{ submission.judge_output }}</pre>
+    {% endif %}
+    {% if submission.error_output %}
+      <h3>Error</h3>
+      <pre>{{ submission.error_output }}</pre>
+    {% endif %}
+  </article>
+  <article class="panel">
+    <h2>Code</h2>
+    <pre>{{ submission.code }}</pre>
+  </article>
+</section>
+{% endblock %}

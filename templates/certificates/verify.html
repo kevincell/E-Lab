@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="auth-panel wide">
+  <h1>Certificate Verified</h1>
+  <dl class="stats">
+    <dt>Student</dt><dd>{{ certificate.student.display_name }}</dd>
+    <dt>USN</dt><dd>{{ certificate.student.usn }}</dd>
+    <dt>Semester</dt><dd>{{ certificate.semester }}</dd>
+    <dt>Completion</dt><dd>{{ certificate.completion_percentage|floatformat:1 }}%</dd>
+    <dt>Issued</dt><dd>{{ certificate.issued_at }}</dd>
+  </dl>
+</section>
+{% endblock %}

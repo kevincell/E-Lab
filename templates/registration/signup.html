@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Sign up - {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<section class="auth-panel wide">
+  <h1>Student Sign Up</h1>
+  <form method="post" class="form-grid">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="primary" type="submit">Create account</button>
+  </form>
+</section>
+{% endblock %}

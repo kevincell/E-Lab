@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>{{ module.name }}</h1>
+    <p class="muted">{{ module.description }}</p>
+  </div>
+  <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
+</section>
+
+<div class="list">
+  {% for question in questions %}
+    <a class="row-card" href="{% url 'question_detail' question.id %}">
+      <span>
+        <strong>{{ question.title }}</strong>
+        <small>{{ question.get_difficulty_display }}{% if question.is_mandatory %} · Mandatory{% endif %}</small>
+      </span>
+      <span>{% if question.id in accepted_ids %}Accepted{% else %}Solve{% endif %}</span>
+    </a>
+  {% empty %}
+    <p class="muted">No questions in this module yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

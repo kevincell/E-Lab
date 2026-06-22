@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Student Dashboard</h1>
+    <p class="muted">Overall completion: {{ overall_percentage|floatformat:1 }}%</p>
+  </div>
+  {% if certificate_eligible %}
+    <a class="primary as-link" href="{% url 'certificate_create' %}">Generate Certificate</a>
+  {% endif %}
+</section>
+
+<section class="grid two">
+  <div>
+    <h2>Modules</h2>
+    <div class="list">
+      {% for module in modules %}
+        <a class="row-card" href="{% url 'module_detail' module.id %}">
+          <span>
+            <strong>{{ module.name }}</strong>
+            <small>Level {{ module.level }}</small>
+          </span>
+          <span>Open</span>
+        </a>
+      {% empty %}
+        <p class="muted">No active modules yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <h2>Progress</h2>
+    <div class="list">
+      {% for row in progress_rows %}
+        <div class="row-card">
+          <span>
+            <strong>{{ row.module.name }}</strong>
+            <small>{{ row.completed }}/{{ row.attempted }} completed</small>
+          </span>
+          <span>{{ row.percentage|floatformat:0 }}%</span>
+        </div>
+      {% empty %}
+        <p class="muted">Start a module to see progress.</p>
+      {% endfor %}
+    </div>
+
+    {% if certificates %}
+      <h2>Certificates</h2>
+      <div class="list">
+        {% for certificate in certificates %}
+          <a class="row-card" href="{% url 'certificate_detail' certificate.id %}">
+            <span>{{ certificate.semester }}</span>
+            <span>{{ certificate.completion_percentage|floatformat:1 }}%</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

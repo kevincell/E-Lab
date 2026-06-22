@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Certificate</h1>
+    <p class="muted">{{ certificate.semester }} · {{ certificate.completion_percentage|floatformat:1 }}%</p>
+  </div>
+  {% if certificate.pdf %}
+    <a class="primary as-link" href="{{ certificate.pdf.url }}">Download PDF</a>
+  {% endif %}
+</section>
+<article class="panel">
+  <p>Verification hash:</p>
+  <pre>{{ certificate.verification_hash }}</pre>
+  <p><a href="{% url 'certificate_verify' certificate.verification_hash %}">Open verification page</a></p>
+</article>
+{% endblock %}
