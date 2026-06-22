@@ -1,6 +1,3 @@
-Here's the exact content for your README.md file. Copy and paste this entire block:
-
-```markdown
 # CCE e-Lab — Programming with C
 
 Continuous Practical Learning and Automated Skill Certification System for First-Year Students.
