@@ -1,20 +1,43 @@
+import csv
+import io
+import os
+import re
+import subprocess
+
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
+from django.db import connection
+from django.db.models import Count, Q, Sum, Value
+from django.db.models.functions import Coalesce
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.defaultfilters import slugify
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .forms import ModuleForm, QuestionForm, StudentSignUpForm, SubmissionForm, TestCaseForm
-from .models import Certificate, Module, Question, Submission, TestCase, User
+from .forms import CSVQuestionUploadForm, ModuleForm, QuestionForm, QuickTestCaseForm, StudentSignUpForm, SubmissionForm, TestCaseForm
+from .models import Certificate, LabSession, Module, ModuleQuestionAssignment, Progress, Question, Submission, TestCase, User
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
-from .services import certificate_eligible, generate_certificate, overall_percentage, student_progress
+from .services import (
+    certificate_eligible,
+    close_open_attendance,
+    current_unlocked_question,
+    generate_certificate,
+    get_or_create_module_assignment,
+    overall_percentage,
+    record_attendance,
+    sync_assignment_completion,
+    student_progress,
+    update_progress,
+)
 from .tasks import evaluate_submission_task
 
 
@@ -23,7 +46,9 @@ class AppLoginView(LoginView):
 
 
 class AppLogoutView(LogoutView):
-    pass
+    def dispatch(self, request, *args, **kwargs):
+        close_open_attendance(request.user)
+        return super().dispatch(request, *args, **kwargs)
 
 
 class SignUpView(CreateView):
@@ -48,8 +73,13 @@ def dashboard(request):
         return redirect("admin:index")
 
     if request.user.is_faculty_like:
-        modules = Module.objects.annotate(question_count=Count("questions"))
+        modules = Module.objects.annotate(
+            question_count=Count("questions"),
+            active_question_count=Count("questions", filter=Q(questions__is_active=True)),
+        )
         recent = Submission.objects.select_related("student", "question")[:12]
+        recent_sessions = LabSession.objects.select_related("module").prefetch_related("attendance_rows__student")[:6]
+        flagged_submissions = Submission.objects.filter(plagiarism_flagged=True).select_related("student", "question")[:8]
         students = User.objects.filter(role=User.Role.STUDENT).count()
         return render(
             request,
@@ -57,6 +87,8 @@ def dashboard(request):
             {
                 "modules": modules,
                 "recent_submissions": recent,
+                "recent_sessions": recent_sessions,
+                "flagged_submissions": flagged_submissions,
                 "students": students,
                 "questions": Question.objects.count(),
             },
@@ -64,7 +96,34 @@ def dashboard(request):
 
     progress_rows = student_progress(request.user)
     modules = Module.objects.filter(is_active=True).prefetch_related("questions")
+    progress_by_module = {row.module_id: row for row in progress_rows}
+    module_cards = []
+    for module in modules:
+        progress = progress_by_module.get(module.id)
+        module_questions = module.questions.filter(is_active=True)
+        module_total = module_questions.count()
+        module_completed = module_questions.filter(
+            submissions__student=request.user,
+            submissions__status=Submission.Status.ACCEPTED,
+        ).distinct().count()
+        module_percentage = (module_completed / module_total * 100) if module_total else 0
+        module_cards.append(
+            {
+                "module": module,
+                "progress": progress,
+                "percentage": module_percentage,
+                "module_total": module_total,
+                "module_completed": module_completed,
+                "completed": module_total > 0 and module_completed == module_total,
+            }
+        )
     pct = overall_percentage(request.user)
+    dashboard_questions = Question.objects.filter(module__is_active=True, is_active=True)
+    questions_total = dashboard_questions.count()
+    completed_total = dashboard_questions.filter(
+        submissions__student=request.user,
+        submissions__status=Submission.Status.ACCEPTED,
+    ).distinct().count()
     eligible, _ = certificate_eligible(request.user)
     certificates = request.user.certificates.all()
     return render(
@@ -72,8 +131,12 @@ def dashboard(request):
         "student/dashboard.html",
         {
             "modules": modules,
+            "module_cards": module_cards,
             "progress_rows": progress_rows,
             "overall_percentage": pct,
+            "questions_total": questions_total,
+            "completed_total": completed_total,
+            "not_attempted_total": max(questions_total - completed_total, 0),
             "certificate_eligible": eligible,
             "certificates": certificates,
         },
@@ -83,36 +146,87 @@ def dashboard(request):
 @login_required
 def module_detail(request, module_id):
     module = get_object_or_404(Module, pk=module_id, is_active=True)
-    questions = module.questions.filter(is_active=True)
-    accepted_ids = set(
-        Submission.objects.filter(
-            student=request.user,
-            status=Submission.Status.ACCEPTED,
-            question__in=questions,
-        ).values_list("question_id", flat=True)
-    )
+    record_attendance(request.user, module)
+    level_cards = []
+    for value, label in Question.Difficulty.choices:
+        questions = module.questions.filter(is_active=True, difficulty=value)
+        total = questions.count()
+        completed = questions.filter(
+            submissions__student=request.user,
+            submissions__status=Submission.Status.ACCEPTED,
+        ).distinct().count()
+        level_cards.append(
+            {
+                "value": value,
+                "label": label,
+                "total": total,
+                "completed": completed,
+                "percentage": (completed / total * 100) if total else 0,
+            }
+        )
+    return render(request, "student/module_detail.html", {"module": module, "level_cards": level_cards})
+
+
+@login_required
+def module_level_detail(request, module_id, difficulty):
+    module = get_object_or_404(Module, pk=module_id, is_active=True)
+    valid_difficulties = {value for value, _ in Question.Difficulty.choices}
+    if difficulty not in valid_difficulties:
+        raise PermissionDenied
+    record_attendance(request.user, module)
+    if request.user.is_faculty_like:
+        questions = module.questions.filter(is_active=True, difficulty=difficulty)
+        accepted_ids = set()
+        assigned_slots = []
+        current_slot = None
+    else:
+        assignment = get_or_create_module_assignment(request.user, module, difficulty)
+        assigned_slots = sync_assignment_completion(assignment)
+        questions = [slot.question for slot in assigned_slots]
+        current_slot = current_unlocked_question(assignment)
+        accepted_ids = {slot.question_id for slot in assigned_slots if slot.completed_at}
+    difficulty_label = dict(Question.Difficulty.choices).get(difficulty, difficulty.title())
     return render(
         request,
-        "student/module_detail.html",
-        {"module": module, "questions": questions, "accepted_ids": accepted_ids},
+        "student/module_level_detail.html",
+        {
+            "module": module,
+            "difficulty": difficulty,
+            "difficulty_label": difficulty_label,
+            "questions": questions,
+            "assigned_slots": assigned_slots,
+            "current_slot": current_slot,
+            "accepted_ids": accepted_ids,
+        },
     )
 
 
 @login_required
 def question_detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id, is_active=True)
+    if not request.user.is_faculty_like:
+        assignment = get_or_create_module_assignment(request.user, question.module, question.difficulty)
+        slot = assignment.assigned_questions.filter(question=question).first()
+        if not slot or not slot.unlocked_at:
+            messages.error(request, "Solve your current unlocked question before opening the next one.")
+            return redirect("module_level_detail", question.module_id, question.difficulty)
+    record_attendance(request.user, question.module)
     latest = Submission.objects.filter(student=request.user, question=question).first()
     initial = {"code": latest.code if latest else question.starter_code}
     form = SubmissionForm(request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
+        if not can_submit(request.user, question):
+            messages.error(request, "Please wait 30 seconds before submitting again.")
+            return redirect("question_detail", question.pk)
         submission = form.save(commit=False)
         submission.student = request.user
         submission.question = question
         submission.language_id = question.language_id
         submission.save()
         evaluate_submission_task.delay(submission.pk)
-        messages.success(request, "Submission queued. Refresh in a moment for the result.")
+        messages.success(request, "Submission queued. We'll take you to the results shortly.")
         return redirect("submission_detail", submission.pk)
+
     return render(
         request,
         "student/question_detail.html",
@@ -126,6 +240,25 @@ def submission_detail(request, submission_id):
     if submission.student != request.user and not request.user.is_faculty_like:
         raise PermissionDenied
     return render(request, "student/submission_detail.html", {"submission": submission})
+
+
+@login_required
+def manual_accept_submission(request, submission_id):
+    faculty_required(request.user)
+    if request.method != "POST":
+        raise PermissionDenied
+    submission = get_object_or_404(Submission.objects.select_related("question", "student"), pk=submission_id)
+    submission.status = Submission.Status.ACCEPTED
+    submission.score = 100
+    submission.manually_graded = True
+    submission.graded_by = request.user
+    submission.judged_at = timezone.now()
+    submission.save(update_fields=["status", "score", "manually_graded", "graded_by", "judged_at"])
+    for assignment in submission.student.module_assignments.filter(module=submission.question.module):
+        sync_assignment_completion(assignment)
+    update_progress(submission.student, submission.question.module)
+    messages.success(request, "Submission manually marked as accepted.")
+    return redirect("submission_detail", submission.pk)
 
 
 @login_required
@@ -152,6 +285,95 @@ def certificate_verify(request, verification_hash):
 
 
 @login_required
+def leaderboard(request):
+    students = (
+        User.objects.filter(role=User.Role.STUDENT)
+        .annotate(
+            total_score=Coalesce(Sum("submissions__score"), Value(0)),
+            problems_solved=Count("submissions__question", filter=Q(submissions__status=Submission.Status.ACCEPTED), distinct=True),
+        )
+        .order_by("-total_score", "-problems_solved", "username")[:50]
+    )
+    return render(request, "student/leaderboard.html", {"students": students})
+
+
+@login_required
+def export_progress(request):
+    faculty_required(request.user)
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="progress.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["USN", "Name", "Module", "Attempted", "Completed", "Percentage"])
+    rows = Progress.objects.select_related("student", "module").order_by("student__usn", "module__order")
+    for row in rows:
+        writer.writerow(
+            [
+                row.student.usn,
+                row.student.display_name,
+                row.module.name,
+                row.attempted,
+                row.completed,
+                f"{row.percentage:.2f}",
+            ]
+        )
+    return response
+
+
+@login_required
+def attendance_report(request):
+    faculty_required(request.user)
+    sessions = LabSession.objects.select_related("module").prefetch_related("attendance_rows__student")[:30]
+    return render(request, "faculty/attendance.html", {"sessions": sessions})
+
+
+def can_submit(student, question):
+    key = f"submit:{student.id}:{question.id}"
+    last = cache.get(key)
+    now = timezone.now()
+    if last and (now - last).total_seconds() < 30:
+        return False
+    cache.set(key, now, 30)
+    return True
+
+
+def check_database():
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
+
+
+def check_sandbox():
+    try:
+        result = subprocess.run(
+            ["docker", "image", "inspect", "elab-sandbox"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def health_check(request):
+    database_ok = check_database()
+    sandbox_ok = check_sandbox()
+    status = 200 if database_ok and sandbox_ok else 503
+    return JsonResponse(
+        {
+            "status": "ok" if status == 200 else "error",
+            "timestamp": timezone.now().isoformat(),
+            "database": "connected" if database_ok else "error",
+            "sandbox": "ready" if sandbox_ok else "error",
+        },
+        status=status,
+    )
+
+
+@login_required
 def faculty_module_form(request, module_id=None):
     faculty_required(request.user)
     module = get_object_or_404(Module, pk=module_id) if module_id else None
@@ -160,23 +382,269 @@ def faculty_module_form(request, module_id=None):
         form.save()
         messages.success(request, "Module saved.")
         return redirect("dashboard")
-    return render(request, "faculty/form.html", {"form": form, "title": "Module"})
+    return render(request, "faculty/form.html", {"form": form, "title": "Module", "module": module})
+
+
+@login_required
+def faculty_module_delete(request, module_id):
+    faculty_required(request.user)
+    if request.method != "POST":
+        raise PermissionDenied
+    module = get_object_or_404(Module, pk=module_id)
+    name = module.name
+    module.delete()
+    messages.success(request, f"Deleted module {name}.")
+    return redirect("dashboard")
+
+
+def module_name_from_csv(filename):
+    filename = os.path.basename(filename)
+    stem = filename.rsplit(".", 1)[0]
+    match = re.match(r"Module(\d+)_(.+)", stem, re.IGNORECASE)
+    if not match:
+        name = re.sub(r"[_\s]+(?:Full|Levels)$", "", stem, flags=re.IGNORECASE)
+        return name.replace("_", " ").strip(), 1
+    order = int(match.group(1))
+    raw_name = re.sub(r"[_\s]+(?:Full|Levels)$", "", match.group(2), flags=re.IGNORECASE)
+    name = raw_name.replace("_", " ").replace("IO", "I/O").strip()
+    name = name.replace("Operators Expressions", "Operators & Expressions")
+    name = name.replace("Conditionals Loops", "Conditionals & Loops")
+    return name, order
+
+
+def difficulty_from_csv(value):
+    value = (value or "").strip().lower()
+    if value == "medium":
+        return Question.Difficulty.MEDIUM
+    if value in {"hard", "expert"}:
+        return Question.Difficulty.HARD
+    return Question.Difficulty.EASY
+
+
+def question_description_from_row(row, module):
+    explicit = (row.get("Problem_Statement") or row.get("Description") or "").strip()
+    if explicit:
+        return explicit
+
+    topic = row.get("Topic", "").strip()
+    level = row.get("Level", "").strip()
+    level_range = row.get("Level_Range", "").strip()
+    difficulty = row.get("Difficulty", "").strip()
+    return (
+        f"Topic: {topic}\n"
+        f"Module: {module.name}\n"
+        f"Level: {level} ({level_range})\n"
+        f"Difficulty: {difficulty}\n\n"
+        "Write a C program for this exercise. Read all input from stdin and print only the exact expected output.\n\n"
+        "Faculty note: replace this scaffold with the complete problem statement, input format, output format, "
+        "constraints, and examples before making the question live."
+    )
+
+
+def starter_code_for_csv_question(row=None):
+    explicit = ((row or {}).get("Starter_Code") or "").strip()
+    if explicit:
+        return explicit
+    return (
+        "#include <stdio.h>\n\n"
+        "int main(void)\n"
+        "{\n"
+        "    /* Read from stdin. Do not print prompts unless required. */\n"
+        "    return 0;\n"
+        "}\n"
+    )
+
+
+def bool_from_csv(value, default=False):
+    value = str(value or "").strip().lower()
+    if value in {"1", "true", "yes", "y", "active"}:
+        return True
+    if value in {"0", "false", "no", "n", "inactive", "draft"}:
+        return False
+    return default
+
+
+def row_test_cases(row):
+    cases = []
+    for index in range(1, 21):
+        stdin = row.get(f"Test{index}_Input")
+        expected = row.get(f"Test{index}_Output")
+        if expected is None:
+            expected = row.get(f"Test{index}_Expected_Output")
+        if expected is None:
+            continue
+        if str(stdin or "").strip() == "" and str(expected or "").strip() == "":
+            continue
+        cases.append((index, stdin or "", expected or ""))
+    return cases
+
+
+def import_question_csv(file_obj, faculty):
+    module_name, order = module_name_from_csv(file_obj.name)
+    module, _ = Module.objects.update_or_create(
+        name=module_name,
+        defaults={
+            "description": f"Imported question bank for {module_name}.",
+            "level": order,
+            "order": order,
+            "is_active": True,
+        },
+    )
+
+    decoded = file_obj.read().decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(decoded))
+    required = {"Question_ID", "Topic", "Level", "Difficulty"}
+    missing = required.difference(reader.fieldnames or [])
+    if missing:
+        raise ValueError(f"{file_obj.name}: missing columns {', '.join(sorted(missing))}")
+
+    created = 0
+    updated = 0
+    active = 0
+    test_cases = 0
+    imported_slugs = []
+    replace_bank = "_levels" in file_obj.name.lower()
+    for index, row in enumerate(reader, start=1):
+        question_id = (row.get("Question_ID") or f"Q{index:03d}").strip()
+        topic = (row.get("Topic") or "Question").strip()
+        level = (row.get("Level") or "1").strip()
+        title = (row.get("Title") or f"{question_id} - {topic} (Level {level})").strip()
+        slug = slugify(f"{question_id}-{topic}-level-{level}")[:180]
+        imported_slugs.append(slug)
+        tests = row_test_cases(row)
+        active_default = bool(tests) and bool((row.get("Problem_Statement") or row.get("Description") or "").strip())
+        obj, was_created = Question.objects.update_or_create(
+            module=module,
+            slug=slug,
+            defaults={
+                "title": title,
+                "description": question_description_from_row(row, module),
+                "difficulty": difficulty_from_csv(row.get("Difficulty")),
+                "csv_level": int(row.get("Level") or 1),
+                "level_range": (row.get("Level_Range") or "").strip(),
+                "starter_code": starter_code_for_csv_question(row),
+                "language_id": 50,
+                "time_limit": float(row.get("Time_Limit") or 2.0),
+                "memory_limit_kb": int(row.get("Memory_Limit_KB") or 128000),
+                "is_mandatory": True,
+                "is_active": bool_from_csv(row.get("Is_Active"), default=active_default),
+                "created_by": faculty,
+            },
+        )
+        for test_order, stdin, expected in tests:
+            TestCase.objects.update_or_create(
+                question=obj,
+                order=test_order,
+                defaults={
+                    "stdin": stdin,
+                    "expected_output": expected,
+                    "is_sample": test_order == 1,
+                },
+            )
+        if tests:
+            TestCase.objects.filter(question=obj).exclude(order__in=[case[0] for case in tests]).delete()
+        test_cases += len(tests)
+        if obj.is_active:
+            active += 1
+        if was_created:
+            created += 1
+        else:
+            updated += 1
+
+    stale_deleted = 0
+    if test_cases:
+        stale_qs = (
+            Question.objects.filter(module=module, is_active=False, description__startswith="Topic:")
+            .annotate(test_count=Count("test_cases"))
+            .filter(test_count=0)
+            .exclude(slug__in=imported_slugs)
+        )
+        stale_deleted, _ = stale_qs.delete()
+
+    replaced_deleted = 0
+    assignments_reset = 0
+    if replace_bank:
+        replaced_deleted, _ = Question.objects.filter(module=module).exclude(slug__in=imported_slugs).delete()
+        assignments_reset, _ = ModuleQuestionAssignment.objects.filter(module=module).delete()
+
+    return {
+        "module": module,
+        "created": created,
+        "updated": updated,
+        "active": active,
+        "test_cases": test_cases,
+        "stale_deleted": stale_deleted,
+        "replaced_deleted": replaced_deleted,
+        "assignments_reset": assignments_reset,
+    }
+
+
+@login_required
+def faculty_question_upload(request):
+    faculty_required(request.user)
+    form = CSVQuestionUploadForm(request.POST or None, request.FILES or None)
+    results = []
+    if request.method == "POST" and form.is_valid():
+        for file_obj in form.cleaned_data["files"]:
+            try:
+                results.append(import_question_csv(file_obj, request.user))
+            except Exception as exc:
+                messages.error(request, str(exc))
+        if results:
+            total_created = sum(row["created"] for row in results)
+            total_updated = sum(row["updated"] for row in results)
+            total_active = sum(row["active"] for row in results)
+            total_tests = sum(row["test_cases"] for row in results)
+            total_deleted = sum(row["stale_deleted"] for row in results)
+            total_replaced = sum(row["replaced_deleted"] for row in results)
+            total_reset = sum(row["assignments_reset"] for row in results)
+            messages.success(
+                request,
+                f"Imported {total_created} new questions, updated {total_updated}, activated {total_active}, synced {total_tests} test cases, removed {total_deleted} stale drafts, replaced {total_replaced} old bank questions, and reset {total_reset} assignments.",
+            )
+    return render(request, "faculty/question_upload.html", {"form": form, "results": results})
 
 
 @login_required
 def faculty_question_form(request, question_id=None):
     faculty_required(request.user)
     question = get_object_or_404(Question, pk=question_id) if question_id else None
-    form = QuestionForm(request.POST or None, instance=question)
-    if request.method == "POST" and form.is_valid():
+    is_test_post = request.method == "POST" and request.POST.get("action") == "add_test"
+    question_data = request.POST if request.method == "POST" and not is_test_post else None
+    test_data = request.POST if is_test_post else None
+    form = QuestionForm(question_data, instance=question)
+    test_form = QuickTestCaseForm(test_data, initial={"order": 2})
+
+    if is_test_post:
+        if not question:
+            messages.error(request, "Save the question before adding hidden tests.")
+            return redirect("faculty_question_new")
+        if test_form.is_valid():
+            test = test_form.save(commit=False)
+            test.question = question
+            test.save()
+            messages.success(request, "Test case added.")
+            return redirect("faculty_question_edit", question.pk)
+    elif request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
         if not obj.created_by_id:
             obj.created_by = request.user
         obj.save()
-        messages.success(request, "Question saved. Add hidden tests before students use it.")
+        if obj.sample_output:
+            TestCase.objects.update_or_create(
+                question=obj,
+                is_sample=True,
+                order=1,
+                defaults={"stdin": obj.sample_input, "expected_output": obj.sample_output},
+            )
+        messages.success(request, "Question saved.")
         return redirect("faculty_question_edit", obj.pk)
     tests = question.test_cases.all() if question else []
-    return render(request, "faculty/question_form.html", {"form": form, "question": question, "tests": tests})
+    return render(
+        request,
+        "faculty/question_form.html",
+        {"form": form, "question": question, "tests": tests, "test_form": test_form},
+    )
 
 
 @login_required
@@ -203,6 +671,8 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         question = serializer.validated_data["question"]
+        if not can_submit(self.request.user, question):
+            raise PermissionDenied("Please wait 30 seconds before submitting again.")
         submission = serializer.save(
             student=self.request.user,
             language_id=question.language_id,
@@ -228,3 +698,23 @@ class ProgressViewSet(viewsets.ViewSet):
     def overall(self, request):
         eligible, pct = certificate_eligible(request.user)
         return Response({"percentage": pct, "certificate_eligible": eligible})
+
+
+class SubmissionLatestViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=["get"])
+    def latest(self, request):
+        question_id = request.query_params.get("question_id")
+        if not question_id:
+            return Response({"submission": None}, status=400)
+
+        qs = Submission.objects.select_related("question").filter(student=request.user, question_id=question_id)
+        submission = qs.order_by("-id").first()
+        if not submission:
+            return Response({"submission": None}, status=200)
+
+        data = SubmissionSerializer(submission).data
+        # DRF serializer uses numeric statuses for `status`; frontend expects string.
+        # We send both for safety.
+        return Response({"submission": {**data, "status": submission.status, "status_display": submission.get_status_display()}})

@@ -1,0 +1,151 @@
+Question_ID,Title,Topic,Level,Level_Range,Difficulty,Status,Score,Max_Score,Problem_Statement,Starter_Code,Is_Active,Time_Limit,Memory_Limit_KB,Test1_Input,Test1_Output,Test2_Input,Test2_Output,Test3_Input,Test3_Output,Test4_Input,Test4_Output,Test5_Input,Test5_Output,Test6_Input,Test6_Output,Test7_Input,Test7_Output,Test8_Input,Test8_Output,Test9_Input,Test9_Output,Test10_Input,Test10_Output
+E001,Maximum Two,Conditionals,1,Easy,Easy,Not Attempted,0,1,"Read two integers and print maximum.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 2,2,5 3,5,-1 -5,-1,0 0,0,100 99,100,42 42,42,-3 7,7,8 -9,8,999 1000,1000,11 10,11
+E002,Sign Number,Conditionals,1,Easy,Easy,Not Attempted,0,1,"Read n and print Positive Negative or Zero.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,Zero,1,Positive,-1,Negative,25,Positive,-30,Negative,999,Positive,-999,Negative,7,Positive,-8,Negative,100,Positive
+E003,Sum N,Loops,1,Easy,Easy,Not Attempted,0,1,"Read n and print sum 1 to n.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1,1,2,3,5,15,10,55,20,210,50,1275,100,5050,7,28,13,91,99,4950
+E004,Count Digits,Loops,1,Easy,Easy,Not Attempted,0,1,"Read n and print digit count.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,1,1,1,9,1,10,2,99,2,100,3,12345,5,100000,6,908070,6,42,2
+E005,Multiplication Ten,Loops,1,Easy,Easy,Not Attempted,0,1,"Read n and print n*10.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1,10,2,20,5,50,7,70,10,100,12,120,15,150,20,200,25,250,99,990
+M001,Leap Year,Conditionals,2,Medium,Medium,Not Attempted,0,1,"Read year and print Leap or Not Leap.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,2000,Leap,1900,Not Leap,2024,Leap,2023,Not Leap,2100,Not Leap,2400,Leap,1996,Leap,1999,Not Leap,1800,Not Leap,1600,Leap
+M002,Factorial,Loops,2,Medium,Medium,Not Attempted,0,1,"Read n 0 to 12 and print factorial.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,1,1,1,2,2,3,6,4,24,5,120,6,720,7,5040,8,40320,10,3628800
+M003,Reverse Number,Loops,2,Medium,Medium,Not Attempted,0,1,"Read non-negative integer and print reverse.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,0,1,1,12,21,120,21,1234,4321,900,9,1001,1001,4567,7654,8080,808,98765,56789
+M004,Prime Check,Loops,2,Medium,Medium,Not Attempted,0,1,"Read n and print Prime or Not Prime.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1,Not Prime,2,Prime,3,Prime,4,Not Prime,5,Prime,9,Not Prime,11,Prime,15,Not Prime,17,Prime,21,Not Prime
+M005,Fibonacci,Loops,2,Medium,Medium,Not Attempted,0,1,"Read n and print nth Fibonacci.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,0,1,1,2,1,3,2,4,3,5,5,6,8,7,13,8,21,10,55
+H001,Prime Range Count,Lab Manual Loops,3,Hard,Hard,Not Attempted,0,1,"Read start end and print count of prime numbers in range.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 10,4,10 20,4,1 100,25,50 100,10,100 150,10,2 2,1,14 16,0,17 31,5,90 110,5,200 230,4
+H002,Armstrong Check,Loops,3,Hard,Hard,Not Attempted,0,1,"Read n and print Armstrong or Not Armstrong.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,Armstrong,1,Armstrong,153,Armstrong,370,Armstrong,371,Armstrong,407,Armstrong,123,Not Armstrong,9474,Armstrong,9475,Not Armstrong,10,Not Armstrong
+H003,Perfect Number,Loops,3,Hard,Hard,Not Attempted,0,1,"Read n and print Perfect or Not Perfect.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1,Not Perfect,6,Perfect,28,Perfect,12,Not Perfect,496,Perfect,100,Not Perfect,8128,Perfect,50,Not Perfect,97,Not Perfect,33550336,Perfect
+H004,Pattern Count,Loops,3,Hard,Hard,Not Attempted,0,1,"Read n and print number of stars in n-row triangle.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1,1,2,3,3,6,4,10,5,15,10,55,20,210,50,1275,7,28,13,91
+H005,Collatz Steps,Loops,3,Hard,Hard,Not Attempted,0,1,"Read n and print steps to reach 1 by Collatz rule.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1,0,2,1,3,7,4,2,5,5,6,8,7,16,8,3,9,19,10,6

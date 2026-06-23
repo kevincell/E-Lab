@@ -36,10 +36,11 @@ def run_c_code(source_code: str, stdin: str = "", expected_output: str = "",
             "--pids-limit", "64",
             "--cap-drop", "ALL",
             "--security-opt", "no-new-privileges:true",
+            "--tmpfs", "/tmp:rw,nosuid,exec,size=50m",
             "-v", f"{tmpdir}:/box:rw",
             "elab-sandbox",
             "sh", "-c",
-            f"cd /box && gcc main.c -o program 2>&1 && timeout {time_limit}s ./program < input.txt"
+            f"cd /box && gcc main.c -o /tmp/program 2>&1 && timeout {time_limit}s /tmp/program < input.txt"
         ]
 
         try:

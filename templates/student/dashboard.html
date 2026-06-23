@@ -1,60 +1,239 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="toolbar">
-  <div>
-    <h1>Student Dashboard</h1>
-    <p class="muted">Overall completion: {{ overall_percentage|floatformat:1 }}%</p>
-  </div>
-  {% if certificate_eligible %}
-    <a class="primary as-link" href="{% url 'certificate_create' %}">Generate Certificate</a>
-  {% endif %}
-</section>
+<section class="dashboard-shell">
+  <section class="course-hero">
+    <div>
+      <p class="eyebrow">Programming With C</p>
+      <h1>Adaptive e-Lab Map</h1>
+      <p class="muted">Your module path, live progress, and certificate readiness in one place.</p>
+    </div>
+    <div class="hero-score" style="--score: {{ overall_percentage|floatformat:0 }}">
+      <span>{{ overall_percentage|floatformat:0 }}%</span>
+      <small>Overall</small>
+    </div>
+    {% if certificate_eligible %}
+      <a class="primary as-link" href="{% url 'certificate_create' %}">Generate Certificate</a>
+    {% endif %}
+  </section>
 
-<section class="grid two">
-  <div>
-    <h2>Modules</h2>
-    <div class="list">
-      {% for module in modules %}
-        <a class="row-card" href="{% url 'module_detail' module.id %}">
-          <span>
-            <strong>{{ module.name }}</strong>
-            <small>Level {{ module.level }}</small>
-          </span>
-          <span>Open</span>
+  <section class="course-map-panel">
+    <aside class="course-card profile-card">
+      <p class="eyebrow">Student</p>
+      <h2>{{ user.display_name }}</h2>
+      <dl class="compact-list">
+        <dt>USN</dt><dd>{{ user.usn|default:"-" }}</dd>
+        <dt>Department</dt><dd>{{ user.department|default:"CCE" }}</dd>
+        <dt>Semester</dt><dd>{{ user.semester }}</dd>
+        <dt>Assigned</dt><dd>{{ questions_total|default:0 }} questions</dd>
+      </dl>
+    </aside>
+
+    <div class="orbit-stage" data-module-map data-cgi-scene>
+      <svg class="orbit-svg" viewBox="0 0 520 520" aria-hidden="true">
+        <defs>
+          <linearGradient id="orbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0f766e" />
+            <stop offset="52%" stop-color="#2563eb" />
+            <stop offset="100%" stop-color="#16a34a" />
+          </linearGradient>
+        </defs>
+        <circle class="orbit-track outer" cx="260" cy="260" r="220"></circle>
+        <circle class="orbit-track middle" cx="260" cy="260" r="166"></circle>
+        <circle class="orbit-track inner" cx="260" cy="260" r="106"></circle>
+        <circle class="orbit-progress" cx="260" cy="260" r="220" pathLength="100" style="--progress: {{ overall_percentage|floatformat:0 }}"></circle>
+      </svg>
+
+      <div class="orbit-core">
+        <span>C</span>
+        <strong data-core-count>0/0</strong>
+        <small data-core-label>selected module</small>
+      </div>
+
+      {% for card in module_cards %}
+        <a
+          class="orbit-node {% if card.completed %}completed{% endif %}"
+          href="{% url 'module_detail' card.module.id %}"
+          data-module-node
+          data-index="{{ forloop.counter0 }}"
+          data-total="{{ module_cards|length }}"
+          data-name="{{ card.module.name }}"
+          data-progress="{{ card.percentage|floatformat:0 }}"
+          data-completed="{% if card.progress %}{{ card.progress.completed }}{% else %}0{% endif %}"
+          data-attempted="{% if card.progress %}{{ card.progress.attempted }}{% else %}0{% endif %}"
+          data-module-completed="{{ card.module_completed }}"
+          data-module-total="{{ card.module_total }}"
+          data-level="{{ card.module.level }}"
+        >
+          <span>{{ forloop.counter }}</span>
+          <strong>{{ card.module.name }}</strong>
+          <small>{{ card.percentage|floatformat:0 }}%</small>
         </a>
       {% empty %}
-        <p class="muted">No active modules yet.</p>
+        <div class="wheel-empty">No modules yet</div>
       {% endfor %}
     </div>
-  </div>
 
+    <aside class="course-card module-focus" data-module-focus>
+      <p class="eyebrow">Selected Module</p>
+      <h2 data-focus-name>Hover a module</h2>
+      <div class="focus-meter">
+        <span data-focus-progress style="width: 0%"></span>
+      </div>
+      <dl class="compact-list">
+        <dt>Progress</dt><dd data-focus-percent>0%</dd>
+        <dt>Completed</dt><dd data-focus-completed>0</dd>
+        <dt>Attempted</dt><dd data-focus-attempted>0</dd>
+        <dt>Level</dt><dd data-focus-level>-</dd>
+      </dl>
+      <div class="level-legend">
+        <span style="--legend-color: var(--level-1)">1</span>
+        <span style="--legend-color: var(--level-2)">2</span>
+        <span style="--legend-color: var(--level-3)">3</span>
+        <span style="--legend-color: var(--level-4)">4</span>
+        <span style="--legend-color: var(--level-5)">5</span>
+      </div>
+      <p class="muted">Click the highlighted module to continue your adaptive 5-question path.</p>
+    </aside>
+  </section>
+
+  <section class="insight-strip">
+    <div class="insight-card">
+      <span>{{ questions_total|default:0 }}</span>
+      <small>Assigned Questions</small>
+    </div>
+    <div class="insight-card success">
+      <span>{{ completed_total|default:0 }}</span>
+      <small>Completed</small>
+    </div>
+    <div class="insight-card">
+      <span>{{ not_attempted_total|default:0 }}</span>
+      <small>Remaining</small>
+    </div>
+    <div class="insight-card">
+      <span>{{ overall_percentage|floatformat:0 }}%</span>
+      <small>Score</small>
+    </div>
+  </section>
+</section>
+
+<section class="grid two dashboard-lists">
   <div>
-    <h2>Progress</h2>
+    <h2>Module Progress</h2>
     <div class="list">
       {% for row in progress_rows %}
-        <div class="row-card">
+        <a class="row-card progress-row {% if row.percentage >= 100 %}completed-card{% endif %}" href="{% url 'module_detail' row.module.id %}">
           <span>
             <strong>{{ row.module.name }}</strong>
             <small>{{ row.completed }}/{{ row.attempted }} completed</small>
           </span>
           <span>{{ row.percentage|floatformat:0 }}%</span>
-        </div>
+        </a>
       {% empty %}
-        <p class="muted">Start a module to see progress.</p>
+        <p class="muted">Open a module to receive your adaptive question set.</p>
       {% endfor %}
     </div>
+  </div>
 
+  <div>
+    <h2>Certificate</h2>
     {% if certificates %}
-      <h2>Certificates</h2>
       <div class="list">
         {% for certificate in certificates %}
-          <a class="row-card" href="{% url 'certificate_detail' certificate.id %}">
+          <a class="row-card completed-card" href="{% url 'certificate_detail' certificate.id %}">
             <span>{{ certificate.semester }}</span>
             <span>{{ certificate.completion_percentage|floatformat:1 }}%</span>
           </a>
         {% endfor %}
       </div>
+    {% else %}
+      <div class="course-card certificate-card">
+        <strong>{{ overall_percentage|floatformat:0 }}%</strong>
+        <p class="muted">Complete assigned mandatory questions to unlock certification.</p>
+      </div>
     {% endif %}
   </div>
 </section>
+
+<script>
+  (function() {
+    const stage = document.querySelector("[data-module-map]");
+    if (!stage) return;
+
+    const nodes = Array.from(stage.querySelectorAll("[data-module-node]"));
+    const focus = document.querySelector("[data-module-focus]");
+    const name = focus && focus.querySelector("[data-focus-name]");
+    const percent = focus && focus.querySelector("[data-focus-percent]");
+    const completed = focus && focus.querySelector("[data-focus-completed]");
+    const attempted = focus && focus.querySelector("[data-focus-attempted]");
+    const level = focus && focus.querySelector("[data-focus-level]");
+    const bar = focus && focus.querySelector("[data-focus-progress]");
+    const coreCount = stage.querySelector("[data-core-count]");
+    const coreLabel = stage.querySelector("[data-core-label]");
+
+    function positionNodes() {
+      const size = stage.offsetWidth;
+      const radius = Math.max(128, Math.min(size * 0.39, 230));
+      nodes.forEach(function(node, index) {
+        const total = Number(node.dataset.total || nodes.length || 1);
+        const angle = (-90 + index * (360 / total)) * Math.PI / 180;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        node.style.setProperty("--node-x", x + "px");
+        node.style.setProperty("--node-y", y + "px");
+      });
+    }
+
+    function updateFocus(node) {
+      if (!node || !focus) return;
+      nodes.forEach(function(item) { item.classList.toggle("is-active", item === node); });
+      stage.dataset.activeProgress = node.dataset.progress || "0";
+      const progress = Number(node.dataset.progress || 0);
+      const moduleColor = getComputedStyle(node).getPropertyValue("--module-color");
+      focus.style.setProperty("--focus-color", moduleColor || "var(--primary)");
+      name.textContent = node.dataset.name || "Module";
+      percent.textContent = progress + "%";
+      completed.textContent = node.dataset.completed || "0";
+      attempted.textContent = node.dataset.attempted || "0";
+      level.textContent = node.dataset.level || "-";
+      bar.style.width = Math.max(0, Math.min(progress, 100)) + "%";
+      if (coreCount) {
+        coreCount.textContent = (node.dataset.moduleCompleted || "0") + "/" + (node.dataset.moduleTotal || "0");
+      }
+      if (coreLabel) {
+        coreLabel.textContent = "in " + (node.dataset.name || "module");
+      }
+    }
+
+    stage.addEventListener("pointermove", function(event) {
+      const rect = stage.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width - 0.5) * 10;
+      const y = ((event.clientY - rect.top) / rect.height - 0.5) * 10;
+      stage.style.setProperty("--pointer-x", ((event.clientX - rect.left) / rect.width * 100).toFixed(2) + "%");
+      stage.style.setProperty("--pointer-y", ((event.clientY - rect.top) / rect.height * 100).toFixed(2) + "%");
+      stage.style.setProperty("--tilt-x", (-y).toFixed(2) + "deg");
+      stage.style.setProperty("--tilt-y", x.toFixed(2) + "deg");
+    });
+
+    stage.addEventListener("pointerleave", function() {
+      stage.style.setProperty("--tilt-x", "0deg");
+      stage.style.setProperty("--tilt-y", "0deg");
+    });
+
+    nodes.forEach(function(node) {
+      node.addEventListener("mouseenter", function() { updateFocus(node); });
+      node.addEventListener("focus", function() { updateFocus(node); });
+    });
+
+    positionNodes();
+    updateFocus(nodes[0]);
+    window.addEventListener("resize", positionNodes);
+
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        stage.classList.toggle("is-in-view", entry.isIntersecting);
+      });
+    }, { threshold: 0.35 });
+    observer.observe(stage);
+  })();
+</script>
 {% endblock %}

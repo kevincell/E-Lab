@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Leaderboard</h1>
+    <p class="muted">Top 50 students by score and solved problems</p>
+  </div>
+  <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
+</section>
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Student</th>
+          <th>USN</th>
+          <th>Problems Solved</th>
+          <th>Total Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ student.display_name }}</td>
+            <td>{{ student.usn|default:"-" }}</td>
+            <td>{{ student.problems_solved|default:0 }}</td>
+            <td>{{ student.total_score|default:0 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5">No students yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

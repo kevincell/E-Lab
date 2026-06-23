@@ -7,6 +7,7 @@ router = DefaultRouter()
 router.register("submissions", views.SubmissionViewSet, basename="submission")
 router.register("questions", views.QuestionViewSet, basename="question-api")
 router.register("progress", views.ProgressViewSet, basename="progress")
+router.register("submission-latest", views.SubmissionLatestViewSet, basename="submission-latest")
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
@@ -14,15 +15,23 @@ urlpatterns = [
     path("logout/", views.AppLogoutView.as_view(), name="logout"),
     path("signup/", views.SignUpView.as_view(), name="signup"),
     path("modules/<int:module_id>/", views.module_detail, name="module_detail"),
+    path("modules/<int:module_id>/<str:difficulty>/", views.module_level_detail, name="module_level_detail"),
     path("questions/<int:question_id>/", views.question_detail, name="question_detail"),
     path("submissions/<int:submission_id>/", views.submission_detail, name="submission_detail"),
+    path("submissions/<int:submission_id>/manual-accept/", views.manual_accept_submission, name="manual_accept_submission"),
+    path("leaderboard/", views.leaderboard, name="leaderboard"),
     path("certificates/generate/", views.certificate_create, name="certificate_create"),
     path("certificates/<int:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("verify/<str:verification_hash>/", views.certificate_verify, name="certificate_verify"),
+    path("faculty/attendance/", views.attendance_report, name="attendance_report"),
+    path("faculty/export/progress/", views.export_progress, name="export_progress"),
     path("faculty/modules/new/", views.faculty_module_form, name="faculty_module_new"),
     path("faculty/modules/<int:module_id>/", views.faculty_module_form, name="faculty_module_edit"),
+    path("faculty/modules/<int:module_id>/delete/", views.faculty_module_delete, name="faculty_module_delete"),
+    path("faculty/questions/upload/", views.faculty_question_upload, name="faculty_question_upload"),
     path("faculty/questions/new/", views.faculty_question_form, name="faculty_question_new"),
     path("faculty/questions/<int:question_id>/", views.faculty_question_form, name="faculty_question_edit"),
     path("faculty/questions/<int:question_id>/tests/new/", views.faculty_testcase_form, name="faculty_testcase_new"),
+    path("health/", views.health_check, name="health_check"),
     path("api/", include(router.urls)),
 ]

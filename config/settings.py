@@ -10,8 +10,12 @@ def env(name, default=None):
 
 SECRET_KEY = env("SECRET_KEY", "dev-only-secret-key")
 DEBUG = env("DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ["http://192.168.1.10", "http://localhost", "http://127.0.0.1"]
+ALLOWED_HOSTS = [host.strip() for host in env("ALLOWED_HOSTS", "*").split(",") if host.strip()]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in env("CSRF_TRUSTED_ORIGINS", "http://192.168.1.10,http://localhost,http://127.0.0.1").split(",")
+    if origin.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -117,3 +121,12 @@ SITE_BASE_URL = env("SITE_BASE_URL", "http://localhost")
 JUDGE0_URL = env("JUDGE0_URL", "http://judge0-server:2358")
 CERTIFICATE_SIGNING_KEY = env("CERTIFICATE_SIGNING_KEY", SECRET_KEY)
 CERTIFICATE_THRESHOLD = int(env("CERTIFICATE_THRESHOLD", "60"))
+
+EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(env("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = env("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_TIMEOUT = int(env("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "elab@cce.nmam.in")

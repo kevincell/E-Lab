@@ -2,34 +2,286 @@
 {% block content %}
 <section class="toolbar">
   <div>
+    <p class="eyebrow">{{ question.module.name }} · {{ question.get_difficulty_display }}</p>
     <h1>{{ question.title }}</h1>
-    <p class="muted">{{ question.module.name }} · {{ question.get_difficulty_display }}</p>
   </div>
-  <a class="secondary as-link" href="{% url 'module_detail' question.module.id %}">Back</a>
+  <a class="back-button as-link" href="{% url 'module_detail' question.module.id %}">Back</a>
 </section>
 
-<section class="grid two">
-  <article class="panel">
-    <h2>Problem</h2>
-    <div class="prose">{{ question.description|linebreaks }}</div>
+<section class="question-layout">
+  <article class="question-panel">
+    <div class="panel-header">
+      <div class="panel-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      </div>
+      <h2 class="panel-title">Problem</h2>
+    </div>
+
+    <div class="prose-dark">{{ question.description|linebreaks }}</div>
+
     {% if question.sample_input or question.sample_output %}
-      <h3>Sample Input</h3>
-      <pre>{{ question.sample_input }}</pre>
-      <h3>Sample Output</h3>
-      <pre>{{ question.sample_output }}</pre>
+      <div class="sample-block">
+        <h3 class="sample-label">Sample Input</h3>
+        <pre class="sample-pre">{{ question.sample_input }}</pre>
+      </div>
+      <div class="sample-block">
+        <h3 class="sample-label">Sample Output</h3>
+        <pre class="sample-pre">{{ question.sample_output }}</pre>
+      </div>
     {% endif %}
   </article>
 
-  <article class="panel">
-    <h2>Submit Code</h2>
-    <form method="post" class="form-grid">
+  <article class="submit-panel">
+    <div class="panel-header">
+      <div class="panel-icon">
+        <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+      </div>
+      <h2 class="panel-title">Submit Code</h2>
+    </div>
+
+    <form method="post" class="submit-form" data-submit-form>
       {% csrf_token %}
-      {{ form.as_p }}
-      <button class="primary" type="submit">Submit</button>
+      {{ form.code.errors }}
+      {{ form.code }}
+
+      <div class="editor-chrome">
+        <div class="editor-titlebar">
+          <span class="dot-red"></span>
+          <span class="dot-yellow"></span>
+          <span class="dot-green"></span>
+          <span class="filename">main.c</span>
+        </div>
+        <div id="editor" class="monaco-editor"></div>
+      </div>
+
+      <button class="primary submit-button" type="submit" data-submit-button>
+        <span>Submit Solution</span>
+        <i aria-hidden="true"></i>
+      </button>
+
+      <!-- Linear progress bar (kept) -->
+      <div class="submit-progress" data-submit-progress aria-hidden="true" role="status" aria-live="polite">
+        <div class="submit-progress-bar" aria-hidden="true">
+          <div class="submit-progress-fill" data-submit-progress-fill></div>
+        </div>
+      </div>
+
+      <!-- Circular progress indicator (new) -->
+      <div class="progress-circle" data-progress-circle aria-hidden="true" role="status" aria-live="polite">
+        <div class="progress-circle-ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="progress-circle-track" cx="60" cy="60" r="52"></circle>
+            <circle class="progress-circle-arc" cx="60" cy="60" r="52" data-progress-arc></circle>
+          </svg>
+          <div class="progress-circle-value" data-progress-value>0%</div>
+          <div class="progress-circle-pulse" aria-hidden="true"></div>
+        </div>
+        <div class="progress-circle-label">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span data-progress-label>Uploading…</span>
+        </div>
+        <p class="progress-circle-hint" data-progress-hint>Your code is being queued for evaluation.</p>
+        <div class="progress-steps" aria-hidden="true">
+          <span class="progress-step" data-step="upload">Uploading</span>
+          <span class="progress-step" data-step="run">Running tests</span>
+          <span class="progress-step" data-step="finalize">Finalizing</span>
+        </div>
+      </div>
     </form>
+
     {% if latest_submission %}
-      <p class="muted">Latest: <a href="{% url 'submission_detail' latest_submission.id %}">{{ latest_submission.get_status_display }}</a></p>
+      <p class="muted" style="margin-top: 16px;">Latest: <a href="{% url 'submission_detail' latest_submission.id %}">{{ latest_submission.get_status_display }}</a></p>
+    {% endif %}
+
+    {% if question.sample_input or question.sample_output %}
+      <div class="test-cards" style="margin-top: 24px;">
+        <div class="code-header">
+          <h2 style="margin-bottom:0;">Sample Tests</h2>
+          <span class="muted" style="font-weight:900;">Visible for clarity</span>
+        </div>
+        <div class="collapsible">
+          <details class="collapsible-item" open>
+            <summary>Sample Input / Output</summary>
+            <div class="prose" style="display:grid; gap:10px; margin-top:10px;">
+              <div>
+                <div class="muted" style="font-weight:900; margin-bottom:6px;">Input</div>
+                <pre class="code-block">{{ question.sample_input }}</pre>
+              </div>
+              <div>
+                <div class="muted" style="font-weight:900; margin-bottom:6px;">Expected Output</div>
+                <pre class="code-block">{{ question.sample_output }}</pre>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
     {% endif %}
   </article>
 </section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<script>
+  require.config({ paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } });
+  require(["vs/editor/editor.main"], function() {
+    const textarea = document.getElementById("id_code");
+    const editorNode = document.getElementById("editor");
+    if (textarea && editorNode) {
+      textarea.style.display = "none";
+      const editor = monaco.editor.create(editorNode, {
+        value: textarea.value,
+        language: "c",
+        theme: "vs-dark",
+        automaticLayout: true,
+        minimap: { enabled: false }
+      });
+      editor.onDidChangeModelContent(function() {
+        textarea.value = editor.getValue();
+      });
+    }
+  });
+
+  (function() {
+    const submitForm = document.querySelector("[data-submit-form]");
+    const submitButton = document.querySelector("[data-submit-button]");
+    const submitProgress = document.querySelector("[data-submit-progress]");
+    const submitProgressFill = document.querySelector("[data-submit-progress-fill]");
+    const progressCircle = document.querySelector("[data-progress-circle]");
+    const progressArc = document.querySelector("[data-progress-arc]");
+    const progressValue = document.querySelector("[data-progress-value]");
+    const progressLabel = document.querySelector("[data-progress-label]");
+    const progressHint = document.querySelector("[data-progress-hint]");
+    const steps = document.querySelectorAll("[data-step]");
+    const textarea = document.getElementById("id_code");
+
+    const RADIUS = 52;
+    const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+    if (progressArc) {
+      progressArc.style.strokeDasharray = `0 ${CIRCUMFERENCE}`;
+    }
+
+    function setProgressUI(percent) {
+      const clamped = Math.max(0, Math.min(100, percent));
+      if (submitProgressFill) submitProgressFill.style.width = `${clamped}%`;
+      if (progressArc) {
+        const offset = CIRCUMFERENCE * (clamped / 100);
+        progressArc.style.strokeDasharray = `${offset} ${CIRCUMFERENCE}`;
+      }
+      if (progressValue) progressValue.textContent = Math.floor(clamped) + "%";
+    }
+
+    function setStep(name) {
+      steps.forEach(function(step) {
+        step.classList.toggle("is-active", step.dataset.step === name);
+      });
+    }
+
+    function setStatus(text, hint) {
+      if (progressLabel) progressLabel.textContent = text;
+      if (progressHint) progressHint.textContent = hint;
+    }
+
+    function startProgress() {
+      submitProgress && submitProgress.classList.add("is-visible");
+      progressCircle && progressCircle.classList.add("is-visible");
+      submitButton.disabled = true;
+      submitButton.classList.add("is-loading");
+      const span = submitButton.querySelector("span");
+      span && (span.textContent = "Submitting…");
+    }
+
+    function stopProgress() {
+      submitProgress && submitProgress.classList.remove("is-visible");
+      progressCircle && progressCircle.classList.remove("is-visible");
+      submitButton.disabled = false;
+      submitButton.classList.remove("is-loading");
+      const span = submitButton.querySelector("span");
+      span && (span.textContent = "Submit Solution");
+    }
+
+    function getCsrfToken() {
+      const input = submitForm.querySelector("input[name='csrfmiddlewaretoken']");
+      return input ? input.value : "";
+    }
+
+    function pollSubmission(questionId, onComplete) {
+      let attempts = 0;
+      const maxAttempts = 120; // ~2 minutes at 1s interval
+      const interval = window.setInterval(function() {
+        attempts++;
+        fetch(`/api/submission-latest/latest/?question_id=${questionId}`, {
+          headers: { "Accept": "application/json" }
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            const sub = data.submission;
+            if (!sub) return;
+            const status = sub.status;
+            const display = sub.status_display || status;
+
+            if (status === "pending" || status === "running") {
+              setStatus(display + "…", "Your code is being evaluated in the sandbox.");
+              setStep(status === "pending" ? "upload" : "run");
+              const fake = Math.min(6 + attempts * 2.2, 88);
+              setProgressUI(fake);
+            } else {
+              window.clearInterval(interval);
+              setProgressUI(100);
+              setStep("finalize");
+              setStatus("Finished", display);
+              onComplete && onComplete(sub);
+            }
+          })
+          .catch(function(err) {
+            console.error("Polling failed", err);
+          });
+
+        if (attempts >= maxAttempts) {
+          window.clearInterval(interval);
+          stopProgress();
+        }
+      }, 1000);
+    }
+
+    if (submitForm && submitButton) {
+      submitForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        startProgress();
+        setProgressUI(6);
+        setStep("upload");
+        setStatus("Uploading…", "Your code is being queued for evaluation.");
+
+        const code = textarea ? textarea.value : "";
+        const questionId = {{ question.id }};
+
+        fetch("/api/submissions/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCsrfToken()
+          },
+          body: JSON.stringify({ question: questionId, code: code })
+        })
+          .then(function(r) {
+            if (!r.ok) throw new Error("Submission failed: " + r.status);
+            return r.json();
+          })
+          .then(function(data) {
+            setStatus("Running tests…", "Executing hidden test cases in the Docker sandbox.");
+            setStep("run");
+            pollSubmission(questionId, function(sub) {
+              window.location.href = `/submissions/${sub.id}/`;
+            });
+          })
+          .catch(function(err) {
+            console.error(err);
+            stopProgress();
+            alert("Submission failed. Please try again.");
+          });
+      });
+    }
+
+    window.addEventListener("pageshow", stopProgress);
+  })();
+</script>
 {% endblock %}
