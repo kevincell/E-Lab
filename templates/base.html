@@ -5,16 +5,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
-  <script>
-    document.documentElement.dataset.theme = localStorage.getItem("elab-theme") || "dark";
-  </script>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
   <header class="topbar">
     <a class="brand" href="{% url 'dashboard' %}">{{ SITE_NAME }}</a>
     <nav class="nav">
-      <button class="theme-toggle" type="button" data-theme-toggle>Theme</button>
       {% if user.is_authenticated %}
         <a href="{% url 'leaderboard' %}">Leaderboard</a>
         <span>{{ user.display_name }}</span>
@@ -39,17 +35,5 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
-  <script>
-    const storedTheme = document.documentElement.dataset.theme || "light";
-    document.querySelectorAll("[data-theme-toggle]").forEach(function(button) {
-      button.textContent = storedTheme === "dark" ? "Light" : "Dark";
-      button.addEventListener("click", function() {
-        const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-        document.documentElement.dataset.theme = next;
-        localStorage.setItem("elab-theme", next);
-        button.textContent = next === "dark" ? "Light" : "Dark";
-      });
-    });
-  </script>
 </body>
 </html>

@@ -18,6 +18,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import slugify
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
@@ -25,6 +27,7 @@ from rest_framework.response import Response
 
 from .forms import CSVQuestionUploadForm, ModuleForm, QuestionForm, QuickTestCaseForm, StudentSignUpForm, SubmissionForm, TestCaseForm
 from .models import Certificate, LabSession, Module, ModuleQuestionAssignment, Progress, Question, Submission, TestCase, User
+from .sandbox import run_c_code
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
 from .services import (
     certificate_eligible,
@@ -126,6 +129,28 @@ def dashboard(request):
     ).distinct().count()
     eligible, _ = certificate_eligible(request.user)
     certificates = request.user.certificates.all()
+
+    # Enhanced data for Ecosystem UI
+    leaderboard_qs = (
+        User.objects.filter(role=User.Role.STUDENT)
+        .annotate(
+            total_score=Coalesce(Sum("submissions__score"), Value(0)),
+            problems_solved=Count("submissions__question", filter=Q(submissions__status=Submission.Status.ACCEPTED), distinct=True),
+        )
+    )
+
+    # Efficient rank calculation
+    current_user_stats = leaderboard_qs.get(id=request.user.id)
+    user_rank = leaderboard_qs.filter(
+        Q(total_score__gt=current_user_stats.total_score) |
+        Q(total_score=current_user_stats.total_score, problems_solved__gt=current_user_stats.problems_solved) |
+        Q(total_score=current_user_stats.total_score, problems_solved=current_user_stats.problems_solved, username__lt=current_user_stats.username)
+    ).count() + 1
+
+    global_leaderboard = leaderboard_qs.order_by("-total_score", "-problems_solved", "username")[:20]
+    recent_activity = Submission.objects.filter(student=request.user).select_related("question")[:10]
+    live_flags_count = Submission.objects.filter(student=request.user, plagiarism_flagged=True).count()
+
     return render(
         request,
         "student/dashboard.html",
@@ -139,6 +164,10 @@ def dashboard(request):
             "not_attempted_total": max(questions_total - completed_total, 0),
             "certificate_eligible": eligible,
             "certificates": certificates,
+            "user_rank": user_rank,
+            "global_leaderboard": global_leaderboard,
+            "recent_activity": recent_activity,
+            "live_flags_count": live_flags_count,
         },
     )
 
@@ -371,6 +400,48 @@ def health_check(request):
         },
         status=status,
     )
+
+
+@login_required
+@require_POST
+def run_code(request):
+    import json
+    data = json.loads(request.body)
+    question_id = data.get("question")
+    code = data.get("code")
+    
+    question = get_object_or_404(Question, id=question_id, is_active=True)
+    test_cases = question.test_cases.filter(is_sample=True).order_by("order")
+    
+    if not test_cases:
+        test_cases = [
+            TestCase(
+                stdin=question.sample_input,
+                expected_output=question.sample_output,
+            )
+        ]
+    
+    results = []
+    for test in test_cases:
+        run_result = run_c_code(
+            source_code=code,
+            stdin=test.stdin or "",
+            expected_output=test.expected_output or "",
+            time_limit=question.time_limit,
+            memory_limit_kb=question.memory_limit_kb,
+        )
+        passed = run_result.get("status_id") == 3
+        results.append({
+            "stdin": test.stdin or "",
+            "expected": test.expected_output or "",
+            "actual": run_result.get("stdout", ""),
+            "passed": passed,
+            "status": run_result.get("status", "Unknown"),
+        })
+    
+    return JsonResponse({
+        "tests": results,
+    })
 
 
 @login_required
@@ -669,7 +740,12 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(student=self.request.user)
 
+    def create(self, request, *args, **kwargs):
+        print("DEBUG: Request data:", request.data)
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
+        print("DEBUG: Validated data:", serializer.validated_data)
         question = serializer.validated_data["question"]
         if not can_submit(self.request.user, question):
             raise PermissionDenied("Please wait 30 seconds before submitting again.")

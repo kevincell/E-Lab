@@ -10,11 +10,13 @@ CCE e-Lab is a web-based platform for first-year Computer & Communication Engine
 
 ## Features
 
+- **Run & Submit code** — Test against sample cases, then submit for full evaluation
 - **Automated code evaluation** — Submit C code, get instant feedback
 - **Progress tracking** — Visual dashboard showing module completion
 - **Auto-generated certificates** — Earned upon ≥60% completion
 - **Faculty monitoring** — Track student progress and manage questions
 - **Self-paced learning** — Work through 5 levels of difficulty at your own speed
+- **LeetCode import** — Import questions directly from LeetCode!
 
 ## Architecture
 
@@ -81,15 +83,26 @@ docker compose up -d --build
 ```bash
 docker compose exec app python manage.py migrate
 docker compose exec app python manage.py collectstatic --noinput
+docker compose exec app python manage.py seed_demo
 ```
 
-### 5. Create Admin User
+### 5. Optional: Import LeetCode Questions
+You can import questions from LeetCode using their public API!
+```bash
+# Import by slug
+docker compose exec app python manage.py import_leetcode --question two-sum --module "LeetCode Problems" --difficulty easy --csv-level 1
+
+# Import by ID
+docker compose exec app python manage.py import_leetcode --question 1 --module "LeetCode Problems" --difficulty easy
+```
+
+### 6. Create Admin User
 
 ```bash
 docker compose exec app python manage.py createsuperuser
 ```
 
-### 6. Access the Application
+### 7. Access the Application
 
 | URL | Description |
 |-----|-------------|

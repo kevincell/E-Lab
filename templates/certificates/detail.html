@@ -3,15 +3,31 @@
 <section class="toolbar">
   <div>
     <h1>Certificate</h1>
-    <p class="muted">{{ certificate.semester }} · {{ certificate.completion_percentage|floatformat:1 }}%</p>
+    <p class="muted">{{ certificate.semester }} · {{ certificate.completion_percentage|floatformat:1 }}% complete</p>
   </div>
-  {% if certificate.pdf %}
-    <a class="primary as-link" href="{{ certificate.pdf.url }}">Download PDF</a>
-  {% endif %}
+  <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
 </section>
-<article class="panel">
-  <p>Verification hash:</p>
-  <pre>{{ certificate.verification_hash }}</pre>
-  <p><a href="{% url 'certificate_verify' certificate.verification_hash %}">Open verification page</a></p>
-</article>
+
+<div class="grid two">
+  <article class="panel certificate-card">
+    <p class="eyebrow">Verification</p>
+    <h3>Hash</h3>
+    <pre style="word-break:break-all;font-size:12px;">{{ certificate.verification_hash }}</pre>
+    <a href="{% url 'certificate_verify' certificate.verification_hash %}" class="secondary">Open Verification Page</a>
+  </article>
+
+  <article class="panel">
+    <p class="eyebrow">Details</p>
+    <dl class="stats">
+      <dt>Student</dt><dd>{{ certificate.student.display_name }}</dd>
+      <dt>USN</dt><dd>{{ certificate.student.usn|default:"-" }}</dd>
+      <dt>Semester</dt><dd>{{ certificate.semester }}</dd>
+      <dt>Completion</dt><dd>{{ certificate.completion_percentage|floatformat:1 }}%</dd>
+      <dt>Issued</dt><dd>{{ certificate.issued_at }}</dd>
+    </dl>
+    {% if certificate.pdf %}
+      <a class="primary as-link" href="{{ certificate.pdf.url }}" style="margin-top:16px;">Download PDF</a>
+    {% endif %}
+  </article>
+</div>
 {% endblock %}

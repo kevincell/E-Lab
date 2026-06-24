@@ -33,5 +33,6 @@ urlpatterns = [
     path("faculty/questions/<int:question_id>/", views.faculty_question_form, name="faculty_question_edit"),
     path("faculty/questions/<int:question_id>/tests/new/", views.faculty_testcase_form, name="faculty_testcase_new"),
     path("health/", views.health_check, name="health_check"),
+    path("api/run/", views.run_code, name="run-code"),
     path("api/", include(router.urls)),
 ]

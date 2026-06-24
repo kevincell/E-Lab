@@ -9,8 +9,8 @@ def env(name, default=None):
 
 
 SECRET_KEY = env("SECRET_KEY", "dev-only-secret-key")
-DEBUG = env("DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS = [host.strip() for host in env("ALLOWED_HOSTS", "*").split(",") if host.strip()]
+DEBUG = True
+ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in env("CSRF_TRUSTED_ORIGINS", "http://192.168.1.10,http://localhost,http://127.0.0.1").split(",")

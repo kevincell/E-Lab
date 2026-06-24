@@ -1,239 +1,221 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}dashboard-page{% endblock %}
+
 {% block content %}
-<section class="dashboard-shell">
-  <section class="course-hero">
+<div class="dashboard-full">
+
+  <!-- Hero Bar -->
+  <div class="course-hero">
     <div>
-      <p class="eyebrow">Programming With C</p>
-      <h1>Adaptive e-Lab Map</h1>
-      <p class="muted">Your module path, live progress, and certificate readiness in one place.</p>
+      <p class="eyebrow">Welcome back, {{ user.display_name }}</p>
+      <h1>C Programming E-Lab</h1>
+      <p class="muted">{{ questions_total }} questions across {{ modules|length }} modules</p>
     </div>
     <div class="hero-score" style="--score: {{ overall_percentage|floatformat:0 }}">
-      <span>{{ overall_percentage|floatformat:0 }}%</span>
-      <small>Overall</small>
+      <div>
+        <span>{{ overall_percentage|floatformat:0 }}%</span>
+        <small>Complete</small>
+      </div>
     </div>
-    {% if certificate_eligible %}
-      <a class="primary as-link" href="{% url 'certificate_create' %}">Generate Certificate</a>
-    {% endif %}
-  </section>
+    <div>
+      {% if certificate_eligible %}
+        <a href="{% url 'certificate_create' %}" class="primary">Get Certificate</a>
+      {% else %}
+        <span class="locked-badge">🔒 Certificate locked</span>
+      {% endif %}
+    </div>
+  </div>
 
-  <section class="course-map-panel">
-    <aside class="course-card profile-card">
-      <p class="eyebrow">Student</p>
-      <h2>{{ user.display_name }}</h2>
-      <dl class="compact-list">
-        <dt>USN</dt><dd>{{ user.usn|default:"-" }}</dd>
-        <dt>Department</dt><dd>{{ user.department|default:"CCE" }}</dd>
-        <dt>Semester</dt><dd>{{ user.semester }}</dd>
-        <dt>Assigned</dt><dd>{{ questions_total|default:0 }} questions</dd>
-      </dl>
-    </aside>
+  <!-- 3-Column Layout: Course Info | Module Wheel | Module Progress -->
+  <div class="course-map-panel">
 
-    <div class="orbit-stage" data-module-map data-cgi-scene>
-      <svg class="orbit-svg" viewBox="0 0 520 520" aria-hidden="true">
-        <defs>
-          <linearGradient id="orbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0f766e" />
-            <stop offset="52%" stop-color="#2563eb" />
-            <stop offset="100%" stop-color="#16a34a" />
-          </linearGradient>
-        </defs>
-        <circle class="orbit-track outer" cx="260" cy="260" r="220"></circle>
-        <circle class="orbit-track middle" cx="260" cy="260" r="166"></circle>
-        <circle class="orbit-track inner" cx="260" cy="260" r="106"></circle>
-        <circle class="orbit-progress" cx="260" cy="260" r="220" pathLength="100" style="--progress: {{ overall_percentage|floatformat:0 }}"></circle>
-      </svg>
-
-      <div class="orbit-core">
-        <span>C</span>
-        <strong data-core-count>0/0</strong>
-        <small data-core-label>selected module</small>
+    <!-- Left: Course Info -->
+    <div class="course-info">
+      <div class="course-card">
+        <p class="eyebrow">Course Information</p>
+        <h3>E-Lab: C Programming</h3>
+        <dl class="stats">
+          <dt>Credits</dt><dd>4</dd>
+          <dt>Lab Hours</dt><dd>60</dd>
+          <dt>Passed</dt><dd>{{ completed_total }}/{{ questions_total }}</dd>
+        </dl>
       </div>
 
+      <div class="course-card">
+        <p class="eyebrow">Overview</p>
+        <dl class="stats">
+          <dt>Total Questions</dt><dd>{{ questions_total }}</dd>
+          <dt>Attempted</dt><dd>{{ completed_total }}</dd>
+          <dt>Not Attempted</dt><dd>{{ not_attempted_total }}</dd>
+        </dl>
+      </div>
+
+      {% if user_rank %}
+      <div class="course-card">
+        <p class="eyebrow">Your Rank</p>
+        <span style="font-size:42px;font-weight:900;color:var(--primary);">#{{ user_rank }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Center: Spinning Module Wheel -->
+    <div class="module-wheel-v2">
+      <!-- Colored wedge ring -->
+      <div class="wheel-wedges"></div>
+
+      <!-- Outer donut: small segments for question status -->
+      <div class="wheel-donut">
+        {% for card in module_cards %}
+          {% for _ in "xxxxxx" %}
+            <div class="wheel-donut-segment {% if card.completed %}status-completed{% else %}status-pending{% endif %}"></div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+
+      <!-- Module labels around the wheel -->
       {% for card in module_cards %}
-        <a
-          class="orbit-node {% if card.completed %}completed{% endif %}"
-          href="{% url 'module_detail' card.module.id %}"
-          data-module-node
-          data-index="{{ forloop.counter0 }}"
-          data-total="{{ module_cards|length }}"
-          data-name="{{ card.module.name }}"
-          data-progress="{{ card.percentage|floatformat:0 }}"
-          data-completed="{% if card.progress %}{{ card.progress.completed }}{% else %}0{% endif %}"
-          data-attempted="{% if card.progress %}{{ card.progress.attempted }}{% else %}0{% endif %}"
-          data-module-completed="{{ card.module_completed }}"
-          data-module-total="{{ card.module_total }}"
-          data-level="{{ card.module.level }}"
-        >
-          <span>{{ forloop.counter }}</span>
-          <strong>{{ card.module.name }}</strong>
+        <a href="{% url 'module_detail' card.module.id %}"
+           class="wheel-module-label"
+           title="{{ card.module.name }} — {{ card.percentage|floatformat:0 }}% complete">
+          M{{ forloop.counter }}
           <small>{{ card.percentage|floatformat:0 }}%</small>
         </a>
       {% empty %}
         <div class="wheel-empty">No modules yet</div>
       {% endfor %}
+
+      <!-- Center core -->
+      <div class="wheel-core">
+        <strong>C</strong>
+        <span>{{ overall_percentage|floatformat:0 }}%</span>
+        <small>Complete</small>
+      </div>
+
+      <!-- Legend -->
+      <div class="wheel-legend">
+        <span><i style="background:var(--success)"></i> Completed</span>
+        <span><i style="background:var(--line-strong)"></i> Pending</span>
+        <span><i style="background:var(--danger)"></i> Failed</span>
+      </div>
     </div>
 
-    <aside class="course-card module-focus" data-module-focus>
-      <p class="eyebrow">Selected Module</p>
-      <h2 data-focus-name>Hover a module</h2>
-      <div class="focus-meter">
-        <span data-focus-progress style="width: 0%"></span>
+    <!-- Right: Module Progress & Syllabus -->
+    <div class="levels-panel">
+      <div class="course-card">
+        <p class="eyebrow">Module Progress</p>
+        <div class="module-progress-list">
+          {% for card in module_cards %}
+            <div class="module-progress-item {% if card.completed %}completed{% endif %}"
+                 style="--mp-color: var(--lvl-{{ forloop.counter }})">
+              <span class="mp-label">
+                <span class="mp-dot"></span>
+                <span>M{{ forloop.counter }}</span>
+              </span>
+              <span class="mp-bar">
+                <div class="mp-bar-fill" style="width:{{ card.percentage|floatformat:0 }}%;background:var(--lvl-{{ forloop.counter }})"></div>
+              </span>
+              <span class="mp-value">{{ card.percentage|floatformat:0 }}%</span>
+            </div>
+          {% endfor %}
+        </div>
       </div>
-      <dl class="compact-list">
-        <dt>Progress</dt><dd data-focus-percent>0%</dd>
-        <dt>Completed</dt><dd data-focus-completed>0</dd>
-        <dt>Attempted</dt><dd data-focus-attempted>0</dd>
-        <dt>Level</dt><dd data-focus-level>-</dd>
-      </dl>
-      <div class="level-legend">
-        <span style="--legend-color: var(--level-1)">1</span>
-        <span style="--legend-color: var(--level-2)">2</span>
-        <span style="--legend-color: var(--level-3)">3</span>
-        <span style="--legend-color: var(--level-4)">4</span>
-        <span style="--legend-color: var(--level-5)">5</span>
-      </div>
-      <p class="muted">Click the highlighted module to continue your adaptive 5-question path.</p>
-    </aside>
-  </section>
 
-  <section class="insight-strip">
+      <div class="course-card">
+        <p class="eyebrow">Syllabus Mapping</p>
+        <ul class="syllabus-list">
+          {% for card in module_cards %}
+            <li style="--sl-color: var(--lvl-{{ forloop.counter }})">{{ card.module.name }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insight Cards -->
+  <div class="insight-strip">
     <div class="insight-card">
-      <span>{{ questions_total|default:0 }}</span>
-      <small>Assigned Questions</small>
+      <p class="eyebrow">Questions</p>
+      <span>{{ questions_total }}</span>
+      <small class="muted">Total</small>
     </div>
     <div class="insight-card success">
-      <span>{{ completed_total|default:0 }}</span>
-      <small>Completed</small>
+      <p class="eyebrow">Solved</p>
+      <span>{{ completed_total }}</span>
+      <small class="muted">Accepted</small>
     </div>
     <div class="insight-card">
-      <span>{{ not_attempted_total|default:0 }}</span>
-      <small>Remaining</small>
+      <p class="eyebrow">Completion</p>
+      <span>{{ overall_percentage|floatformat:1 }}%</span>
+      <small class="muted">Overall</small>
     </div>
     <div class="insight-card">
-      <span>{{ overall_percentage|floatformat:0 }}%</span>
-      <small>Score</small>
-    </div>
-  </section>
-</section>
-
-<section class="grid two dashboard-lists">
-  <div>
-    <h2>Module Progress</h2>
-    <div class="list">
-      {% for row in progress_rows %}
-        <a class="row-card progress-row {% if row.percentage >= 100 %}completed-card{% endif %}" href="{% url 'module_detail' row.module.id %}">
-          <span>
-            <strong>{{ row.module.name }}</strong>
-            <small>{{ row.completed }}/{{ row.attempted }} completed</small>
-          </span>
-          <span>{{ row.percentage|floatformat:0 }}%</span>
-        </a>
-      {% empty %}
-        <p class="muted">Open a module to receive your adaptive question set.</p>
-      {% endfor %}
+      <p class="eyebrow">Flags</p>
+      <span>{{ live_flags_count|default:"0"|stringformat:"02d" }}</span>
+      <small class="muted">Live</small>
     </div>
   </div>
 
-  <div>
-    <h2>Certificate</h2>
-    {% if certificates %}
+  <!-- Recent Activity -->
+  {% if recent_activity %}
+  <div class="dashboard-lists">
+    <div class="panel">
+      <p class="eyebrow">Recent Activity</p>
       <div class="list">
-        {% for certificate in certificates %}
-          <a class="row-card completed-card" href="{% url 'certificate_detail' certificate.id %}">
-            <span>{{ certificate.semester }}</span>
-            <span>{{ certificate.completion_percentage|floatformat:1 }}%</span>
-          </a>
+        {% for sub in recent_activity %}
+          <div class="row-card">
+            <span>
+              <strong>{{ sub.question.title }}</strong>
+              <small class="muted">{{ sub.question.module.name }} · {{ sub.submitted_at|date:"M d, H:i" }}</small>
+            </span>
+            <span class="status-pill {% if sub.status == 'accepted' %}status-accepted{% elif sub.status == 'pending' %}status-pending{% elif sub.status == 'running' %}status-running{% else %}status-wrong_answer{% endif %}">
+              {{ sub.status|upper }}
+            </span>
+          </div>
         {% endfor %}
       </div>
-    {% else %}
-      <div class="course-card certificate-card">
-        <strong>{{ overall_percentage|floatformat:0 }}%</strong>
-        <p class="muted">Complete assigned mandatory questions to unlock certification.</p>
-      </div>
-    {% endif %}
+    </div>
   </div>
-</section>
+  {% endif %}
+
+  <!-- Certificates -->
+  {% if certificates %}
+  <div class="dashboard-lists">
+    <div class="panel certificate-card">
+      <p class="eyebrow">Certificates</p>
+      <strong>📜</strong>
+      <h3>Certificate Earned</h3>
+      <p class="muted">{{ certificates.0.semester }} · {{ certificates.0.completion_percentage|floatformat:1 }}%</p>
+      <a href="{% url 'certificate_detail' certificates.0.id %}" class="secondary">View Certificate</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
 
 <script>
-  (function() {
-    const stage = document.querySelector("[data-module-map]");
-    if (!stage) return;
+(function() {
+  // Position module labels around the wheel
+  const labels = document.querySelectorAll('.wheel-module-label');
+  if (labels.length === 0) return;
+  const angleStep = 360 / labels.length;
+  labels.forEach(function(label, i) {
+    var angle = -90 + i * angleStep;
+    label.style.setProperty('--wedge-angle', angle + 'deg');
+    label.style.setProperty('--wedge-radius', '190px');
+  });
 
-    const nodes = Array.from(stage.querySelectorAll("[data-module-node]"));
-    const focus = document.querySelector("[data-module-focus]");
-    const name = focus && focus.querySelector("[data-focus-name]");
-    const percent = focus && focus.querySelector("[data-focus-percent]");
-    const completed = focus && focus.querySelector("[data-focus-completed]");
-    const attempted = focus && focus.querySelector("[data-focus-attempted]");
-    const level = focus && focus.querySelector("[data-focus-level]");
-    const bar = focus && focus.querySelector("[data-focus-progress]");
-    const coreCount = stage.querySelector("[data-core-count]");
-    const coreLabel = stage.querySelector("[data-core-label]");
-
-    function positionNodes() {
-      const size = stage.offsetWidth;
-      const radius = Math.max(128, Math.min(size * 0.39, 230));
-      nodes.forEach(function(node, index) {
-        const total = Number(node.dataset.total || nodes.length || 1);
-        const angle = (-90 + index * (360 / total)) * Math.PI / 180;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-        node.style.setProperty("--node-x", x + "px");
-        node.style.setProperty("--node-y", y + "px");
-      });
-    }
-
-    function updateFocus(node) {
-      if (!node || !focus) return;
-      nodes.forEach(function(item) { item.classList.toggle("is-active", item === node); });
-      stage.dataset.activeProgress = node.dataset.progress || "0";
-      const progress = Number(node.dataset.progress || 0);
-      const moduleColor = getComputedStyle(node).getPropertyValue("--module-color");
-      focus.style.setProperty("--focus-color", moduleColor || "var(--primary)");
-      name.textContent = node.dataset.name || "Module";
-      percent.textContent = progress + "%";
-      completed.textContent = node.dataset.completed || "0";
-      attempted.textContent = node.dataset.attempted || "0";
-      level.textContent = node.dataset.level || "-";
-      bar.style.width = Math.max(0, Math.min(progress, 100)) + "%";
-      if (coreCount) {
-        coreCount.textContent = (node.dataset.moduleCompleted || "0") + "/" + (node.dataset.moduleTotal || "0");
-      }
-      if (coreLabel) {
-        coreLabel.textContent = "in " + (node.dataset.name || "module");
-      }
-    }
-
-    stage.addEventListener("pointermove", function(event) {
-      const rect = stage.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width - 0.5) * 10;
-      const y = ((event.clientY - rect.top) / rect.height - 0.5) * 10;
-      stage.style.setProperty("--pointer-x", ((event.clientX - rect.left) / rect.width * 100).toFixed(2) + "%");
-      stage.style.setProperty("--pointer-y", ((event.clientY - rect.top) / rect.height * 100).toFixed(2) + "%");
-      stage.style.setProperty("--tilt-x", (-y).toFixed(2) + "deg");
-      stage.style.setProperty("--tilt-y", x.toFixed(2) + "deg");
-    });
-
-    stage.addEventListener("pointerleave", function() {
-      stage.style.setProperty("--tilt-x", "0deg");
-      stage.style.setProperty("--tilt-y", "0deg");
-    });
-
-    nodes.forEach(function(node) {
-      node.addEventListener("mouseenter", function() { updateFocus(node); });
-      node.addEventListener("focus", function() { updateFocus(node); });
-    });
-
-    positionNodes();
-    updateFocus(nodes[0]);
-    window.addEventListener("resize", positionNodes);
-
-    const observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        stage.classList.toggle("is-in-view", entry.isIntersecting);
-      });
-    }, { threshold: 0.35 });
-    observer.observe(stage);
-  })();
-</script>
+  // Position donut segments
+  var donut = document.querySelector('.wheel-donut');
+  if (!donut) return;
+  var segments = donut.querySelectorAll('.wheel-donut-segment');
+  var segCount = segments.length;
+  if (segCount === 0) return;
+  var segStep = 360 / segCount;
+  segments.forEach(function(seg, i) {
+    seg.style.setProperty('--seg-angle', (i * segStep) + 'deg');
+  });
+})();
+</script></function></seed:tool_call>
 {% endblock %}

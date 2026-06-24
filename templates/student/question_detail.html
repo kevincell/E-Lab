@@ -17,18 +17,26 @@
       <h2 class="panel-title">Problem</h2>
     </div>
 
-    <div class="prose-dark">{{ question.description|linebreaks }}</div>
+    <div class="prose-dark">{{ question.description|safe|linebreaks }}</div>
 
-    {% if question.sample_input or question.sample_output %}
-      <div class="sample-block">
-        <h3 class="sample-label">Sample Input</h3>
-        <pre class="sample-pre">{{ question.sample_input }}</pre>
-      </div>
-      <div class="sample-block">
-        <h3 class="sample-label">Sample Output</h3>
-        <pre class="sample-pre">{{ question.sample_output }}</pre>
-      </div>
-    {% endif %}
+    {% with sample_test_cases=question.test_cases.all|dictsort:"order" %}
+      {% for tc in sample_test_cases %}
+        {% if tc.is_sample %}
+          <div class="examples-section">
+            <h3 class="examples-title">Example {{ forloop.counter }}:</h3>
+            
+            <div class="example-block">
+              <strong>Input:</strong>
+              <pre class="example-code">{{ tc.stdin }}</pre>
+            </div>
+            <div class="example-block">
+              <strong>Output:</strong>
+              <pre class="example-code">{{ tc.expected_output }}</pre>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endwith %}
   </article>
 
   <article class="submit-panel">
@@ -54,19 +62,22 @@
         <div id="editor" class="monaco-editor"></div>
       </div>
 
-      <button class="primary submit-button" type="submit" data-submit-button>
-        <span>Submit Solution</span>
-        <i aria-hidden="true"></i>
-      </button>
+      <div class="button-group">
+        <button class="secondary run-button" type="button" data-run-button>
+          <span>Run</span>
+        </button>
+        <button class="primary submit-button" type="submit" data-submit-button>
+          <span>Submit</span>
+        </button>
+      </div>
 
-      <!-- Linear progress bar (kept) -->
+      <!-- Progress indicators -->
       <div class="submit-progress" data-submit-progress aria-hidden="true" role="status" aria-live="polite">
         <div class="submit-progress-bar" aria-hidden="true">
           <div class="submit-progress-fill" data-submit-progress-fill></div>
         </div>
       </div>
 
-      <!-- Circular progress indicator (new) -->
       <div class="progress-circle" data-progress-circle aria-hidden="true" role="status" aria-live="polite">
         <div class="progress-circle-ring">
           <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -93,41 +104,32 @@
       <p class="muted" style="margin-top: 16px;">Latest: <a href="{% url 'submission_detail' latest_submission.id %}">{{ latest_submission.get_status_display }}</a></p>
     {% endif %}
 
-    {% if question.sample_input or question.sample_output %}
-      <div class="test-cards" style="margin-top: 24px;">
-        <div class="code-header">
-          <h2 style="margin-bottom:0;">Sample Tests</h2>
-          <span class="muted" style="font-weight:900;">Visible for clarity</span>
-        </div>
-        <div class="collapsible">
-          <details class="collapsible-item" open>
-            <summary>Sample Input / Output</summary>
-            <div class="prose" style="display:grid; gap:10px; margin-top:10px;">
-              <div>
-                <div class="muted" style="font-weight:900; margin-bottom:6px;">Input</div>
-                <pre class="code-block">{{ question.sample_input }}</pre>
-              </div>
-              <div>
-                <div class="muted" style="font-weight:900; margin-bottom:6px;">Expected Output</div>
-                <pre class="code-block">{{ question.sample_output }}</pre>
-              </div>
-            </div>
-          </details>
-        </div>
+    <!-- Test Results -->
+    <div class="test-results" id="test-results" style="display: none; margin-top: 24px;">
+      <div class="results-header">
+        <h3 class="results-title">Test Results</h3>
+        <span class="results-status" id="results-status"></span>
       </div>
-    {% endif %}
+      <div class="results-list" id="results-list"></div>
+    </div>
   </article>
 </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 <script>
+  let editor;
+  let isRunning = false;
+
   require.config({ paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } });
   require(["vs/editor/editor.main"], function() {
     const textarea = document.getElementById("id_code");
     const editorNode = document.getElementById("editor");
     if (textarea && editorNode) {
+      if (!textarea.value.trim() && {{ question.starter_code|length|safe }} > 0) {
+        textarea.value = `{{ question.starter_code|safe }}`;
+      }
       textarea.style.display = "none";
-      const editor = monaco.editor.create(editorNode, {
+      editor = monaco.editor.create(editorNode, {
         value: textarea.value,
         language: "c",
         theme: "vs-dark",
@@ -143,6 +145,7 @@
   (function() {
     const submitForm = document.querySelector("[data-submit-form]");
     const submitButton = document.querySelector("[data-submit-button]");
+    const runButton = document.querySelector("[data-run-button]");
     const submitProgress = document.querySelector("[data-submit-progress]");
     const submitProgressFill = document.querySelector("[data-submit-progress-fill]");
     const progressCircle = document.querySelector("[data-progress-circle]");
@@ -152,6 +155,9 @@
     const progressHint = document.querySelector("[data-progress-hint]");
     const steps = document.querySelectorAll("[data-step]");
     const textarea = document.getElementById("id_code");
+    const testResultsDiv = document.getElementById("test-results");
+    const resultsList = document.getElementById("results-list");
+    const resultsStatus = document.getElementById("results-status");
 
     const RADIUS = 52;
     const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -185,6 +191,7 @@
       submitProgress && submitProgress.classList.add("is-visible");
       progressCircle && progressCircle.classList.add("is-visible");
       submitButton.disabled = true;
+      runButton.disabled = true;
       submitButton.classList.add("is-loading");
       const span = submitButton.querySelector("span");
       span && (span.textContent = "Submitting…");
@@ -194,9 +201,10 @@
       submitProgress && submitProgress.classList.remove("is-visible");
       progressCircle && progressCircle.classList.remove("is-visible");
       submitButton.disabled = false;
+      runButton.disabled = false;
       submitButton.classList.remove("is-loading");
       const span = submitButton.querySelector("span");
-      span && (span.textContent = "Submit Solution");
+      span && (span.textContent = "Submit");
     }
 
     function getCsrfToken() {
@@ -204,15 +212,99 @@
       return input ? input.value : "";
     }
 
+    function renderTestResults(tests, isRun) {
+      testResultsDiv.style.display = "block";
+      resultsList.innerHTML = "";
+      
+      let allPassed = true;
+      tests.forEach((test, index) => {
+        const testDiv = document.createElement("div");
+        testDiv.className = "test-result-item " + (test.passed ? "passed" : "failed");
+        
+        const statusIcon = test.passed 
+          ? '<span class="status-icon passed">✓</span>' 
+          : '<span class="status-icon failed">✗</span>';
+        
+        testDiv.innerHTML = `
+          <div class="test-result-header">
+            ${statusIcon}
+            <span class="test-name">${isRun ? "Sample Test" : "Test Case"} ${index + 1}</span>
+          </div>
+          <div class="test-result-details">
+            <div class="test-detail-block">
+              <span class="detail-label">Input</span>
+              <pre class="detail-code">${test.stdin || ""}</pre>
+            </div>
+            <div class="test-detail-block">
+              <span class="detail-label">Expected</span>
+              <pre class="detail-code">${test.expected || ""}</pre>
+            </div>
+            <div class="test-detail-block">
+              <span class="detail-label">Your Output</span>
+              <pre class="detail-code">${test.actual || ""}</pre>
+            </div>
+          </div>
+        `;
+        
+        if (!test.passed) allPassed = false;
+        resultsList.appendChild(testDiv);
+      });
+      
+      resultsStatus.textContent = allPassed ? "All Test Cases Passed" : "Some Test Cases Failed";
+      resultsStatus.className = "results-status " + (allPassed ? "success" : "error");
+    }
+
+    function runCode() {
+      if (isRunning) return;
+      isRunning = true;
+      testResultsDiv.style.display = "none";
+      
+      startProgress();
+      setProgressUI(10);
+      setStep("upload");
+      setStatus("Running…", "Testing sample test case.");
+      
+      const code = editor ? editor.getValue() : textarea.value;
+      const questionId = {{ question.id }};
+      const csrfToken = getCsrfToken();
+      
+      fetch("/api/run/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({ question: questionId, code: code })
+      })
+        .then(function(r) {
+          if (!r.ok) throw new Error("Run failed");
+          return r.json();
+        })
+        .then(function(data) {
+          stopProgress();
+          renderTestResults(data.tests || [], true);
+        })
+        .catch(function(err) {
+          console.error(err);
+          stopProgress();
+          alert("Run failed. Please try again.");
+        })
+        .finally(function() {
+          isRunning = false;
+        });
+    }
+
     function pollSubmission(questionId, onComplete) {
       let attempts = 0;
-      const maxAttempts = 120; // ~2 minutes at 1s interval
+      const maxAttempts = 120;
       const interval = window.setInterval(function() {
         attempts++;
         fetch(`/api/submission-latest/latest/?question_id=${questionId}`, {
           headers: { "Accept": "application/json" }
         })
-          .then(function(r) { return r.json(); })
+          .then(function(r) {
+            return r.json();
+          })
           .then(function(data) {
             const sub = data.submission;
             if (!sub) return;
@@ -246,24 +338,30 @@
     if (submitForm && submitButton) {
       submitForm.addEventListener("submit", function(event) {
         event.preventDefault();
+        testResultsDiv.style.display = "none";
         startProgress();
         setProgressUI(6);
         setStep("upload");
         setStatus("Uploading…", "Your code is being queued for evaluation.");
 
-        const code = textarea ? textarea.value : "";
+        const code = editor ? editor.getValue() : textarea.value;
         const questionId = {{ question.id }};
+        const csrfToken = getCsrfToken();
 
         fetch("/api/submissions/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-CSRFToken": getCsrfToken()
+            "X-CSRFToken": csrfToken
           },
           body: JSON.stringify({ question: questionId, code: code })
         })
           .then(function(r) {
-            if (!r.ok) throw new Error("Submission failed: " + r.status);
+            if (!r.ok) {
+              return r.text().then(function(text) {
+                throw new Error("Submission failed: " + r.status + " - " + text);
+              });
+            }
             return r.json();
           })
           .then(function(data) {
@@ -276,9 +374,13 @@
           .catch(function(err) {
             console.error(err);
             stopProgress();
-            alert("Submission failed. Please try again.");
+            alert("Submission failed. Please try again. Details: " + err.message);
           });
       });
+    }
+
+    if (runButton) {
+      runButton.addEventListener("click", runCode);
     }
 
     window.addEventListener("pageshow", stopProgress);
