@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
 <section class="toolbar">
   <div>
@@ -126,7 +127,7 @@
     const editorNode = document.getElementById("editor");
     if (textarea && editorNode) {
       if (!textarea.value.trim() && {{ question.starter_code|length|safe }} > 0) {
-        textarea.value = `{{ question.starter_code|safe }}`;
+        textarea.value = "{{ question.starter_code|escapejs }}";
       }
       textarea.style.display = "none";
       editor = monaco.editor.create(editorNode, {
