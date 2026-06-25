@@ -39,20 +39,22 @@ CCE e-Lab is a web-based platform for first-year Computer & Communication Engine
 ## Quick Start
 
 ### 1. Clone the Repository
-
 ```bash
 git clone https://github.com/VazShalvin/E-Lab.git
 cd E-Lab
 ```
 
-### 2. Environment Configuration
+### 2. Install Prerequisites
+Make sure these are installed on your machine:
+- Docker Desktop (for Windows/macOS) or Docker Engine (for Linux)
+- Git
 
+### 3. Environment Configuration
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` with your settings:
-
 ```env
 DEBUG=true
 SECRET_KEY=your-secret-key-here-change-in-production
@@ -71,22 +73,35 @@ SITE_BASE_URL=http://localhost
 CERTIFICATE_THRESHOLD=60
 ```
 
-### 3. Build and Start
-
+### 4. Build and Start Services
+First, build the sandbox image and then start all services:
 ```bash
+# Build the C code execution sandbox
 docker build -t elab-sandbox -f sandbox/Dockerfile sandbox/
+
+# Start all containers (app, worker, nginx, db, redis)
 docker compose up -d --build
 ```
 
-### 4. Initialize Database
-
+### 5. Wait for Services to Start
+Let the containers initialize (usually 30-60 seconds). Check the logs:
 ```bash
+docker compose ps
+```
+
+### 6. Initialize Database and Static Files
+```bash
+# Run database migrations
 docker compose exec app python manage.py migrate
+
+# Collect static files
 docker compose exec app python manage.py collectstatic --noinput
+
+# Seed demo data (modules, questions, test cases)
 docker compose exec app python manage.py seed_demo
 ```
 
-### 5. Optional: Import LeetCode Questions
+### 7. Optional: Import LeetCode Questions
 You can import questions from LeetCode using their public API!
 ```bash
 # Import by slug
@@ -96,35 +111,47 @@ docker compose exec app python manage.py import_leetcode --question two-sum --mo
 docker compose exec app python manage.py import_leetcode --question 1 --module "LeetCode Problems" --difficulty easy
 ```
 
-### 6. Create Admin User
-
+### 8. Create Admin User
 ```bash
 docker compose exec app python manage.py createsuperuser
 ```
 
-### 7. Access the Application
+### 9. Access the Application
+Now you're ready to go!
 
 | URL | Description |
 |-----|-------------|
-| `http://localhost` | Student dashboard |
-| `http://localhost/admin/` | Django admin panel |
+| `http://localhost` | Student dashboard (login with student/student12345) |
+| `http://localhost/admin/` | Django admin panel (login with the superuser you created) |
 | `http://localhost/login/` | Login page |
 
-## Development Workflow
+### 10. Default Login Credentials
+Demo user accounts created by `seed_demo` command:
 
+| Role | Username | Password |
+|------|----------|----------|
+| Student | `student` | `student12345` |
+| Faculty | `faculty` | `faculty12345` |
+
+## Development Workflow
 ```bash
-# Start
+# Start all services
 docker compose up -d
 
-# Stop
+# Stop all services
 docker compose down
 
-# View logs
+# View logs for specific service
 docker compose logs -f app
 docker compose logs -f worker
+docker compose logs -f db
 
 # Restart after code changes
 docker compose restart app worker
+
+# Re-collect static files (after CSS/JS changes)
+docker compose exec app python manage.py collectstatic --noinput
+docker compose restart nginx
 ```
 
 ## Project Structure
@@ -197,18 +224,23 @@ Students receive auto-generated certificates when they:
 | OS | Ubuntu 22.04 LTS | Ubuntu 22.04/24.04 LTS |
 
 ### Production Setup
-
 ```bash
+# Clone the repo
 git clone https://github.com/VazShalvin/E-Lab.git
 cd E-Lab
-cp .env.example .env
-# Edit .env: DEBUG=false, strong SECRET_KEY, production ALLOWED_HOSTS
 
+# Configure environment
+cp .env.example .env
+# Edit .env: DEBUG=false, strong SECRET_KEY, production ALLOWED_HOSTS, production POSTGRES_PASSWORD
+
+# Build and start
 docker build -t elab-sandbox -f sandbox/Dockerfile sandbox/
 docker compose up -d --build
 
+# Initialize
 docker compose exec app python manage.py migrate
 docker compose exec app python manage.py collectstatic --noinput
+docker compose exec app python manage.py seed_demo  # Optional: if you want demo data
 docker compose exec app python manage.py createsuperuser
 ```
 
