@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>{{ module.name }} - {{ difficulty_label }}</h1>
+    <p class="muted">Your randomized 5-question {{ difficulty_label|lower }} set.</p>
+  </div>
+  <div class="actions">
+    <a class="secondary as-link" href="{% url 'module_detail' module.id %}">Levels</a>
+    <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
+  </div>
+</section>
+
+{% if assigned_slots %}
+  <section class="panel module-path">
+    <div class="section-heading">
+      <h2>{{ difficulty_label }} Questions</h2>
+      <p class="muted">Solve the current unlocked question to reveal the next one.</p>
+    </div>
+    <div class="path-steps">
+      {% for slot in assigned_slots %}
+        {% if slot.completed_at %}
+          <a class="path-step completed" href="{% url 'question_detail' slot.question.id %}">
+            <strong>{{ slot.order }}</strong>
+            <span>{{ slot.question.title }}</span>
+            <small>Completed</small>
+          </a>
+        {% elif slot.unlocked_at %}
+          <a class="path-step current" href="{% url 'question_detail' slot.question.id %}">
+            <strong>{{ slot.order }}</strong>
+            <span>{{ slot.question.title }}</span>
+            <small>Solve now</small>
+          </a>
+        {% else %}
+          <div class="path-step locked">
+            <strong>{{ slot.order }}</strong>
+            <span>Locked Question</span>
+            <small>Complete the previous question</small>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+{% else %}
+  <div class="list">
+    {% for question in questions %}
+      <a class="row-card" href="{% url 'question_detail' question.id %}">
+        <span>
+          <strong>{{ question.title }}</strong>
+          <small>{{ question.get_difficulty_display }}</small>
+        </span>
+        <span>Solve</span>
+      </a>
+    {% empty %}
+      <p class="muted">No {{ difficulty_label|lower }} questions in this module yet.</p>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

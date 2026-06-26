@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Upload Question CSV</h1>
+    <p class="muted">Import module question maps and generate editable question scaffolds.</p>
+  </div>
+  <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
+</section>
+
+<section class="grid two">
+  <article class="panel form-panel">
+    <div class="section-heading">
+      <h2>CSV Import</h2>
+      <p class="muted">Files named like Module1_Basics_IO.csv become modules automatically.</p>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="primary" type="submit">Import CSV Files</button>
+    </form>
+  </article>
+
+  <aside class="panel">
+    <div class="section-heading">
+      <h2>Required Columns</h2>
+      <p class="muted">The importer expects these headers.</p>
+    </div>
+    <div class="chips">
+      <span>Question_ID</span>
+      <span>Topic</span>
+      <span>Level</span>
+      <span>Difficulty</span>
+      <span>Level_Range</span>
+      <span>Status</span>
+      <span>Score</span>
+      <span>Max_Score</span>
+    </div>
+    <p class="muted import-note">Rows with Problem_Statement and test columns are imported as active questions. Files ending in _Levels.csv replace that module's old question bank and regenerate student assignments.</p>
+    <div class="chips">
+      <span>Problem_Statement</span>
+      <span>Starter_Code</span>
+      <span>Is_Active</span>
+      <span>Test1_Input</span>
+      <span>Test1_Output</span>
+      <span>...</span>
+      <span>Test10_Input</span>
+      <span>Test10_Output</span>
+    </div>
+  </aside>
+</section>
+
+{% if results %}
+  <section class="panel import-results">
+    <h2>Import Results</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Created</th>
+            <th>Updated</th>
+            <th>Visible</th>
+            <th>Test Cases</th>
+            <th>Stale Drafts Removed</th>
+            <th>Old Bank Removed</th>
+            <th>Assignments Reset</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in results %}
+            <tr>
+              <td>{{ row.module.name }}</td>
+              <td>{{ row.created }}</td>
+              <td>{{ row.updated }}</td>
+              <td>{{ row.active }}</td>
+              <td>{{ row.test_cases }}</td>
+              <td>{{ row.stale_deleted }}</td>
+              <td>{{ row.replaced_deleted }}</td>
+              <td>{{ row.assignments_reset }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Attendance</h1>
+    <p class="muted">Recent lab sessions and student activity</p>
+  </div>
+  <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
+</section>
+
+<section class="list">
+  {% for session in sessions %}
+    <article class="panel">
+      <div class="toolbar compact">
+        <div>
+          <h2>{{ session.module.name }}</h2>
+          <p class="muted">{{ session.date }} - {{ session.students_present.count }} present</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>USN</th>
+              <th>Login</th>
+              <th>Logout</th>
+              <th>Minutes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in session.attendance_rows.all %}
+              <tr>
+                <td>{{ row.student.display_name }}</td>
+                <td>{{ row.student.usn|default:"-" }}</td>
+                <td>{{ row.login_time }}</td>
+                <td>{{ row.logout_time|default:"Active" }}</td>
+                <td>{{ row.time_spent_minutes }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">No activity rows for this session.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  {% empty %}
+    <article class="panel">
+      <p class="muted">No lab sessions recorded yet.</p>
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,151 @@
+Question_ID,Title,Topic,Level,Level_Range,Difficulty,Status,Score,Max_Score,Problem_Statement,Starter_Code,Is_Active,Time_Limit,Memory_Limit_KB,Test1_Input,Test1_Output,Test2_Input,Test2_Output,Test3_Input,Test3_Output,Test4_Input,Test4_Output,Test5_Input,Test5_Output,Test6_Input,Test6_Output,Test7_Input,Test7_Output,Test8_Input,Test8_Output,Test9_Input,Test9_Output,Test10_Input,Test10_Output
+E001,Print an Integer,Basics I/O,1,Easy,Easy,Not Attempted,0,1,"Read one integer and print it.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,0,1,1,-1,-1,25,25,999,999,-250,-250,42,42,10000,10000,-9999,-9999,7,7
+E002,Sum Two Integers,Basics I/O,1,Easy,Easy,Not Attempted,0,1,"Read two integers and print their sum.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 2,3,-1 5,4,0 0,0,100 200,300,-7 -8,-15,999 1,1000,45 -10,35,123 321,444,-50 20,-30,214 786,1000
+E003,Product Two Integers,Basics I/O,1,Easy,Easy,Not Attempted,0,1,"Read two integers and print their product.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,2 3,6,-2 5,-10,0 9,0,12 12,144,-7 -8,56,100 3,300,45 -2,-90,11 13,143,-5 20,-100,25 4,100
+E004,Rectangle Area,Basics I/O,1,Easy,Easy,Not Attempted,0,1,"Read length and breadth and print rectangle area.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,2 3,6,5 5,25,10 1,10,7 8,56,12 4,48,100 20,2000,9 9,81,3 14,42,25 6,150,11 12,132
+E005,ASCII Value,Basics I/O,1,Easy,Easy,Not Attempted,0,1,"Read one character and print its ASCII value.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,A,65,a,97,0,48,Z,90,z,122,9,57,@,64,#,35,m,109,K,75
+M001,Celsius to Fahrenheit,Basics I/O,2,Medium,Medium,Not Attempted,0,1,"Read Celsius and print Fahrenheit using integer formula c*9/5+32.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,32,100,212,37,98,-40,-40,25,77,10,50,15,59,30,86,50,122,-10,14
+M002,Simple Interest,Basics I/O,2,Medium,Medium,Not Attempted,0,1,"Read principal rate time and print simple interest p*r*t/100.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1000 5 2,100,5000 10 1,500,2500 4 3,300,100 1 1,1,12000 8 5,4800,7500 6 2,900,999 9 9,809,1500 7 4,420,20000 3 6,3600,6400 5 5,1600
+M003,Square and Cube,Basics I/O,2,Medium,Medium,Not Attempted,0,1,"Read n and print square and cube separated by a space.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1,1 1,2,4 8,3,9 27,4,16 64,5,25 125,10,100 1000,-2,4 -8,-3,9 -27,0,0 0,12,144 1728
+M004,Last Digit,Basics I/O,2,Medium,Medium,Not Attempted,0,1,"Read a non-negative integer and print its last digit.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,0,7,7,10,0,123,3,999,9,4560,0,10001,1,88,8,305,5,4709,9
+M005,Swap Two Numbers,Basics I/O,2,Medium,Medium,Not Attempted,0,1,"Read a and b and print b and a.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 2,2 1,5 3,3 5,-1 9,9 -1,0 0,0 0,100 99,99 100,42 7,7 42,-3 -8,-8 -3,8 -9,-9 8,999 1000,1000 999,11 10,10 11
+H001,Quadratic Root Type,Lab Manual Basics,3,Hard,Hard,Not Attempted,0,1,"Read coefficients a b c and print Equal Real, Distinct Real, or Imaginary based on discriminant.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 -2 1,Equal Real,1 -5 6,Distinct Real,1 2 5,Imaginary,2 4 2,Equal Real,1 0 -4,Distinct Real,1 1 1,Imaginary,3 6 3,Equal Real,2 5 2,Distinct Real,5 2 1,Imaginary,1 7 10,Distinct Real
+H002,Digit Sum,Lab Manual Basics,3,Hard,Hard,Not Attempted,0,1,"Read non-negative integer and print sum of digits.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,0,0,1,1,12,3,123,6,999,27,1001,2,4567,22,8080,16,98765,35,50005,10
+H003,Digit Frequency,Lab Manual Basics,3,Hard,Hard,Not Attempted,0,1,"Read n and digit d. Print how many times d occurs in n.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1011 1,3,999 9,3,12345 6,0,0 0,1,1000 0,3,8080 8,2,55555 5,5,120120 2,2,777 3,0,90909 9,3
+H004,GCD of Two Numbers,Lab Manual Basics,3,Hard,Hard,Not Attempted,0,1,"Read two positive integers and print their GCD.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,12 18,6,7 5,1,100 10,10,81 27,27,14 21,7,17 19,1,48 180,12,64 16,16,99 33,33,270 192,6
+H005,LCM of Two Numbers,Lab Manual Basics,3,Hard,Hard,Not Attempted,0,1,"Read two positive integers and print their LCM.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,12 18,36,7 5,35,100 10,100,81 27,81,14 21,42,17 19,323,4 6,12,8 12,24,9 15,45,10 25,50

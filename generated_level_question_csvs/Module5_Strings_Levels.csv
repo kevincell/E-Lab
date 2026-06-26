@@ -1,0 +1,151 @@
+Question_ID,Title,Topic,Level,Level_Range,Difficulty,Status,Score,Max_Score,Problem_Statement,Starter_Code,Is_Active,Time_Limit,Memory_Limit_KB,Test1_Input,Test1_Output,Test2_Input,Test2_Output,Test3_Input,Test3_Output,Test4_Input,Test4_Output,Test5_Input,Test5_Output,Test6_Input,Test6_Output,Test7_Input,Test7_Output,Test8_Input,Test8_Output,Test9_Input,Test9_Output,Test10_Input,Test10_Output
+E001,String Length,Strings,1,Easy,Easy,Not Attempted,0,1,"Read a word and print its length.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,1,abc,3,hello,5,programming,11,sky,3,education,9,queue,5,rhythm,6,banana,6,computer,8
+E002,First Character,Strings,1,Easy,Easy,Not Attempted,0,1,"Read a word and print first character.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,a,abc,a,hello,h,programming,p,sky,s,education,e,queue,q,rhythm,r,banana,b,computer,c
+E003,Last Character,Strings,1,Easy,Easy,Not Attempted,0,1,"Read a word and print last character.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,a,abc,c,hello,o,programming,g,sky,y,education,n,queue,e,rhythm,m,banana,a,computer,r
+E004,Count A,Strings,1,Easy,Easy,Not Attempted,0,1,"Read a lowercase word and print count of a.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,1,abc,1,hello,0,programming,1,sky,0,education,1,queue,0,rhythm,0,banana,3,computer,0
+E005,Has Digit,Strings,1,Easy,Easy,Not Attempted,0,1,"Read a word and print Yes if it contains a digit else No.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,abc,No,a1b,Yes,123,Yes,code,No,c0de,Yes,test9,Yes,hello,No,5five,Yes,none,No,x7,Yes
+M001,Count Vowels,Strings,2,Medium,Medium,Not Attempted,0,1,"Read a lowercase word and print vowel count.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,1,abc,1,hello,2,programming,3,sky,0,education,5,queue,4,rhythm,0,banana,3,computer,3
+M002,Count Consonants,Strings,2,Medium,Medium,Not Attempted,0,1,"Read a lowercase alphabetic word and print consonant count.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,0,abc,2,hello,3,programming,8,sky,3,education,4,queue,1,rhythm,6,banana,3,computer,5
+M003,Palindrome Word,Strings,2,Medium,Medium,Not Attempted,0,1,"Read a word and print Palindrome or Not Palindrome.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,madam,Palindrome,level,Palindrome,hello,Not Palindrome,civic,Palindrome,code,Not Palindrome,radar,Palindrome,abcba,Palindrome,abcd,Not Palindrome,a,Palindrome,noon,Palindrome
+M004,Lexicographic Compare,Strings,2,Medium,Medium,Not Attempted,0,1,"Read two words and print First Second or Equal.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,apple banana,First,cat bat,Second,same same,Equal,abc abd,First,z a,Second,code coder,First,hello hell,Second,aa ab,First,sun moon,Second,tree tree,Equal
+M005,Reverse Word,Strings,2,Medium,Medium,Not Attempted,0,1,"Read a word and print reverse.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,a,abc,cba,hello,olleh,programming,gnimmargorp,sky,yks,education,noitacude,queue,eueuq,rhythm,mhtyhr,banana,ananab,computer,retupmoc
+H001,Palindrome Manual,Lab Manual Strings,3,Hard,Hard,Not Attempted,0,1,"Read a string and print Palindrome or Not Palindrome.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,madam,Palindrome,level,Palindrome,hello,Not Palindrome,civic,Palindrome,code,Not Palindrome,radar,Palindrome,abcba,Palindrome,abcd,Not Palindrome,a,Palindrome,noon,Palindrome
+H002,Longest Unique Substring,Strings,3,Hard,Hard,Not Attempted,0,1,"Read a word and print length of longest substring without repeating characters.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,abcabcbb,3,bbbbb,1,pwwkew,3,abcdef,6,abba,2,dvdf,3,anviaj,5,aab,2,tmmzuxt,5,hello,3
+H003,Remove Vowels Count,Strings,3,Hard,Hard,Not Attempted,0,1,"Read word and print number of characters remaining after removing vowels.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,a,0,abc,2,hello,3,programming,8,sky,3,education,4,queue,1,rhythm,6,banana,3,computer,5
+H004,Anagram Check Sorted,Strings,3,Hard,Hard,Not Attempted,0,1,"Read two lowercase words and print Anagram or Not Anagram.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,listen silent,Anagram,earth heart,Anagram,cat act,Anagram,hello bello,Not Anagram,abc abd,Not Anagram,a a,Anagram,evil vile,Anagram,dusty study,Anagram,night thing,Anagram,code decode,Not Anagram
+H005,Word Score,Strings,3,Hard,Hard,Not Attempted,0,1,"Read lowercase word and print sum of alphabet positions.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,abc,6,hello,52,code,27,lab,15,z,26,az,27,nitte,68,student,103,program,88,string,87

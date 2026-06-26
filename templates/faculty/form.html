@@ -7,5 +7,11 @@
     {{ form.as_p }}
     <button class="primary" type="submit">Save</button>
   </form>
+  {% if module %}
+    <form method="post" action="{% url 'faculty_module_delete' module.id %}" class="danger-zone" onsubmit="return confirm('Delete this module and all its questions?');">
+      {% csrf_token %}
+      <button class="danger-button" type="submit">Delete Module</button>
+    </form>
+  {% endif %}
 </section>
 {% endblock %}

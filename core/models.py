@@ -52,6 +52,8 @@ class Question(models.Model):
     slug = models.SlugField(max_length=180)
     description = models.TextField()
     difficulty = models.CharField(max_length=16, choices=Difficulty.choices, default=Difficulty.EASY)
+    csv_level = models.PositiveSmallIntegerField(default=1)
+    level_range = models.CharField(max_length=32, blank=True)
     sample_input = models.TextField(blank=True)
     sample_output = models.TextField(blank=True)
     starter_code = models.TextField(blank=True)
@@ -110,6 +112,16 @@ class Submission(models.Model):
     memory_used = models.PositiveIntegerField(null=True, blank=True)
     judge_output = models.TextField(blank=True)
     error_output = models.TextField(blank=True)
+    manually_graded = models.BooleanField(default=False)
+    graded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="graded_submissions",
+    )
+    plagiarism_flagged = models.BooleanField(default=False)
+    plagiarism_notes = models.TextField(blank=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
     judged_at = models.DateTimeField(null=True, blank=True)
 
@@ -118,6 +130,65 @@ class Submission(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.question} - {self.status}"
+
+
+class LabSession(models.Model):
+    date = models.DateField(default=timezone.localdate)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="lab_sessions")
+    students_present = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="lab_sessions_present")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "module__order"]
+        unique_together = [("date", "module")]
+
+    def __str__(self):
+        return f"{self.module} - {self.date}"
+
+
+class Attendance(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="attendance_rows")
+    session = models.ForeignKey(LabSession, on_delete=models.CASCADE, related_name="attendance_rows")
+    login_time = models.DateTimeField(auto_now_add=True)
+    logout_time = models.DateTimeField(null=True, blank=True)
+    time_spent_minutes = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-login_time"]
+        unique_together = [("student", "session", "login_time")]
+
+    def __str__(self):
+        return f"{self.student} - {self.session}"
+
+
+class ModuleQuestionAssignment(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="module_assignments")
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="question_assignments")
+    difficulty = models.CharField(max_length=16, choices=Question.Difficulty.choices, default=Question.Difficulty.EASY)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [("student", "module", "difficulty")]
+        ordering = ["module__order", "difficulty", "created_at"]
+
+    def __str__(self):
+        return f"{self.student} - {self.module}"
+
+
+class AssignedQuestion(models.Model):
+    assignment = models.ForeignKey(ModuleQuestionAssignment, on_delete=models.CASCADE, related_name="assigned_questions")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="assigned_slots")
+    order = models.PositiveSmallIntegerField()
+    unlocked_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = [("assignment", "question"), ("assignment", "order")]
+
+    def __str__(self):
+        return f"{self.assignment} #{self.order}"
 
 
 class Progress(models.Model):

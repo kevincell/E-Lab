@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Sign up - {{ SITE_NAME }}{% endblock %}
 {% block content %}
-<section class="auth-panel wide">
-  <h1>Student Sign Up</h1>
-  <form method="post" class="form-grid">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button class="primary" type="submit">Create account</button>
-  </form>
-</section>
+<div style="display:grid;place-items:center;min-height:60vh;padding:20px 0;">
+  <section class="auth-panel wide">
+    <div style="text-align:center;margin-bottom:20px;">
+      <span style="font-size:36px;font-weight:900;color:var(--primary);letter-spacing:-0.03em;">{{ SITE_NAME }}</span>
+      <p class="muted" style="margin-top:6px;">Create your student account</p>
+    </div>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="primary" type="submit">Create Account</button>
+    </form>
+    <p class="muted" style="text-align:center;margin-top:16px;">Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
+  </section>
+</div>
 {% endblock %}

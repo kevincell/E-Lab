@@ -1,60 +1,221 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}dashboard-page{% endblock %}
+
 {% block content %}
-<section class="toolbar">
-  <div>
-    <h1>Student Dashboard</h1>
-    <p class="muted">Overall completion: {{ overall_percentage|floatformat:1 }}%</p>
-  </div>
-  {% if certificate_eligible %}
-    <a class="primary as-link" href="{% url 'certificate_create' %}">Generate Certificate</a>
-  {% endif %}
-</section>
+<div class="dashboard-full">
 
-<section class="grid two">
-  <div>
-    <h2>Modules</h2>
-    <div class="list">
-      {% for module in modules %}
-        <a class="row-card" href="{% url 'module_detail' module.id %}">
-          <span>
-            <strong>{{ module.name }}</strong>
-            <small>Level {{ module.level }}</small>
-          </span>
-          <span>Open</span>
-        </a>
-      {% empty %}
-        <p class="muted">No active modules yet.</p>
-      {% endfor %}
+  <!-- Hero Bar -->
+  <div class="course-hero">
+    <div>
+      <p class="eyebrow">Welcome back, {{ user.display_name }}</p>
+      <h1>C Programming E-Lab</h1>
+      <p class="muted">{{ questions_total }} questions across {{ modules|length }} modules</p>
+    </div>
+    <div class="hero-score" style="--score: {{ overall_percentage|floatformat:0 }}">
+      <div>
+        <span>{{ overall_percentage|floatformat:0 }}%</span>
+        <small>Complete</small>
+      </div>
+    </div>
+    <div>
+      {% if certificate_eligible %}
+        <a href="{% url 'certificate_create' %}" class="primary">Get Certificate</a>
+      {% else %}
+        <span class="locked-badge">🔒 Certificate locked</span>
+      {% endif %}
     </div>
   </div>
 
-  <div>
-    <h2>Progress</h2>
-    <div class="list">
-      {% for row in progress_rows %}
-        <div class="row-card">
-          <span>
-            <strong>{{ row.module.name }}</strong>
-            <small>{{ row.completed }}/{{ row.attempted }} completed</small>
-          </span>
-          <span>{{ row.percentage|floatformat:0 }}%</span>
-        </div>
-      {% empty %}
-        <p class="muted">Start a module to see progress.</p>
-      {% endfor %}
+  <!-- 3-Column Layout: Course Info | Module Wheel | Module Progress -->
+  <div class="course-map-panel">
+
+    <!-- Left: Course Info -->
+    <div class="course-info">
+      <div class="course-card">
+        <p class="eyebrow">Course Information</p>
+        <h3>E-Lab: C Programming</h3>
+        <dl class="stats">
+          <dt>Credits</dt><dd>4</dd>
+          <dt>Lab Hours</dt><dd>60</dd>
+          <dt>Passed</dt><dd>{{ completed_total }}/{{ questions_total }}</dd>
+        </dl>
+      </div>
+
+      <div class="course-card">
+        <p class="eyebrow">Overview</p>
+        <dl class="stats">
+          <dt>Total Questions</dt><dd>{{ questions_total }}</dd>
+          <dt>Attempted</dt><dd>{{ completed_total }}</dd>
+          <dt>Not Attempted</dt><dd>{{ not_attempted_total }}</dd>
+        </dl>
+      </div>
+
+      {% if user_rank %}
+      <div class="course-card">
+        <p class="eyebrow">Your Rank</p>
+        <span style="font-size:42px;font-weight:900;color:var(--primary);">#{{ user_rank }}</span>
+      </div>
+      {% endif %}
     </div>
 
-    {% if certificates %}
-      <h2>Certificates</h2>
-      <div class="list">
-        {% for certificate in certificates %}
-          <a class="row-card" href="{% url 'certificate_detail' certificate.id %}">
-            <span>{{ certificate.semester }}</span>
-            <span>{{ certificate.completion_percentage|floatformat:1 }}%</span>
-          </a>
+    <!-- Center: Spinning Module Wheel -->
+    <div class="module-wheel-v2">
+      <!-- Colored wedge ring -->
+      <div class="wheel-wedges"></div>
+
+      <!-- Outer donut: small segments for question status -->
+      <div class="wheel-donut">
+        {% for card in module_cards %}
+          {% for _ in "xxxxxx" %}
+            <div class="wheel-donut-segment {% if card.completed %}status-completed{% else %}status-pending{% endif %}"></div>
+          {% endfor %}
         {% endfor %}
       </div>
-    {% endif %}
+
+      <!-- Module labels around the wheel -->
+      {% for card in module_cards %}
+        <a href="{% url 'module_detail' card.module.id %}"
+           class="wheel-module-label"
+           title="{{ card.module.name }} — {{ card.percentage|floatformat:0 }}% complete">
+          M{{ forloop.counter }}
+          <small>{{ card.percentage|floatformat:0 }}%</small>
+        </a>
+      {% empty %}
+        <div class="wheel-empty">No modules yet</div>
+      {% endfor %}
+
+      <!-- Center core -->
+      <div class="wheel-core">
+        <strong>C</strong>
+        <span>{{ overall_percentage|floatformat:0 }}%</span>
+        <small>Complete</small>
+      </div>
+
+      <!-- Legend -->
+      <div class="wheel-legend">
+        <span><i style="background:var(--success)"></i> Completed</span>
+        <span><i style="background:var(--line-strong)"></i> Pending</span>
+        <span><i style="background:var(--danger)"></i> Failed</span>
+      </div>
+    </div>
+
+    <!-- Right: Module Progress & Syllabus -->
+    <div class="levels-panel">
+      <div class="course-card">
+        <p class="eyebrow">Module Progress</p>
+        <div class="module-progress-list">
+          {% for card in module_cards %}
+            <div class="module-progress-item {% if card.completed %}completed{% endif %}"
+                 style="--mp-color: var(--lvl-{{ forloop.counter }})">
+              <span class="mp-label">
+                <span class="mp-dot"></span>
+                <span>M{{ forloop.counter }}</span>
+              </span>
+              <span class="mp-bar">
+                <div class="mp-bar-fill" style="width:{{ card.percentage|floatformat:0 }}%;background:var(--lvl-{{ forloop.counter }})"></div>
+              </span>
+              <span class="mp-value">{{ card.percentage|floatformat:0 }}%</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="course-card">
+        <p class="eyebrow">Syllabus Mapping</p>
+        <ul class="syllabus-list">
+          {% for card in module_cards %}
+            <li style="--sl-color: var(--lvl-{{ forloop.counter }})">{{ card.module.name }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </div>
-</section>
+
+  <!-- Insight Cards -->
+  <div class="insight-strip">
+    <div class="insight-card">
+      <p class="eyebrow">Questions</p>
+      <span>{{ questions_total }}</span>
+      <small class="muted">Total</small>
+    </div>
+    <div class="insight-card success">
+      <p class="eyebrow">Solved</p>
+      <span>{{ completed_total }}</span>
+      <small class="muted">Accepted</small>
+    </div>
+    <div class="insight-card">
+      <p class="eyebrow">Completion</p>
+      <span>{{ overall_percentage|floatformat:1 }}%</span>
+      <small class="muted">Overall</small>
+    </div>
+    <div class="insight-card">
+      <p class="eyebrow">Flags</p>
+      <span>{{ live_flags_count|default:"0"|stringformat:"02d" }}</span>
+      <small class="muted">Live</small>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  {% if recent_activity %}
+  <div class="dashboard-lists">
+    <div class="panel">
+      <p class="eyebrow">Recent Activity</p>
+      <div class="list">
+        {% for sub in recent_activity %}
+          <div class="row-card">
+            <span>
+              <strong>{{ sub.question.title }}</strong>
+              <small class="muted">{{ sub.question.module.name }} · {{ sub.submitted_at|date:"M d, H:i" }}</small>
+            </span>
+            <span class="status-pill {% if sub.status == 'accepted' %}status-accepted{% elif sub.status == 'pending' %}status-pending{% elif sub.status == 'running' %}status-running{% else %}status-wrong_answer{% endif %}">
+              {{ sub.status|upper }}
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Certificates -->
+  {% if certificates %}
+  <div class="dashboard-lists">
+    <div class="panel certificate-card">
+      <p class="eyebrow">Certificates</p>
+      <strong>📜</strong>
+      <h3>Certificate Earned</h3>
+      <p class="muted">{{ certificates.0.semester }} · {{ certificates.0.completion_percentage|floatformat:1 }}%</p>
+      <a href="{% url 'certificate_detail' certificates.0.id %}" class="secondary">View Certificate</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+(function() {
+  // Position module labels around the wheel
+  const labels = document.querySelectorAll('.wheel-module-label');
+  if (labels.length === 0) return;
+  const angleStep = 360 / labels.length;
+  labels.forEach(function(label, i) {
+    var angle = -90 + i * angleStep;
+    label.style.setProperty('--wedge-angle', angle + 'deg');
+    label.style.setProperty('--wedge-radius', '190px');
+  });
+
+  // Position donut segments
+  var donut = document.querySelector('.wheel-donut');
+  if (!donut) return;
+  var segments = donut.querySelectorAll('.wheel-donut-segment');
+  var segCount = segments.length;
+  if (segCount === 0) return;
+  var segStep = 360 / segCount;
+  segments.forEach(function(seg, i) {
+    seg.style.setProperty('--seg-angle', (i * segStep) + 'deg');
+  });
+})();
+</script></function></seed:tool_call>
 {% endblock %}

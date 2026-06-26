@@ -1,32 +1,129 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="toolbar">
-  <h1>Question</h1>
-  {% if question %}
-    <a class="secondary as-link" href="{% url 'faculty_testcase_new' question.id %}">Add Test</a>
-  {% endif %}
+  <div>
+    <h1>{% if question %}Edit Question{% else %}New Question{% endif %}</h1>
+    <p class="muted">{% if question %}{{ question.module.name }}{% else %}Create the problem and sample test in one pass{% endif %}</p>
+  </div>
+  <div class="actions">
+    <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
+    {% if question %}
+      <a class="secondary as-link" href="{% url 'question_detail' question.id %}">Preview</a>
+    {% endif %}
+  </div>
 </section>
 
-<section class="grid two">
-  <form method="post" class="form-grid panel">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button class="primary" type="submit">Save</button>
-  </form>
-  <aside class="panel">
-    <h2>Test Cases</h2>
+<form method="post" class="question-builder">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="save_question">
+
+  <section class="panel form-panel">
+    <div class="section-heading">
+      <h2>Basics</h2>
+      <p class="muted">Where the question appears and how students identify it.</p>
+    </div>
+    <div class="field-row">
+      <p>{{ form.module.label_tag }}{{ form.module }}{{ form.module.errors }}</p>
+      <p>{{ form.difficulty.label_tag }}{{ form.difficulty }}{{ form.difficulty.errors }}</p>
+    </div>
+    <div class="field-row">
+      <p>{{ form.title.label_tag }}{{ form.title }}{{ form.title.errors }}</p>
+      <p>{{ form.slug.label_tag }}{{ form.slug }}{{ form.slug.errors }}</p>
+    </div>
+  </section>
+
+  <section class="panel form-panel">
+    <div class="section-heading">
+      <h2>Problem</h2>
+      <p class="muted">Tell students what to read from stdin and exactly what to print.</p>
+    </div>
+    <p>{{ form.description.label_tag }}{{ form.description }}{{ form.description.errors }}</p>
+    <div class="field-row">
+      <p>{{ form.sample_input.label_tag }}{{ form.sample_input }}{{ form.sample_input.errors }}</p>
+      <p>{{ form.sample_output.label_tag }}{{ form.sample_output }}{{ form.sample_output.errors }}</p>
+    </div>
+  </section>
+
+  <section class="panel form-panel">
+    <div class="section-heading">
+      <h2>Starter Code</h2>
+      <p class="muted">Keep prompts out of sample solutions unless the expected output includes them.</p>
+    </div>
+    <p>{{ form.starter_code.label_tag }}{{ form.starter_code }}{{ form.starter_code.errors }}</p>
+  </section>
+
+  <aside class="panel judge-panel">
+    <div class="section-heading">
+      <h2>Judge</h2>
+      <p class="muted">C/GCC defaults are already selected.</p>
+    </div>
+    <p>{{ form.language_id.label_tag }}{{ form.language_id }}{{ form.language_id.errors }}</p>
+    <div class="field-row compact">
+      <p>{{ form.time_limit.label_tag }}{{ form.time_limit }}{{ form.time_limit.errors }}</p>
+      <p>{{ form.memory_limit_kb.label_tag }}{{ form.memory_limit_kb }}{{ form.memory_limit_kb.errors }}</p>
+    </div>
+    <label class="checkbox-row">{{ form.is_mandatory }} <span>Mandatory for certificates</span></label>
+    <label class="checkbox-row">{{ form.is_active }} <span>Visible to students</span></label>
+    <button class="primary full-width" type="submit">Save Question</button>
+  </aside>
+</form>
+
+<section class="grid two question-tests">
+  <article class="panel">
+    <div class="section-heading">
+      <h2>Test Cases</h2>
+      <p class="muted">The sample output is saved as sample test #1 automatically.</p>
+    </div>
     <div class="list">
       {% for test in tests %}
         <div class="row-card">
           <span>
             <strong>{% if test.is_sample %}Sample{% else %}Hidden{% endif %} #{{ test.order }}</strong>
-            <small>{{ test.expected_output|truncatechars:60 }}</small>
+            <small>Input: {{ test.stdin|default:"empty"|truncatechars:45 }}</small>
           </span>
+          <span>{{ test.expected_output|truncatechars:30 }}</span>
         </div>
       {% empty %}
-        <p class="muted">Save the question, then add tests.</p>
+        <p class="muted">Save the question with sample output to create the first test.</p>
       {% endfor %}
     </div>
-  </aside>
+  </article>
+
+  <article class="panel">
+    <div class="section-heading">
+      <h2>Add Test</h2>
+      <p class="muted">{% if question %}Add hidden cases without leaving this page.{% else %}Save the question first, then add hidden cases.{% endif %}</p>
+    </div>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_test">
+      {{ test_form.as_p }}
+      <button class="secondary" type="submit" {% if not question %}disabled{% endif %}>Add Test Case</button>
+    </form>
+  </article>
 </section>
+
+<script>
+  const titleInput = document.getElementById("id_title");
+  const slugInput = document.getElementById("id_slug");
+
+  function slugify(value) {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  if (titleInput && slugInput) {
+    titleInput.addEventListener("input", function() {
+      if (!slugInput.dataset.touched) {
+        slugInput.value = slugify(titleInput.value);
+      }
+    });
+    slugInput.addEventListener("input", function() {
+      slugInput.dataset.touched = "true";
+    });
+  }
+</script>
 {% endblock %}

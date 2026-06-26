@@ -1,0 +1,151 @@
+Question_ID,Title,Topic,Level,Level_Range,Difficulty,Status,Score,Max_Score,Problem_Statement,Starter_Code,Is_Active,Time_Limit,Memory_Limit_KB,Test1_Input,Test1_Output,Test2_Input,Test2_Output,Test3_Input,Test3_Output,Test4_Input,Test4_Output,Test5_Input,Test5_Output,Test6_Input,Test6_Output,Test7_Input,Test7_Output,Test8_Input,Test8_Output,Test9_Input,Test9_Output,Test10_Input,Test10_Output
+E001,Array Sum,Arrays,1,Easy,Easy,Not Attempted,0,1,"Read n and n integers and print sum.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,1,3 1 2 3,6,3 5 5 5,15,3 -1 2 -3,-2,4 10 20 30 40,100,3 0 0 0,0,2 7 8,15,3 100 -50 25,75,4 9 1 2 3,15,5 4 4 4 4 4,20
+E002,Array Maximum,Arrays,1,Easy,Easy,Not Attempted,0,1,"Read n and n integers and print maximum.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,1,3 1 2 3,3,3 5 5 5,5,3 -1 2 -3,2,4 10 20 30 40,40,3 0 0 0,0,2 7 8,8,3 100 -50 25,100,4 9 1 2 3,9,5 4 4 4 4 4,4
+E003,Count Even,Arrays,1,Easy,Easy,Not Attempted,0,1,"Read n and n integers and print count of even elements.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,0,3 1 2 3,1,3 5 5 5,0,3 -1 2 -3,1,4 10 20 30 40,4,3 0 0 0,3,2 7 8,1,3 100 -50 25,2,4 9 1 2 3,1,5 4 4 4 4 4,5
+E004,Positive Count,Arrays,1,Easy,Easy,Not Attempted,0,1,"Read n and n integers and print count of positive numbers.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,1,3 1 2 3,3,3 5 5 5,3,3 -1 2 -3,1,4 10 20 30 40,4,3 0 0 0,0,2 7 8,2,3 100 -50 25,2,4 9 1 2 3,4,5 4 4 4 4 4,5
+E005,Array Average,Arrays,1,Easy,Easy,Not Attempted,0,1,"Read n and n integers and print integer average.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,1,3 1 2 3,2,3 5 5 5,5,3 -1 2 -3,-1,4 10 20 30 40,25,3 0 0 0,0,2 7 8,7,3 100 -50 25,25,4 9 1 2 3,3,5 4 4 4 4 4,4
+M001,Linear Search,Arrays,2,Medium,Medium,Not Attempted,0,1,"Read n, n integers, key. Print Found or Not Found.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,3 1 2 3 2,Found,3 1 2 3 5,Not Found,1 9 9,Found,3 4 5 6 4,Found,3 4 5 6 7,Not Found,2 0 0 0,Found,2 -1 2 -1,Found,3 8 9 10 10,Found,3 8 9 10 11,Not Found,3 5 5 5 5,Found
+M002,Array Reverse,Arrays,2,Medium,Medium,Not Attempted,0,1,"Read n and n integers and print reverse.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,1,3 1 2 3,3 2 1,3 5 5 5,5 5 5,3 -1 2 -3,-3 2 -1,4 10 20 30 40,40 30 20 10,3 0 0 0,0 0 0,2 7 8,8 7,3 100 -50 25,25 -50 100,4 9 1 2 3,3 2 1 9,5 4 4 4 4 4,4 4 4 4 4
+M003,Second Largest,Arrays,2,Medium,Medium,Not Attempted,0,1,"Read n and n distinct integers and print second largest.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,2 1 2,1,3 1 2 3,2,3 5 4 3,4,4 10 20 30 40,30,3 -1 2 -3,-1,3 100 50 25,50,3 7 9 8,8,4 11 13 17 19,17,4 4 1 6 2,4,3 99 1 50,50
+M004,Frequency Key,Arrays,2,Medium,Medium,Not Attempted,0,1,"Read n, n integers, key. Print key frequency.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,3 1 2 1 1,2,3 1 2 3 4,0,3 5 5 5 5,3,3 0 0 1 0,2,3 -1 2 -1 -1,2,3 7 8 9 7,1,3 7 8 9 10,0,4 3 3 2 3 3,3,1 1 1,1,1 1 2,0
+M005,Adjacent Pair Sum,Arrays,2,Medium,Medium,Not Attempted,0,1,"Read n and n integers and print maximum adjacent pair sum.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,2 1 2,3,3 1 2 3,5,3 5 4 3,9,4 10 20 30 40,70,3 -1 2 -3,1,3 100 50 25,150,3 7 9 8,17,4 11 13 17 19,36,4 4 1 6 2,8,3 99 1 50,100
+H001,Mean Variance Integer,Lab Manual Arrays,3,Hard,Hard,Not Attempted,0,1,"Read n and n integers. Print integer mean and integer variance.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,1 0,3 1 2 3,2 0,3 5 5 5,5 0,3 -1 2 -3,-1 4,4 10 20 30 40,25 125,3 0 0 0,0 0,2 7 8,7 0,3 100 -50 25,25 3750,4 9 1 2 3,3 10,5 4 4 4 4 4,4 0
+H002,Selection Sort,Lab Manual Arrays,3,Hard,Hard,Not Attempted,0,1,"Read n and n integers and print sorted array ascending.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 1,1,3 1 2 3,1 2 3,3 5 5 5,5 5 5,3 -1 2 -3,-3 -1 2,4 10 20 30 40,10 20 30 40,3 0 0 0,0 0 0,2 7 8,7 8,3 100 -50 25,-50 25 100,4 9 1 2 3,1 2 3 9,5 4 4 4 4 4,4 4 4 4 4
+H003,Binary Search,Lab Manual Arrays,3,Hard,Hard,Not Attempted,0,1,"Read n sorted integers and key. Print index if found else -1.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,3 1 2 3 2,1,3 1 2 3 5,-1,1 9 9,0,3 4 5 6 4,0,3 4 5 6 7,-1,2 0 1 0,0,2 -1 2 -1,0,3 8 9 10 10,2,3 8 9 10 11,-1,3 5 6 7 5,0
+H004,Matrix Trace 2x2,Lab Manual Arrays,3,Hard,Hard,Not Attempted,0,1,"Read four integers of 2x2 matrix and print trace.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 2 3 4,5,0 0 0 0,0,5 6 7 8,13,1 0 0 1,2,9 8 7 6,15,10 20 30 40,50,-1 2 -3 4,3,100 1 2 3,103,7 7 7 7,14,11 12 13 14,25
+H005,Matrix Transpose 2x2,Lab Manual Arrays,3,Hard,Hard,Not Attempted,0,1,"Read four integers of 2x2 matrix and print transpose row-wise.
+
+Read input from stdin and print only the exact requested output. Do not print prompts.","#include <stdio.h>
+
+int main(void)
+{
+    /* Read from stdin and print exact output only. */
+    return 0;
+}
+",true,2,128000,1 2 3 4,1 3 2 4,0 0 0 0,0 0 0 0,5 6 7 8,5 7 6 8,1 0 0 1,1 0 0 1,9 8 7 6,9 7 8 6,10 20 30 40,10 30 20 40,-1 2 -3 4,-1 -3 2 4,100 1 2 3,100 2 1 3,7 7 7 7,7 7 7 7,11 12 13 14,11 13 12 14
