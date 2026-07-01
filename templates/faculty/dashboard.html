@@ -7,10 +7,74 @@
   </div>
   <div class="actions">
     <a class="primary as-link" href="{% url 'faculty_question_new' %}">New Question</a>
+    <a class="secondary as-link" href="{% url 'faculty_question_bank' %}">Question Bank</a>
     <a class="secondary as-link" href="{% url 'faculty_question_upload' %}">Upload CSV</a>
     <a class="secondary as-link" href="{% url 'faculty_module_new' %}">New Module</a>
     <a class="secondary as-link" href="{% url 'attendance_report' %}">Attendance</a>
     <a class="secondary as-link" href="{% url 'export_progress' %}">Export CSV</a>
+  </div>
+</section>
+
+<section class="panel faculty-progress-panel">
+  <div class="progress-head">
+    <div>
+      <h2>Student Progress Tracker</h2>
+      <p class="muted">{{ selected_category_label }} &middot; {{ progress_total }} questions</p>
+    </div>
+    <form class="progress-controls" method="get">
+      <label>
+        <span>Category</span>
+        <select name="category" onchange="this.form.submit()">
+          <option value="overall" {% if selected_category == "overall" %}selected{% endif %}>Overall Progress</option>
+          {% for module in progress_modules %}
+            <option value="{{ module.id }}" {% if selected_category == module.id|stringformat:"s" %}selected{% endif %}>{{ module.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>Sort by</span>
+        <select name="sort" onchange="this.form.submit()">
+          <option value="rank" {% if selected_sort == "rank" %}selected{% endif %}>Rank</option>
+          <option value="usn" {% if selected_sort == "usn" %}selected{% endif %}>USN</option>
+        </select>
+      </label>
+    </form>
+  </div>
+
+  <div class="table-wrap">
+    <table class="progress-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>USN</th>
+          <th>Student</th>
+          <th>Attempted</th>
+          <th>Completed</th>
+          <th>Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in progress_tracker %}
+          <tr>
+            <td>#{{ row.rank }}</td>
+            <td>{{ row.student_usn }}</td>
+            <td>{{ row.student.display_name }}</td>
+            <td>{{ row.attempted }}/{{ row.total }}</td>
+            <td>{{ row.completed }}/{{ row.total }}</td>
+            <td>
+              <div class="progress-cell">
+                <span class="progress-track"><span style="width: {{ row.percentage|floatformat:0 }}%"></span></span>
+                <strong>{{ row.percentage|floatformat:1 }}%</strong>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="muted">No students found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -25,6 +89,7 @@
             <small>{{ module.question_count }} questions · {{ module.active_question_count }} visible</small>
           </span>
           <span class="actions">
+            <a class="secondary as-link" href="{% url 'faculty_question_bank_module' module.id %}">View Qs</a>
             <a class="secondary as-link" href="{% url 'faculty_module_edit' module.id %}">Edit</a>
             <form method="post" action="{% url 'faculty_module_delete' module.id %}" onsubmit="return confirm('Delete this module and all its questions?');">
               {% csrf_token %}

@@ -97,11 +97,17 @@ def student_performance_band(student):
 
 
 def choose_adaptive_questions(student, module, difficulty, count=5):
-    questions = list(module.questions.filter(is_active=True, difficulty=difficulty).order_by("csv_level", "id"))
+    all_questions = list(module.questions.filter(is_active=True, difficulty=difficulty).order_by("csv_level", "id"))
     rng = random.SystemRandom()
-    rng.shuffle(questions)
-    if len(questions) <= count:
-        return questions
+
+    mandatory_qs = [q for q in all_questions if q.is_mandatory]
+    optional_qs = [q for q in all_questions if not q.is_mandatory]
+
+    if len(all_questions) <= count:
+        rng.shuffle(all_questions)
+        return all_questions
+
+    needed_optional = max(0, count - len(mandatory_qs))
 
     accepted_ids = set(
         Submission.objects.filter(
@@ -111,8 +117,8 @@ def choose_adaptive_questions(student, module, difficulty, count=5):
             question__difficulty=difficulty,
         ).values_list("question_id", flat=True)
     )
-    unsolved = [question for question in questions if question.id not in accepted_ids]
-    pool = unsolved if len(unsolved) >= count else unsolved + [question for question in questions if question.id in accepted_ids]
+    unsolved = [question for question in optional_qs if question.id not in accepted_ids]
+    pool = unsolved if len(unsolved) >= needed_optional else unsolved + [question for question in optional_qs if question.id in accepted_ids]
 
     band = student_performance_band(student)
     if band == "support":
@@ -121,7 +127,11 @@ def choose_adaptive_questions(student, module, difficulty, count=5):
         pool.sort(key=lambda question: (-question.csv_level, rng.random()))
     else:
         rng.shuffle(pool)
-    return pool[:count]
+
+    selected = mandatory_qs + pool[:needed_optional]
+    selected = selected[:count]
+    rng.shuffle(selected)
+    return selected
 
 
 def sync_assignment_completion(assignment):

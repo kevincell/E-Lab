@@ -42,6 +42,10 @@
     </div>
   </section>
 {% else %}
+  <div class="panel" style="margin-bottom: 20px; border-left: 4px solid var(--accent-primary); padding: 16px; background: rgba(31, 41, 55, 0.4);">
+    <h3 style="margin: 0 0 6px;">👨‍🏫 Faculty Overview Mode</h3>
+    <p class="muted" style="margin: 0;">You are viewing all <strong>{{ questions|length }} questions</strong> available in this difficulty level. When a student accesses this level, the system dynamically assigns them a randomized adaptive set of exactly <strong>5 questions</strong>.</p>
+  </div>
   <div class="list">
     {% for question in questions %}
       <a class="row-card" href="{% url 'question_detail' question.id %}">

@@ -26,7 +26,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .forms import CSVQuestionUploadForm, ModuleForm, QuestionForm, QuickTestCaseForm, StudentSignUpForm, SubmissionForm, TestCaseForm
-from .models import Certificate, LabSession, Module, ModuleQuestionAssignment, Progress, Question, Submission, TestCase, User
+from .models import AssignedQuestion, Certificate, LabSession, Module, ModuleQuestionAssignment, Progress, Question, Submission, TestCase, User
 from .sandbox import run_c_code
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
 from .services import (
@@ -80,10 +80,103 @@ def dashboard(request):
             question_count=Count("questions"),
             active_question_count=Count("questions", filter=Q(questions__is_active=True)),
         )
+        selected_category = request.GET.get("category") or "overall"
+        selected_sort = request.GET.get("sort") or "rank"
+        if selected_sort not in {"rank", "usn"}:
+            selected_sort = "rank"
+
+        progress_modules = list(modules.order_by("order", "name"))
+        progress_students_qs = (
+            User.objects.filter(is_staff=False, is_superuser=False)
+            .exclude(role__in=[User.Role.FACULTY, User.Role.ADMIN])
+        )
+        selected_module = None
+        if selected_category != "overall":
+            try:
+                selected_module_id = int(selected_category)
+            except (TypeError, ValueError):
+                selected_category = "overall"
+            else:
+                selected_module = next((module for module in progress_modules if module.id == selected_module_id), None)
+                if selected_module is None:
+                    selected_category = "overall"
+
+        if selected_module:
+            progress_total = min(15, selected_module.question_count)
+            progress_students = progress_students_qs.annotate(
+                attempted_count=Count(
+                    "submissions__question",
+                    filter=Q(
+                        submissions__question__module=selected_module,
+                    ),
+                    distinct=True,
+                ),
+                completed_count=Count(
+                    "submissions__question",
+                    filter=Q(
+                        submissions__question__module=selected_module,
+                        submissions__status=Submission.Status.ACCEPTED,
+                    ),
+                    distinct=True,
+                ),
+            )
+            selected_category_label = selected_module.name
+        else:
+            progress_total = sum(min(15, module.question_count) for module in progress_modules)
+            progress_students = progress_students_qs.annotate(
+                attempted_count=Count(
+                    "submissions__question",
+                    distinct=True,
+                ),
+                completed_count=Count(
+                    "submissions__question",
+                    filter=Q(submissions__status=Submission.Status.ACCEPTED),
+                    distinct=True,
+                ),
+            )
+            selected_category_label = "Overall Progress"
+
+        progress_tracker = []
+        for student in progress_students:
+            attempted = min(student.attempted_count, progress_total)
+            completed = min(student.completed_count, progress_total)
+            percentage = (completed / progress_total * 100) if progress_total else 0
+            progress_tracker.append(
+                {
+                    "student": student,
+                    "student_usn": student.usn or student.username,
+                    "attempted": attempted,
+                    "completed": completed,
+                    "total": progress_total,
+                    "percentage": percentage,
+                }
+            )
+
+        ranked_tracker = sorted(
+            progress_tracker,
+            key=lambda row: (
+                -row["percentage"],
+                -row["completed"],
+                -row["attempted"],
+                row["student_usn"].lower(),
+                row["student"].username.lower(),
+            ),
+        )
+        for index, row in enumerate(ranked_tracker, start=1):
+            row["rank"] = index
+
+        if selected_sort == "usn":
+            progress_tracker = sorted(
+                ranked_tracker,
+                key=lambda row: (row["student_usn"].lower(), row["student"].username.lower()),
+            )
+        else:
+            progress_tracker = ranked_tracker
+
         recent = Submission.objects.select_related("student", "question")[:12]
         recent_sessions = LabSession.objects.select_related("module").prefetch_related("attendance_rows__student")[:6]
         flagged_submissions = Submission.objects.filter(plagiarism_flagged=True).select_related("student", "question")[:8]
-        students = User.objects.filter(role=User.Role.STUDENT).count()
+        students = progress_students_qs.count()
         return render(
             request,
             "faculty/dashboard.html",
@@ -94,21 +187,75 @@ def dashboard(request):
                 "flagged_submissions": flagged_submissions,
                 "students": students,
                 "questions": Question.objects.count(),
+                "progress_tracker": progress_tracker,
+                "progress_modules": progress_modules,
+                "selected_category": selected_category,
+                "selected_category_label": selected_category_label,
+                "selected_sort": selected_sort,
+                "progress_total": progress_total,
             },
         )
 
     progress_rows = student_progress(request.user)
     modules = Module.objects.filter(is_active=True).prefetch_related("questions")
     progress_by_module = {row.module_id: row for row in progress_rows}
+    user_submissions = Submission.objects.filter(student=request.user).values("question_id", "status")
+    question_status_map = {}
+    for sub in user_submissions:
+        qid = sub["question_id"]
+        st = sub["status"]
+        if qid not in question_status_map:
+            question_status_map[qid] = set()
+        question_status_map[qid].add(st)
+
     module_cards = []
     for module in modules:
         progress = progress_by_module.get(module.id)
         module_questions = module.questions.filter(is_active=True)
-        module_total = module_questions.count()
-        module_completed = module_questions.filter(
-            submissions__student=request.user,
-            submissions__status=Submission.Status.ACCEPTED,
-        ).distinct().count()
+        if request.user.is_faculty_like:
+            module_total = module_questions.count()
+            module_completed = module_questions.filter(
+                submissions__student=request.user,
+                submissions__status=Submission.Status.ACCEPTED,
+            ).distinct().count()
+            questions_for_dots = list(module_questions)
+        else:
+            module_total = min(15, module_questions.count())
+            assigned_qs = AssignedQuestion.objects.filter(
+                assignment__student=request.user, assignment__module=module
+            )
+            if assigned_qs.exists():
+                module_completed = assigned_qs.filter(completed_at__isnull=False).count()
+                questions_for_dots = [aq.question for aq in assigned_qs.select_related("question")]
+            else:
+                module_completed = module_questions.filter(
+                    submissions__student=request.user,
+                    submissions__status=Submission.Status.ACCEPTED,
+                ).distinct().count()
+                module_completed = min(module_completed, module_total)
+                questions_for_dots = list(module_questions[:module_total])
+
+        question_statuses = []
+        for q in questions_for_dots:
+            st_set = question_status_map.get(q.id, set())
+            if Submission.Status.ACCEPTED in st_set:
+                question_statuses.append("completed")
+            elif any(
+                s in st_set
+                for s in [
+                    Submission.Status.WRONG_ANSWER,
+                    Submission.Status.TIME_LIMIT_EXCEEDED,
+                    Submission.Status.RUNTIME_ERROR,
+                    Submission.Status.COMPILATION_ERROR,
+                    Submission.Status.INTERNAL_ERROR,
+                ]
+            ):
+                question_statuses.append("failed")
+            else:
+                question_statuses.append("pending")
+        if not question_statuses and module_total > 0:
+            question_statuses = ["pending"] * module_total
+
         module_percentage = (module_completed / module_total * 100) if module_total else 0
         module_cards.append(
             {
@@ -118,15 +265,20 @@ def dashboard(request):
                 "module_total": module_total,
                 "module_completed": module_completed,
                 "completed": module_total > 0 and module_completed == module_total,
+                "question_statuses": question_statuses,
             }
         )
     pct = overall_percentage(request.user)
     dashboard_questions = Question.objects.filter(module__is_active=True, is_active=True)
-    questions_total = dashboard_questions.count()
-    completed_total = dashboard_questions.filter(
-        submissions__student=request.user,
-        submissions__status=Submission.Status.ACCEPTED,
-    ).distinct().count()
+    if request.user.is_faculty_like:
+        questions_total = dashboard_questions.count()
+        completed_total = dashboard_questions.filter(
+            submissions__student=request.user,
+            submissions__status=Submission.Status.ACCEPTED,
+        ).distinct().count()
+    else:
+        questions_total = sum(card["module_total"] for card in module_cards)
+        completed_total = sum(card["module_completed"] for card in module_cards)
     eligible, _ = certificate_eligible(request.user)
     certificates = request.user.certificates.all()
 
@@ -179,11 +331,27 @@ def module_detail(request, module_id):
     level_cards = []
     for value, label in Question.Difficulty.choices:
         questions = module.questions.filter(is_active=True, difficulty=value)
-        total = questions.count()
-        completed = questions.filter(
-            submissions__student=request.user,
-            submissions__status=Submission.Status.ACCEPTED,
-        ).distinct().count()
+        if request.user.is_faculty_like:
+            total = questions.count()
+            completed = questions.filter(
+                submissions__student=request.user,
+                submissions__status=Submission.Status.ACCEPTED,
+            ).distinct().count()
+        else:
+            assignment = ModuleQuestionAssignment.objects.filter(
+                student=request.user, module=module, difficulty=value
+            ).first()
+            if assignment:
+                total = assignment.assigned_questions.count()
+                completed = assignment.assigned_questions.filter(completed_at__isnull=False).count()
+            else:
+                total = min(5, questions.count())
+                completed = questions.filter(
+                    submissions__student=request.user,
+                    submissions__status=Submission.Status.ACCEPTED,
+                ).distinct().count()
+                completed = min(completed, total)
+
         level_cards.append(
             {
                 "value": value,
@@ -468,6 +636,52 @@ def faculty_module_delete(request, module_id):
     return redirect("dashboard")
 
 
+@login_required
+def faculty_question_bank(request, module_id=None):
+    faculty_required(request.user)
+    modules = Module.objects.annotate(
+        question_count=Count("questions"),
+        active_question_count=Count("questions", filter=Q(questions__is_active=True)),
+    ).order_by("order")
+
+    selected_module = None
+    questions_by_difficulty = {}
+    stats = {}
+
+    if not module_id and modules.exists():
+        module_id = modules.first().id
+
+    if module_id:
+        selected_module = get_object_or_404(Module, pk=module_id)
+        all_questions = list(
+            selected_module.questions
+            .annotate(test_count=Count("test_cases"))
+            .order_by("difficulty", "csv_level", "title")
+        )
+        for diff_value, diff_label in Question.Difficulty.choices:
+            qs = [q for q in all_questions if q.difficulty == diff_value]
+            questions_by_difficulty[diff_label] = qs
+
+        stats = {
+            "total": len(all_questions),
+            "easy": len([q for q in all_questions if q.difficulty == Question.Difficulty.EASY]),
+            "medium": len([q for q in all_questions if q.difficulty == Question.Difficulty.MEDIUM]),
+            "hard": len([q for q in all_questions if q.difficulty == Question.Difficulty.HARD]),
+            "mandatory": len([q for q in all_questions if q.is_mandatory]),
+        }
+
+    return render(
+        request,
+        "faculty/question_bank.html",
+        {
+            "modules": modules,
+            "selected_module": selected_module,
+            "questions_by_difficulty": questions_by_difficulty,
+            "stats": stats,
+        },
+    )
+
+
 def module_name_from_csv(filename):
     filename = os.path.basename(filename)
     stem = filename.rsplit(".", 1)[0]
@@ -597,7 +811,7 @@ def import_question_csv(file_obj, faculty):
                 "language_id": 50,
                 "time_limit": float(row.get("Time_Limit") or 2.0),
                 "memory_limit_kb": int(row.get("Memory_Limit_KB") or 128000),
-                "is_mandatory": True,
+                "is_mandatory": bool_from_csv(row.get("Is_Mandatory"), default=False),
                 "is_active": bool_from_csv(row.get("Is_Active"), default=active_default),
                 "created_by": faculty,
             },

@@ -1,11 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Sign up - {{ SITE_NAME }}{% endblock %}
+{% load static %}
+{% block title %}Sign up - Dept. of Computer and Communication{% endblock %}
 {% block content %}
 <div style="display:grid;place-items:center;min-height:60vh;padding:20px 0;">
-  <section class="auth-panel wide">
-    <div style="text-align:center;margin-bottom:20px;">
-      <span style="font-size:36px;font-weight:900;color:var(--primary);letter-spacing:-0.03em;">{{ SITE_NAME }}</span>
-      <p class="muted" style="margin-top:6px;">Create your student account</p>
+  <section class="auth-panel wide" style="max-width: 480px;">
+    <div style="text-align:center;margin-bottom:24px;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE Logo" style="height: 54px; width: auto; object-fit: contain; filter: brightness(0) invert(1);">
+      <span style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.01em;line-height:1.3;">Dept. of Computer and Communication</span>
+      <p class="muted" style="margin:0;font-size:14px;">CCE e-Lab Portal · Create your student account</p>
     </div>
     <form method="post" class="form-grid">
       {% csrf_token %}

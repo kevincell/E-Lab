@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Question Bank · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<section class="qbank-page">
+  <div class="qbank-header">
+    <div>
+      <h1>Faculty Question Bank</h1>
+      <p class="muted">Browse, search, and manage verified curriculum questions across all modules.</p>
+    </div>
+    <div class="actions">
+      <a class="primary as-link" href="{% url 'faculty_question_new' %}">+ New Question</a>
+      <a class="secondary as-link" href="{% url 'faculty_question_upload' %}">Upload CSV Bank</a>
+      <a class="secondary as-link" href="{% url 'dashboard' %}">← Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Module selector tabs -->
+  <div class="qbank-module-tabs">
+    {% for mod in modules %}
+      <a
+        class="qbank-tab {% if selected_module.id == mod.id %}active{% endif %}"
+        href="{% url 'faculty_question_bank_module' mod.id %}"
+      >
+        <span class="qbank-tab-name">{{ mod.name }}</span>
+        <span class="qbank-tab-count">{{ mod.question_count }} Qs</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  {% if selected_module %}
+    <!-- Summary Stats Grid -->
+    <div class="qbank-stats-grid">
+      <div class="stat-card">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Total Questions</span>
+      </div>
+      <div class="stat-card border-easy">
+        <span class="stat-value text-easy">{{ stats.easy }}</span>
+        <span class="stat-label">Easy Level</span>
+      </div>
+      <div class="stat-card border-medium">
+        <span class="stat-value text-medium">{{ stats.medium }}</span>
+        <span class="stat-label">Medium Level</span>
+      </div>
+      <div class="stat-card border-hard">
+        <span class="stat-value text-hard">{{ stats.hard }}</span>
+        <span class="stat-label">Hard Level</span>
+      </div>
+      <div class="stat-card border-mandatory">
+        <span class="stat-value text-mandatory">★ {{ stats.mandatory }}</span>
+        <span class="stat-label">Lab Manual (Mandatory)</span>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="qbank-controls">
+      <div class="search-box">
+        <input type="text" id="qSearchInput" placeholder="Search questions by keyword or topic..." onkeyup="filterQuestions()">
+      </div>
+      <div class="filter-pills">
+        <button class="filter-pill active" onclick="setFilter('all', this)">All</button>
+        <button class="filter-pill" onclick="setFilter('easy', this)">Easy</button>
+        <button class="filter-pill" onclick="setFilter('medium', this)">Medium</button>
+        <button class="filter-pill" onclick="setFilter('hard', this)">Hard</button>
+        <button class="filter-pill pill-mandatory" onclick="setFilter('mandatory', this)">★ Lab Manual Only</button>
+      </div>
+    </div>
+
+    <div class="qbank-module-info">
+      <h2>{{ selected_module.name }}</h2>
+      <p class="muted">{{ selected_module.description }}</p>
+    </div>
+
+    {% for diff_label, qs in questions_by_difficulty.items %}
+      <div class="qbank-difficulty-section" data-diff-group="{{ diff_label|lower }}">
+        <div class="qbank-diff-header">
+          <span class="qbank-diff-badge
+            {% if diff_label == 'Easy' %}badge-easy
+            {% elif diff_label == 'Medium' %}badge-medium
+            {% else %}badge-hard{% endif %}
+          ">{{ diff_label }}</span>
+          <span class="qbank-diff-count">{{ qs|length }} question{{ qs|length|pluralize }}</span>
+        </div>
+
+        {% if qs %}
+          <div class="qbank-table-wrap">
+            <table class="qbank-table">
+              <thead>
+                <tr>
+                  <th class="col-idx">#</th>
+                  <th class="col-title">Question & Topic</th>
+                  <th class="col-lvl">Level</th>
+                  <th class="col-limits">Limits</th>
+                  <th class="col-tests">Tests</th>
+                  <th class="col-mandatory">Status</th>
+                  <th class="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for q in qs %}
+                  <tr class="q-row {% if not q.is_active %}row-inactive{% endif %}" 
+                      data-title="{{ q.title|lower }}" 
+                      data-desc="{{ q.description|striptags|lower }}"
+                      data-diff="{{ q.difficulty }}"
+                      data-mandatory="{{ q.is_mandatory|yesno:'true,false' }}">
+                    <td class="col-idx">{{ forloop.counter }}</td>
+                    <td class="col-title">
+                      <a class="q-title-link" href="{% url 'question_detail' q.id %}" target="_blank">{{ q.title }}</a>
+                      <div class="q-snippet">{{ q.description|striptags|truncatewords:14 }}</div>
+                    </td>
+                    <td class="col-lvl">
+                      <span class="lvl-tag">Level {{ q.csv_level }}</span>
+                    </td>
+                    <td class="col-limits">
+                      <small class="muted">{{ q.time_limit }}s / {{ q.memory_limit_kb|slice:":-3" }}MB</small>
+                    </td>
+                    <td class="col-tests">
+                      <a class="test-pill-link" href="{% url 'faculty_testcase_new' q.id %}" title="Add/Manage Test Cases">
+                        <span class="test-pill">{{ q.test_count }} tests</span>
+                      </a>
+                    </td>
+                    <td class="col-mandatory">
+                      {% if q.is_mandatory %}
+                        <span class="mandatory-badge">★ Lab Manual</span>
+                      {% endif %}
+                      {% if not q.is_active %}
+                        <span class="status-inactive">Inactive</span>
+                      {% endif %}
+                    </td>
+                    <td class="col-actions">
+                      <div class="action-buttons">
+                        <a class="btn-xs secondary as-link" href="{% url 'question_detail' q.id %}" target="_blank">Preview</a>
+                        <a class="btn-xs primary as-link" href="{% url 'faculty_question_edit' q.id %}">Edit</a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="muted" style="padding: 16px 0;">No {{ diff_label|lower }} questions in this module.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+</section>
+
+<script>
+let currentFilter = 'all';
+
+function setFilter(filterType, btnElem) {
+  currentFilter = filterType;
+  document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+  btnElem.classList.add('active');
+  filterQuestions();
+}
+
+function filterQuestions() {
+  const query = document.getElementById('qSearchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('.q-row');
+  
+  rows.forEach(row => {
+    const title = row.getAttribute('data-title');
+    const desc = row.getAttribute('data-desc');
+    const diff = row.getAttribute('data-diff');
+    const isMandatory = row.getAttribute('data-mandatory') === 'true';
+    
+    const matchesSearch = title.includes(query) || desc.includes(query);
+    let matchesFilter = true;
+    
+    if (currentFilter === 'easy') matchesFilter = (diff === 'easy');
+    else if (currentFilter === 'medium') matchesFilter = (diff === 'medium');
+    else if (currentFilter === 'hard') matchesFilter = (diff === 'hard');
+    else if (currentFilter === 'mandatory') matchesFilter = isMandatory;
+    
+    if (matchesSearch && matchesFilter) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  
+  // Hide empty difficulty section headers if all rows inside are hidden
+  document.querySelectorAll('.qbank-difficulty-section').forEach(sec => {
+    const visibleRows = sec.querySelectorAll('.q-row:not([style*="display: none"])');
+    sec.style.display = visibleRows.length > 0 ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

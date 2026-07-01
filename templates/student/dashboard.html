@@ -68,8 +68,8 @@
       <!-- Outer donut: small segments for question status -->
       <div class="wheel-donut">
         {% for card in module_cards %}
-          {% for _ in "xxxxxx" %}
-            <div class="wheel-donut-segment {% if card.completed %}status-completed{% else %}status-pending{% endif %}"></div>
+          {% for status in card.question_statuses %}
+            <div class="wheel-donut-segment status-{{ status }}" title="M{{ forloop.parentloop.counter }}: {{ status|title }}"></div>
           {% endfor %}
         {% endfor %}
       </div>

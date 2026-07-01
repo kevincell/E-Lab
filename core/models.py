@@ -24,6 +24,8 @@ class User(AbstractUser):
 
     @property
     def is_faculty_like(self):
+        if self.role == self.Role.STUDENT:
+            return False
         return self.role in {self.Role.FACULTY, self.Role.ADMIN} or self.is_staff
 
 

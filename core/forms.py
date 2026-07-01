@@ -23,6 +23,12 @@ class MultipleFileField(forms.FileField):
 class StudentSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label = "USN"
+        self.fields["username"].help_text = "Use your student USN, for example NNM25CC001."
+        self.fields["usn"].required = False
+
     class Meta:
         model = User
         fields = ("username", "first_name", "last_name", "email", "usn", "department", "semester")
@@ -30,6 +36,8 @@ class StudentSignUpForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = User.Role.STUDENT
+        if not user.usn:
+            user.usn = user.username
         if commit:
             user.save()
         return user

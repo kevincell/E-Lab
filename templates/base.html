@@ -5,11 +5,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=2.0">
 </head>
 <body class="{% block body_class %}{% endblock %}">
   <header class="topbar">
-    <a class="brand" href="{% url 'dashboard' %}">{{ SITE_NAME }}</a>
+    <a class="brand" href="{% url 'dashboard' %}" style="display: flex; align-items: center; gap: 14px; text-decoration: none;">
+      <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE NMAMIT Logo" style="height: 38px; width: auto; object-fit: contain; filter: brightness(0) invert(1);">
+      <span style="font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.01em; line-height: 1.2; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 14px;">Dept. of Computer and Communication Engineering</span>
+    </a>
     <nav class="nav">
       {% if user.is_authenticated %}
         <a href="{% url 'leaderboard' %}">Leaderboard</a>
