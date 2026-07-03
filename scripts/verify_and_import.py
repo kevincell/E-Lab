@@ -2,7 +2,15 @@ import os
 import sys
 import django
 
-sys.path.append("d:/New folder/E-Lab")
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+# FIX: Use dynamic path instead of hardcoded Windows path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+sys.path.insert(0, project_root)
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 os.environ["USE_SQLITE"] = "true"
 django.setup()
@@ -33,7 +41,7 @@ csv_files = [
 print("Starting CSV import...")
 imported_modules = []
 for filename in csv_files:
-    filepath = os.path.join("d:/New folder/E-Lab/generated_level_question_csvs", filename)
+    filepath = os.path.join(PROJECT_ROOT, "generated_level_question_csvs", filename)
     with open(filepath, "rb") as f:
         res = import_question_csv(f, faculty)
     
