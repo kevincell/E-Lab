@@ -111,6 +111,57 @@ docker compose exec app python manage.py import_leetcode --question two-sum --mo
 docker compose exec app python manage.py import_leetcode --question 1 --module "LeetCode Problems" --difficulty easy
 ```
 
+### 8. Updating Questions
+
+You can update the website's question bank using one of these methods.
+
+- **Via web UI (recommended for faculty):** Login as a faculty user and open the "Question Upload" page (Faculty → Question Upload). Upload one or more CSV files using the form.
+
+- **Import CSVs from the project (batch import):** The project includes a helper script that imports all CSVs found in `generated_level_question_csvs/` and runs a quick verification. From the project root run:
+
+```bash
+# On the host (development):
+python scripts/verify_and_import.py
+
+# Inside the Docker app container (recommended when using Docker):
+docker compose exec app bash -lc "python scripts/verify_and_import.py"
+```
+
+This script uses the `import_question_csv` helper (core.views) and prints a summary per module.
+
+- **Programmatic CSV import (one-off) via Django shell:** To import a single CSV file from inside the container, run:
+
+```bash
+docker compose exec app bash -lc "python - <<'PY'
+from django.core.files import File
+from core.views import import_question_csv
+from core.models import User
+faculty, _ = User.objects.get_or_create(username='faculty', defaults={'email': 'faculty@elab.local', 'role': User.Role.FACULTY})
+with open('generated_level_question_csvs/Module1_Basics_IO_Levels.csv','rb') as f:
+	res = import_question_csv(File(f), faculty)
+	print(res)
+PY"
+```
+
+- **Import LeetCode questions:** Use the management command for single LeetCode imports:
+
+```bash
+docker compose exec app python manage.py import_leetcode --question two-sum --module "LeetCode Problems" --difficulty easy --csv-level 1
+```
+
+CSV format notes:
+
+- Required columns: `Question_ID`, `Topic`, `Level`, `Difficulty`.
+- Sample/hidden test columns should be named like `Test1_Input`, `Test1_Output`, ... up to `Test20_Input`/`Test20_Output`.
+- Filenames containing `_levels` (case-insensitive) trigger a replacement behavior: questions not present in the uploaded CSV will be removed from that module and module assignments reset.
+
+After importing CSVs you may want to re-collect static files and restart Nginx:
+
+```bash
+docker compose exec app python manage.py collectstatic --noinput
+docker compose restart nginx
+```
+
 ### 8. Create Admin User
 ```bash
 docker compose exec app python manage.py createsuperuser
