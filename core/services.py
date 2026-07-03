@@ -10,7 +10,7 @@ from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import AssignedQuestion, Attendance, Certificate, LabSession, Module, ModuleQuestionAssignment, Progress, Question, Submission
+from .models import AssignedQuestion, Attendance, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, User
 from .sandbox import run_c_code
 
 
@@ -363,4 +363,57 @@ def notify_certificate(student, certificate):
         from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
         recipient_list=[student.email],
         fail_silently=True,
+    )
+
+
+def notify_faculty_of_eligible_student(student):
+    """Create a notification for all faculty when a student becomes certificate-eligible."""
+    pct = overall_percentage(student)
+    faculty_users = User.objects.filter(role__in=[User.Role.FACULTY, User.Role.HOD])
+    for faculty in faculty_users:
+        # Avoid duplicate notifications for the same student
+        if not Notification.objects.filter(
+            recipient=faculty,
+            related_student=student,
+            notification_type=Notification.Type.CERT_ELIGIBLE,
+        ).exists():
+            Notification.objects.create(
+                recipient=faculty,
+                notification_type=Notification.Type.CERT_ELIGIBLE,
+                title=f"{student.display_name} is certificate eligible",
+                message=f"{student.display_name} ({student.usn or student.username}) has completed {pct:.1f}% and met all mandatory requirements.",
+                related_student=student,
+            )
+
+
+def notify_hod_of_cert_request(cert_request):
+    """Create a notification for all HoD users when a faculty sends a cert approval request."""
+    hod_users = User.objects.filter(role=User.Role.HOD)
+    for hod in hod_users:
+        Notification.objects.create(
+            recipient=hod,
+            notification_type=Notification.Type.CERT_FACULTY_REQUEST,
+            title=f"Certificate request for {cert_request.student.display_name}",
+            message=f"Faculty {cert_request.requested_by_faculty.display_name} has verified and sent a certificate approval request for {cert_request.student.display_name} ({cert_request.completion_percentage:.1f}% complete).",
+            related_student=cert_request.student,
+        )
+
+
+def notify_student_of_cert_decision(cert_request):
+    """Notify the student when the HoD approves or rejects their certificate."""
+    if cert_request.status == CertificateRequest.Status.APPROVED:
+        ntype = Notification.Type.CERT_HOD_APPROVED
+        title = "Certificate Approved!"
+        message = f"Congratulations! Your certificate has been approved by the HoD. You can now generate your certificate."
+    else:
+        ntype = Notification.Type.CERT_HOD_REJECTED
+        title = "Certificate Request Declined"
+        message = f"Your certificate request has been declined. Notes: {cert_request.hod_notes or 'No additional notes.'}"
+
+    Notification.objects.create(
+        recipient=cert_request.student,
+        notification_type=ntype,
+        title=title,
+        message=message,
+        related_student=cert_request.student,
     )

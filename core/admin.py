@@ -5,9 +5,11 @@ from .models import (
     AssignedQuestion,
     Attendance,
     Certificate,
+    CertificateRequest,
     LabSession,
     Module,
     ModuleQuestionAssignment,
+    Notification,
     Progress,
     Question,
     Submission,
@@ -101,3 +103,18 @@ class ProgressAdmin(admin.ModelAdmin):
 class CertificateAdmin(admin.ModelAdmin):
     list_display = ("student", "semester", "completion_percentage", "issued_at")
     search_fields = ("student__username", "student__usn", "verification_hash")
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("recipient", "notification_type", "title", "is_read", "created_at")
+    list_filter = ("notification_type", "is_read")
+    search_fields = ("recipient__username", "title")
+
+
+@admin.register(CertificateRequest)
+class CertificateRequestAdmin(admin.ModelAdmin):
+    list_display = ("student", "status", "requested_by_faculty", "approved_by_hod", "completion_percentage", "updated_at")
+    list_filter = ("status",)
+    search_fields = ("student__username", "student__usn")
+

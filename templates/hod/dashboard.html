@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}HoD Dashboard — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>HoD Dashboard</h1>
+    <p class="muted">{{ total_students }} students · Overseeing departmental certificate approvals</p>
+  </div>
+  <div class="actions">
+    <a class="secondary as-link" href="{% url 'notifications_list' %}">🔔 Notifications</a>
+    <form method="post" action="{% url 'role_select' %}" style="display:inline;">
+      {% csrf_token %}
+      <input type="hidden" name="role" value="faculty">
+      <button class="primary" type="submit">Switch to Faculty Portal</button>
+    </form>
+  </div>
+</section>
+
+<!-- Stats Row -->
+<section class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="insight-card">
+    <span class="eyebrow">Total Students</span>
+    <strong style="font-size: 28px; display: block; margin-top: 4px;">{{ total_students }}</strong>
+  </div>
+  <div class="insight-card" style="border-bottom-color: #E7E625;">
+    <span class="eyebrow">Pending Requests</span>
+    <strong style="font-size: 28px; display: block; margin-top: 4px;">{{ pending_requests|length }}</strong>
+  </div>
+  <div class="insight-card success">
+    <span class="eyebrow">Approved Certificates</span>
+    <strong style="font-size: 28px; display: block; margin-top: 4px;">{{ approved_count }}</strong>
+  </div>
+  <div class="insight-card" style="border-bottom-color: #ef4444;">
+    <span class="eyebrow">Rejected Requests</span>
+    <strong style="font-size: 28px; display: block; margin-top: 4px;">{{ rejected_count }}</strong>
+  </div>
+</section>
+
+<!-- Pending Certificate Requests -->
+<section class="panel" style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div>
+      <h2>Pending Certificate Requests</h2>
+      <p class="muted">Requests verified and submitted by faculty awaiting final HoD authorization.</p>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="qbank-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>USN</th>
+          <th>Completion %</th>
+          <th>Requested By</th>
+          <th>Date</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in pending_requests %}
+          <tr>
+            <td><strong>{{ req.student.display_name }}</strong></td>
+            <td>{{ req.student.usn }}</td>
+            <td>
+              <div class="progress-cell">
+                <span class="progress-track"><span style="width: {{ req.completion_percentage|floatformat:0 }}%"></span></span>
+                <strong>{{ req.completion_percentage|floatformat:1 }}%</strong>
+              </div>
+            </td>
+            <td>{{ req.requested_by_faculty.display_name|default:"Faculty" }}</td>
+            <td>{{ req.created_at|date:"M d, Y" }}</td>
+            <td style="text-align: right;">
+              <a class="primary as-link" style="padding: 6px 14px; font-size: 13px;" href="{% url 'hod_review_request' req.id %}">Review &rarr;</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="muted" style="text-align: center; padding: 24px;">No pending certificate approval requests.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Recent Decisions -->
+<section class="panel">
+  <div style="margin-bottom: 16px;">
+    <h2>Recent Authorization Decisions</h2>
+    <p class="muted">History of certificates approved or declined by the Head of Department.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table class="qbank-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Status</th>
+          <th>Completion %</th>
+          <th>Decided By</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in recent_decisions %}
+          <tr>
+            <td><strong>{{ req.student.display_name }}</strong> <small class="muted">({{ req.student.usn }})</small></td>
+            <td>
+              {% if req.status == "approved" %}
+                <span style="color: var(--success); font-weight: 700;">✓ Approved</span>
+              {% else %}
+                <span style="color: #ef4444; font-weight: 700;">✗ Rejected</span>
+              {% endif %}
+            </td>
+            <td>{{ req.completion_percentage|floatformat:1 }}%</td>
+            <td>{{ req.approved_by_hod.display_name|default:"HoD" }}</td>
+            <td>{{ req.updated_at|date:"M d, Y H:i" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="muted" style="text-align: center; padding: 24px;">No past decisions recorded yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

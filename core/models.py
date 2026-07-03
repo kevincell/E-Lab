@@ -11,6 +11,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         STUDENT = "student", "Student"
         FACULTY = "faculty", "Faculty"
+        HOD = "hod", "HoD"
         ADMIN = "admin", "Admin"
 
     usn = models.CharField(max_length=32, blank=True, unique=True, null=True)
@@ -26,7 +27,11 @@ class User(AbstractUser):
     def is_faculty_like(self):
         if self.role == self.Role.STUDENT:
             return False
-        return self.role in {self.Role.FACULTY, self.Role.ADMIN} or self.is_staff
+        return self.role in {self.Role.FACULTY, self.Role.HOD, self.Role.ADMIN} or self.is_staff
+
+    @property
+    def is_hod(self):
+        return self.role == self.Role.HOD
 
 
 class Module(models.Model):
@@ -238,3 +243,64 @@ class Certificate(models.Model):
         now = timezone.localtime()
         term = "Odd" if now.month >= 7 else "Even"
         return f"{now.year}-{str(now.year + 1)[-2:]} {term}"
+
+
+class Notification(models.Model):
+    class Type(models.TextChoices):
+        CERT_ELIGIBLE = "cert_eligible", "Student Certificate Eligible"
+        CERT_FACULTY_REQUEST = "cert_faculty_request", "Faculty Sent Approval Request"
+        CERT_HOD_APPROVED = "cert_hod_approved", "HoD Approved Certificate"
+        CERT_HOD_REJECTED = "cert_hod_rejected", "HoD Rejected Certificate"
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
+    )
+    notification_type = models.CharField(max_length=32, choices=Type.choices)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    related_student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        null=True, blank=True, related_name="+"
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.recipient} — {self.title}"
+
+
+class CertificateRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING_FACULTY = "pending_faculty", "Awaiting Faculty Review"
+        PENDING_HOD = "pending_hod", "Awaiting HoD Approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificate_requests"
+    )
+    requested_by_faculty = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="faculty_cert_requests"
+    )
+    approved_by_hod = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="hod_cert_approvals"
+    )
+    status = models.CharField(
+        max_length=32, choices=Status.choices, default=Status.PENDING_FACULTY
+    )
+    faculty_notes = models.TextField(blank=True)
+    hod_notes = models.TextField(blank=True)
+    completion_percentage = models.FloatField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"{self.student} — {self.get_status_display()}"

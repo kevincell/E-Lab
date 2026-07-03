@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Select Role — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="role-select-container">
+  <div class="role-select-header">
+    <span class="eyebrow">Welcome, Head of Department</span>
+    <h1>Select Active Workspace Role</h1>
+    <p class="muted">Choose your portal access role for this session. You can switch roles at any time from the top navigation bar.</p>
+  </div>
+
+  <div class="role-cards-grid">
+    <!-- Card 1: HoD -->
+    <form method="post" action="{% url 'role_select' %}" class="role-card-form">
+      {% csrf_token %}
+      <input type="hidden" name="role" value="hod">
+      <button type="submit" class="role-card role-card-hod">
+        <div class="role-card-icon">👑</div>
+        <div class="role-card-content">
+          <h2>Continue as HoD</h2>
+          <p>Review & approve student certificate requests, oversee departmental performance, and monitor verification workflows.</p>
+          <span class="role-card-action">Enter HoD Portal &rarr;</span>
+        </div>
+      </button>
+    </form>
+
+    <!-- Card 2: Faculty -->
+    <form method="post" action="{% url 'role_select' %}" class="role-card-form">
+      {% csrf_token %}
+      <input type="hidden" name="role" value="faculty">
+      <button type="submit" class="role-card role-card-faculty">
+        <div class="role-card-icon">📚</div>
+        <div class="role-card-content">
+          <h2>Continue as Faculty</h2>
+          <p>Manage question banks, review and grade student code submissions, track class attendance, and verify student progress.</p>
+          <span class="role-card-action">Enter Faculty Portal &rarr;</span>
+        </div>
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

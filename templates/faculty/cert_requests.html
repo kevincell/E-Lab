@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Certificate Requests — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Certificate Approval Management</h1>
+    <p class="muted">Track student eligibility, verify lab requirements, and forward verification requests to the HoD</p>
+  </div>
+  <div class="actions">
+    <a class="secondary as-link" href="{% url 'dashboard' %}">&larr; Back to Faculty Dashboard</a>
+  </div>
+</section>
+
+<!-- Eligible Students Section -->
+<section class="panel" style="margin-bottom: 24px;">
+  <div style="margin-bottom: 16px;">
+    <h2>Certificate-Eligible Candidates</h2>
+    <p class="muted">Students who have surpassed the completion threshold (60%+) and finished all mandatory questions.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table class="qbank-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>USN</th>
+          <th>Completion %</th>
+          <th>Verification Status</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in eligible_students %}
+          <tr>
+            <td><strong>{{ item.student.display_name }}</strong></td>
+            <td>{{ item.student.usn }}</td>
+            <td>
+              <div class="progress-cell">
+                <span class="progress-track"><span style="width: {{ item.percentage|floatformat:0 }}%"></span></span>
+                <strong>{{ item.percentage|floatformat:1 }}%</strong>
+              </div>
+            </td>
+            <td>
+              {% if item.existing_request %}
+                <span class="chips" style="padding: 4px 10px; border-radius: 12px; font-weight: 600;">
+                  {{ item.existing_request.get_status_display }}
+                </span>
+              {% else %}
+                <span style="color: var(--accent-primary); font-weight: 700;">✨ Ready for review</span>
+              {% endif %}
+            </td>
+            <td style="text-align: right;">
+              {% if not item.existing_request or item.existing_request.status == "rejected" %}
+                <form method="post" action="{% url 'faculty_send_cert_request' item.student.id %}" style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                  {% csrf_token %}
+                  <input type="text" name="notes" placeholder="Optional notes..." style="padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(128,128,128,0.3); font-size: 13px; width: 160px;">
+                  <button type="submit" class="primary" style="padding: 6px 14px; font-size: 13px;">Forward to HoD &rarr;</button>
+                </form>
+              {% else %}
+                <span class="muted">&mdash;</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="muted" style="text-align: center; padding: 24px;">No new eligible students awaiting verification at this time.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Sent Requests History -->
+<section class="panel">
+  <div style="margin-bottom: 16px;">
+    <h2>Forwarded Approval Requests</h2>
+    <p class="muted">History of certificate requests submitted to the HoD from your faculty account.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table class="qbank-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Status</th>
+          <th>Completion %</th>
+          <th>HoD Reviewer</th>
+          <th>Sent Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in my_requests %}
+          <tr>
+            <td><strong>{{ req.student.display_name }}</strong> <small class="muted">({{ req.student.usn }})</small></td>
+            <td>
+              <span style="font-weight: 600;">{{ req.get_status_display }}</span>
+              {% if req.hod_notes %}
+                <br><small class="muted">Remarks: {{ req.hod_notes }}</small>
+              {% endif %}
+            </td>
+            <td>{{ req.completion_percentage|floatformat:1 }}%</td>
+            <td>{{ req.approved_by_hod.display_name|default:"Pending Review" }}</td>
+            <td>{{ req.created_at|date:"M d, Y H:i" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="muted" style="text-align: center; padding: 24px;">You have not sent any requests to the HoD yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

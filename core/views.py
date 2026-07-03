@@ -26,7 +26,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .forms import CSVQuestionUploadForm, ModuleForm, QuestionForm, QuickTestCaseForm, StudentSignUpForm, SubmissionForm, TestCaseForm
-from .models import AssignedQuestion, Certificate, LabSession, Module, ModuleQuestionAssignment, Progress, Question, Submission, TestCase, User
+from .models import AssignedQuestion, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, TestCase, User
 from .sandbox import run_c_code
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
 from .services import (
@@ -35,6 +35,9 @@ from .services import (
     current_unlocked_question,
     generate_certificate,
     get_or_create_module_assignment,
+    notify_faculty_of_eligible_student,
+    notify_hod_of_cert_request,
+    notify_student_of_cert_decision,
     overall_percentage,
     record_attendance,
     sync_assignment_completion,
@@ -47,10 +50,18 @@ from .tasks import evaluate_submission_task
 class AppLoginView(LoginView):
     template_name = "registration/login.html"
 
+    def get_success_url(self):
+        user = self.request.user
+        if user.is_authenticated and user.role == User.Role.HOD:
+            return reverse_lazy("role_select")
+        return super().get_success_url() or reverse_lazy("dashboard")
+
 
 class AppLogoutView(LogoutView):
     def dispatch(self, request, *args, **kwargs):
         close_open_attendance(request.user)
+        if "active_role" in request.session:
+            del request.session["active_role"]
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -74,6 +85,14 @@ def faculty_required(user):
 def dashboard(request):
     if request.user.role == User.Role.ADMIN:
         return redirect("admin:index")
+
+    # HoD with active role "hod" goes to HoD dashboard
+    if request.user.role == User.Role.HOD:
+        active_role = request.session.get("active_role")
+        if active_role == "hod":
+            return redirect("hod_dashboard")
+        elif active_role != "faculty":
+            return redirect("role_select")
 
     if request.user.is_faculty_like:
         modules = Module.objects.annotate(
@@ -244,9 +263,9 @@ def dashboard(request):
                 s in st_set
                 for s in [
                     Submission.Status.WRONG_ANSWER,
-                    Submission.Status.TIME_LIMIT_EXCEEDED,
+                    Submission.Status.TLE,
                     Submission.Status.RUNTIME_ERROR,
-                    Submission.Status.COMPILATION_ERROR,
+                    Submission.Status.COMPILE_ERROR,
                     Submission.Status.INTERNAL_ERROR,
                 ]
             ):
@@ -942,6 +961,226 @@ def faculty_testcase_form(request, question_id):
         messages.success(request, "Test case added.")
         return redirect("faculty_question_edit", question.pk)
     return render(request, "faculty/form.html", {"form": form, "title": "Test case"})
+
+
+# =========================================================
+#   Role Selection (HoD dual-login)
+# =========================================================
+@login_required
+def role_select(request):
+    if request.user.role != User.Role.HOD:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        chosen = request.POST.get("role", "faculty")
+        if chosen in ("hod", "faculty"):
+            request.session["active_role"] = chosen
+        if chosen == "hod":
+            return redirect("hod_dashboard")
+        return redirect("dashboard")
+
+    return render(request, "registration/role_select.html")
+
+
+# =========================================================
+#   HoD Dashboard
+# =========================================================
+@login_required
+def hod_dashboard(request):
+    if request.user.role != User.Role.HOD or request.session.get("active_role") != "hod":
+        return redirect("dashboard")
+
+    pending_requests = CertificateRequest.objects.filter(
+        status=CertificateRequest.Status.PENDING_HOD
+    ).select_related("student", "requested_by_faculty").order_by("-updated_at")
+
+    approved_count = CertificateRequest.objects.filter(status=CertificateRequest.Status.APPROVED).count()
+    rejected_count = CertificateRequest.objects.filter(status=CertificateRequest.Status.REJECTED).count()
+    total_students = User.objects.filter(role=User.Role.STUDENT).count()
+
+    recent_decisions = CertificateRequest.objects.filter(
+        status__in=[CertificateRequest.Status.APPROVED, CertificateRequest.Status.REJECTED]
+    ).select_related("student", "requested_by_faculty", "approved_by_hod").order_by("-updated_at")[:10]
+
+    return render(request, "hod/dashboard.html", {
+        "pending_requests": pending_requests,
+        "approved_count": approved_count,
+        "rejected_count": rejected_count,
+        "total_students": total_students,
+        "recent_decisions": recent_decisions,
+    })
+
+
+# =========================================================
+#   HoD Review Certificate Request
+# =========================================================
+@login_required
+def hod_review_request(request, request_id):
+    if request.user.role != User.Role.HOD or request.session.get("active_role") != "hod":
+        return redirect("dashboard")
+
+    cert_req = get_object_or_404(
+        CertificateRequest.objects.select_related("student", "requested_by_faculty"),
+        pk=request_id,
+    )
+    student = cert_req.student
+
+    # Get full student activity
+    modules = Module.objects.filter(is_active=True).prefetch_related("questions")
+    module_progress = []
+    for module in modules:
+        total_q = module.questions.filter(is_active=True).count()
+        solved = module.questions.filter(
+            is_active=True,
+            submissions__student=student,
+            submissions__status=Submission.Status.ACCEPTED,
+        ).distinct().count()
+        pct = (solved / total_q * 100) if total_q else 0
+        module_progress.append({
+            "module": module,
+            "total": total_q,
+            "solved": solved,
+            "percentage": pct,
+        })
+
+    recent_submissions = Submission.objects.filter(
+        student=student
+    ).select_related("question", "question__module").order_by("-submitted_at")[:30]
+
+    pct = overall_percentage(student)
+
+    return render(request, "hod/review_request.html", {
+        "cert_req": cert_req,
+        "student": student,
+        "module_progress": module_progress,
+        "recent_submissions": recent_submissions,
+        "overall_pct": pct,
+    })
+
+
+# =========================================================
+#   HoD Approve / Reject Certificate
+# =========================================================
+@login_required
+@require_POST
+def hod_approve_certificate(request, request_id):
+    if request.user.role != User.Role.HOD or request.session.get("active_role") != "hod":
+        raise PermissionDenied
+
+    cert_req = get_object_or_404(CertificateRequest, pk=request_id, status=CertificateRequest.Status.PENDING_HOD)
+    action = request.POST.get("action")
+    notes = request.POST.get("notes", "").strip()
+
+    if action == "approve":
+        cert_req.status = CertificateRequest.Status.APPROVED
+        cert_req.approved_by_hod = request.user
+        cert_req.hod_notes = notes
+        cert_req.save()
+        # Auto-generate the certificate
+        cert = generate_certificate(cert_req.student)
+        notify_student_of_cert_decision(cert_req)
+        messages.success(request, f"Certificate approved for {cert_req.student.display_name}.")
+    elif action == "reject":
+        cert_req.status = CertificateRequest.Status.REJECTED
+        cert_req.approved_by_hod = request.user
+        cert_req.hod_notes = notes
+        cert_req.save()
+        notify_student_of_cert_decision(cert_req)
+        messages.info(request, f"Certificate request rejected for {cert_req.student.display_name}.")
+
+    return redirect("hod_dashboard")
+
+
+# =========================================================
+#   Faculty Certificate Requests Page
+# =========================================================
+@login_required
+def faculty_cert_requests(request):
+    faculty_required(request.user)
+
+    # Find eligible students
+    all_students = User.objects.filter(role=User.Role.STUDENT)
+    eligible_students = []
+    for student in all_students:
+        is_eligible, pct = certificate_eligible(student)
+        if is_eligible:
+            existing_req = CertificateRequest.objects.filter(student=student).order_by("-updated_at").first()
+            eligible_students.append({
+                "student": student,
+                "percentage": pct,
+                "existing_request": existing_req,
+            })
+
+    # Requests that this faculty has sent
+    my_requests = CertificateRequest.objects.filter(
+        requested_by_faculty=request.user
+    ).select_related("student", "approved_by_hod").order_by("-updated_at")[:20]
+
+    return render(request, "faculty/cert_requests.html", {
+        "eligible_students": eligible_students,
+        "my_requests": my_requests,
+    })
+
+
+# =========================================================
+#   Faculty Send Certificate Request to HoD
+# =========================================================
+@login_required
+@require_POST
+def faculty_send_cert_request(request, student_id):
+    faculty_required(request.user)
+
+    student = get_object_or_404(User, pk=student_id, role=User.Role.STUDENT)
+    is_eligible, pct = certificate_eligible(student)
+    if not is_eligible:
+        messages.error(request, f"{student.display_name} is not yet eligible for a certificate.")
+        return redirect("faculty_cert_requests")
+
+    # Check for existing pending request
+    existing = CertificateRequest.objects.filter(
+        student=student,
+        status__in=[CertificateRequest.Status.PENDING_HOD, CertificateRequest.Status.APPROVED],
+    ).first()
+    if existing:
+        messages.warning(request, f"A request for {student.display_name} already exists ({existing.get_status_display()}).")
+        return redirect("faculty_cert_requests")
+
+    notes = request.POST.get("notes", "").strip()
+    cert_req = CertificateRequest.objects.create(
+        student=student,
+        requested_by_faculty=request.user,
+        status=CertificateRequest.Status.PENDING_HOD,
+        faculty_notes=notes,
+        completion_percentage=pct,
+    )
+    notify_hod_of_cert_request(cert_req)
+    messages.success(request, f"Approval request sent to HoD for {student.display_name}.")
+    return redirect("faculty_cert_requests")
+
+
+# =========================================================
+#   Notifications
+# =========================================================
+@login_required
+def notifications_list(request):
+    notifications = Notification.objects.filter(recipient=request.user).order_by("-created_at")[:50]
+    return render(request, "notifications/list.html", {"notifications": notifications})
+
+
+@login_required
+@require_POST
+def notification_mark_read(request, notification_id):
+    notif = get_object_or_404(Notification, pk=notification_id, recipient=request.user)
+    notif.is_read = True
+    notif.save(update_fields=["is_read"])
+    return redirect("notifications_list")
+
+
+@login_required
+@require_POST
+def notifications_mark_all_read(request):
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    return redirect("notifications_list")
 
 
 class SubmissionViewSet(viewsets.ModelViewSet):

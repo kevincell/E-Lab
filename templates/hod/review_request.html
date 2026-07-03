@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Review Certificate Request — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Certificate Authorization Review</h1>
+    <p class="muted">Reviewing candidate progress and faculty verification report for {{ student.display_name }}</p>
+  </div>
+  <div class="actions">
+    <a class="back-button as-link" href="{% url 'hod_dashboard' %}">&larr; Back to HoD Dashboard</a>
+  </div>
+</section>
+
+<!-- Main Grid -->
+<section class="grid two" style="gap: 24px; margin-bottom: 24px;">
+  <!-- Left Column -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <!-- Student Info -->
+    <div class="panel">
+      <h2>Student Information</h2>
+      <div class="stats" style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <dt class="eyebrow">Name</dt>
+          <dd style="font-size: 16px;">{{ student.display_name }}</dd>
+        </div>
+        <div>
+          <dt class="eyebrow">USN</dt>
+          <dd style="font-size: 16px;">{{ student.usn }}</dd>
+        </div>
+        <div>
+          <dt class="eyebrow">Department</dt>
+          <dd style="font-size: 16px;">{{ student.department|default:"CCE" }}</dd>
+        </div>
+        <div>
+          <dt class="eyebrow">Semester</dt>
+          <dd style="font-size: 16px;">Sem {{ student.semester }}</dd>
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <dt class="eyebrow">Email</dt>
+          <dd style="font-size: 14px;">{{ student.email }}</dd>
+        </div>
+      </div>
+    </div>
+
+    <!-- Request Details -->
+    <div class="panel">
+      <h2>Verification Report</h2>
+      <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <span class="eyebrow">Verified & Requested By</span>
+          <p style="font-size: 15px; font-weight: 600; margin-top: 2px;">{{ cert_req.requested_by_faculty.display_name|default:"Faculty Member" }}</p>
+        </div>
+        <div>
+          <span class="eyebrow">Submission Date</span>
+          <p style="font-size: 14px; margin-top: 2px;">{{ cert_req.created_at|date:"F d, Y H:i" }}</p>
+        </div>
+        <div>
+          <span class="eyebrow">Overall Completion Status</span>
+          <div class="progress-cell" style="margin-top: 6px;">
+            <span class="progress-track"><span style="width: {{ overall_pct|floatformat:0 }}%"></span></span>
+            <strong>{{ overall_pct|floatformat:1 }}%</strong>
+          </div>
+        </div>
+        <div>
+          <span class="eyebrow">Faculty Notes</span>
+          <div style="background: rgba(0,0,0,0.05); padding: 12px; border-radius: 6px; margin-top: 4px; font-size: 14px;">
+            {{ cert_req.faculty_notes|default:"No notes attached by verifying faculty." }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <!-- Module Progress -->
+    <div class="panel">
+      <h2>Module-by-Module Breakdown</h2>
+      <div class="table-wrap" style="margin-top: 16px;">
+        <table class="qbank-table">
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>Solved</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mp in module_progress %}
+              <tr>
+                <td><strong>{{ mp.module.name }}</strong></td>
+                <td>{{ mp.solved }} / {{ mp.total }}</td>
+                <td>
+                  <div class="progress-cell">
+                    <span class="progress-track"><span style="width: {{ mp.percentage|floatformat:0 }}%"></span></span>
+                    <strong>{{ mp.percentage|floatformat:0 }}%</strong>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Submissions -->
+    <div class="panel">
+      <h2>Recent Student Submissions</h2>
+      <div class="list" style="max-height: 340px; overflow-y: auto; margin-top: 16px;">
+        {% for sub in recent_submissions %}
+          <div class="row-card" style="padding: 10px 14px;">
+            <span>
+              <strong>{{ sub.question.title }}</strong>
+              <small class="muted">{{ sub.question.module.name }} &middot; {{ sub.submitted_at|timesince }} ago</small>
+            </span>
+            <span style="font-size: 13px; font-weight: 600; color: {% if sub.status == 'accepted' %}var(--success){% else %}#ef4444{% endif %};">
+              {{ sub.get_status_display }}
+            </span>
+          </div>
+        {% empty %}
+          <p class="muted">No submission activity recorded.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Bottom Authorization Section -->
+{% if cert_req.status == "pending_hod" %}
+  <section class="panel" style="border: 2px solid var(--accent-primary);">
+    <h2>Final Authorization Decision</h2>
+    <p class="muted">As the Head of Department, your approval will instantly issue a verifiable digital certificate to the student.</p>
+
+    <form method="post" action="{% url 'hod_approve_certificate' cert_req.id %}" style="margin-top: 16px;">
+      {% csrf_token %}
+      <label style="display: block; margin-bottom: 16px;">
+        <span class="eyebrow" style="display: block; margin-bottom: 6px;">Decision Notes / Remarks (Optional)</span>
+        <textarea name="notes" rows="3" placeholder="Enter remarks (if rejecting, state reasons for student/faculty reference)..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); font-family: inherit;"></textarea>
+      </label>
+
+      <div style="display: flex; gap: 16px; justify-content: flex-end;">
+        <button type="submit" name="action" value="reject" class="secondary" style="background: #ef4444; color: white; border: none; padding: 10px 24px; font-weight: 700; border-radius: 6px; cursor: pointer;">
+          ✗ Decline Request
+        </button>
+        <button type="submit" name="action" value="approve" class="primary" style="padding: 10px 28px; font-weight: 700; border-radius: 6px; cursor: pointer;">
+          ✓ Authorize & Issue Certificate
+        </button>
+      </div>
+    </form>
+  </section>
+{% else %}
+  <section class="panel">
+    <h2>Authorization Status</h2>
+    <p>This request has already been processed: <strong>{{ cert_req.get_status_display }}</strong> on {{ cert_req.updated_at|date:"F d, Y H:i" }}.</p>
+    {% if cert_req.hod_notes %}
+      <p style="margin-top: 8px;" class="muted">Remarks: {{ cert_req.hod_notes }}</p>
+    {% endif %}
+  </section>
+{% endif %}
+{% endblock %}

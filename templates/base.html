@@ -6,15 +6,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}?v=2.0">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
 </head>
 <body class="{% block body_class %}{% endblock %}">
   <header class="topbar">
     <a class="brand" href="{% url 'dashboard' %}" style="display: flex; align-items: center; gap: 14px; text-decoration: none;">
-      <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE NMAMIT Logo" style="height: 38px; width: auto; object-fit: contain; filter: brightness(0) invert(1);">
-      <span style="font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.01em; line-height: 1.2; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 14px;">Dept. of Computer and Communication Engineering</span>
+      <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE NMAMIT Logo" class="brand-logo" style="height: 38px; width: auto; object-fit: contain;">
+      <span class="header-dept-text">Dept. of Computer and Communication Engineering</span>
     </a>
     <nav class="nav">
+      <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" type="button">
+        🌙 Dark Mode
+      </button>
       {% if user.is_authenticated %}
+        {% if user.is_hod %}
+          <a href="{% url 'role_select' %}" class="nav-role-badge" title="Switch Role">👑 Switch Role</a>
+        {% elif user.is_faculty_like %}
+          <a href="{% url 'faculty_cert_requests' %}" title="Certificate Requests">🎓 Cert Requests</a>
+        {% endif %}
+        <a href="{% url 'notifications_list' %}" class="nav-notif-link" title="Notifications">
+          🔔
+          {% if unread_notification_count and unread_notification_count > 0 %}
+            <span class="notif-badge">{{ unread_notification_count }}</span>
+          {% endif %}
+        </a>
         <a href="{% url 'leaderboard' %}">Leaderboard</a>
         <span>{{ user.display_name }}</span>
         <form action="{% url 'logout' %}" method="post">
@@ -38,5 +58,34 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleBtn = document.getElementById('theme-toggle');
+      if (!toggleBtn) return;
+      
+      function updateToggleText() {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        if (current === 'light') {
+          toggleBtn.innerHTML = '🌙 Dark Mode';
+        } else {
+          toggleBtn.innerHTML = '☀️ Light Mode';
+        }
+      }
+      
+      updateToggleText();
+      
+      toggleBtn.addEventListener('click', function() {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        const next = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        updateToggleText();
+        
+        if (typeof monaco !== 'undefined' && monaco.editor) {
+          monaco.editor.setTheme(next === 'light' ? 'vs' : 'vs-dark');
+        }
+      });
+    });
+  </script>
 </body>
 </html>

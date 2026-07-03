@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Notifications — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Notifications Center</h1>
+    <p class="muted">Alerts on student progress milestones and certificate verification workflows</p>
+  </div>
+  <div class="actions">
+    <form method="post" action="{% url 'notifications_mark_all_read' %}">
+      {% csrf_token %}
+      <button type="submit" class="secondary">Mark all read ✓</button>
+    </form>
+    <a class="secondary as-link" href="{% url 'dashboard' %}">&larr; Back to Dashboard</a>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="list">
+    {% for notif in notifications %}
+      <div class="row-card {% if not notif.is_read %}notif-unread{% endif %}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; border-left: {% if not notif.is_read %}4px solid var(--accent-primary){% else %}none{% endif %};">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+            <strong style="font-size: 16px;">{{ notif.title }}</strong>
+            {% if not notif.is_read %}
+              <span class="chips" style="background: var(--accent-primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">NEW</span>
+            {% endif %}
+          </div>
+          <p style="margin: 4px 0; font-size: 14px; line-height: 1.4;">{{ notif.message }}</p>
+          <span class="muted" style="font-size: 12px;">{{ notif.created_at|timesince }} ago</span>
+        </div>
+
+        <div>
+          {% if not notif.is_read %}
+            <form method="post" action="{% url 'notification_mark_read' notif.id %}">
+              {% csrf_token %}
+              <button type="submit" class="secondary" style="padding: 4px 10px; font-size: 12px;">Mark read</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div style="text-align: center; padding: 48px; color: var(--muted);">
+        <p style="font-size: 32px; margin-bottom: 8px;">🔕</p>
+        <p>No notifications at this time.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
