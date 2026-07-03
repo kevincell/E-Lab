@@ -21,16 +21,16 @@
     </a>
     <nav class="nav">
       <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" type="button">
-        🌙 Dark Mode
+        Dark Mode
       </button>
       {% if user.is_authenticated %}
         {% if user.is_hod %}
-          <a href="{% url 'role_select' %}" class="nav-role-badge" title="Switch Role">👑 Switch Role</a>
+          <a href="{% url 'role_select' %}" class="nav-role-badge" title="Switch Role">Switch Role</a>
         {% elif user.is_faculty_like %}
-          <a href="{% url 'faculty_cert_requests' %}" title="Certificate Requests">🎓 Cert Requests</a>
+          <a href="{% url 'faculty_cert_requests' %}" title="Certificate Requests">Cert Requests</a>
         {% endif %}
         <a href="{% url 'notifications_list' %}" class="nav-notif-link" title="Notifications">
-          🔔
+          Alerts
           {% if unread_notification_count and unread_notification_count > 0 %}
             <span class="notif-badge">{{ unread_notification_count }}</span>
           {% endif %}
@@ -66,9 +66,9 @@
       function updateToggleText() {
         const current = document.documentElement.getAttribute('data-theme') || 'light';
         if (current === 'light') {
-          toggleBtn.innerHTML = '🌙 Dark Mode';
+          toggleBtn.innerHTML = 'Dark Mode';
         } else {
-          toggleBtn.innerHTML = '☀️ Light Mode';
+          toggleBtn.innerHTML = 'Light Mode';
         }
       }
       

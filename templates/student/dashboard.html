@@ -23,7 +23,7 @@
       {% if certificate_eligible %}
         <a href="{% url 'certificate_create' %}" class="primary">Get Certificate</a>
       {% else %}
-        <span class="locked-badge">🔒 Certificate locked</span>
+        <span class="locked-badge">Certificate locked</span>
       {% endif %}
     </div>
   </div>
@@ -184,7 +184,6 @@
   <div class="dashboard-lists">
     <div class="panel certificate-card">
       <p class="eyebrow">Certificates</p>
-      <strong>📜</strong>
       <h3>Certificate Earned</h3>
       <p class="muted">{{ certificates.0.semester }} · {{ certificates.0.completion_percentage|floatformat:1 }}%</p>
       <a href="{% url 'certificate_detail' certificates.0.id %}" class="secondary">View Certificate</a>

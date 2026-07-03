@@ -168,6 +168,7 @@ docker compose exec app python manage.py createsuperuser
 ```
 
 ### 9. Access the Application
+
 Now you're ready to go!
 
 | URL | Description |

@@ -8,7 +8,7 @@
     <p class="muted">{{ total_students }} students · Overseeing departmental certificate approvals</p>
   </div>
   <div class="actions">
-    <a class="secondary as-link" href="{% url 'notifications_list' %}">🔔 Notifications</a>
+    <a class="secondary as-link" href="{% url 'notifications_list' %}">Notifications</a>
     <form method="post" action="{% url 'role_select' %}" style="display:inline;">
       {% csrf_token %}
       <input type="hidden" name="role" value="faculty">

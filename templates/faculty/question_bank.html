@@ -10,7 +10,7 @@
     <div class="actions">
       <a class="primary as-link" href="{% url 'faculty_question_new' %}">+ New Question</a>
       <a class="secondary as-link" href="{% url 'faculty_question_upload' %}">Upload CSV Bank</a>
-      <a class="secondary as-link" href="{% url 'dashboard' %}">← Dashboard</a>
+      <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
     </div>
   </div>
 
@@ -30,24 +30,24 @@
   {% if selected_module %}
     <!-- Summary Stats Grid -->
     <div class="qbank-stats-grid">
-      <div class="stat-card">
+      <div class="stat-card" style="cursor: pointer;" onclick="scrollToSection('all')" title="View all questions">
         <span class="stat-value">{{ stats.total }}</span>
         <span class="stat-label">Total Questions</span>
       </div>
-      <div class="stat-card border-easy">
+      <div class="stat-card border-easy" style="cursor: pointer;" onclick="scrollToSection('easy')" title="Scroll to Easy questions">
         <span class="stat-value text-easy">{{ stats.easy }}</span>
         <span class="stat-label">Easy Level</span>
       </div>
-      <div class="stat-card border-medium">
+      <div class="stat-card border-medium" style="cursor: pointer;" onclick="scrollToSection('medium')" title="Scroll to Medium questions">
         <span class="stat-value text-medium">{{ stats.medium }}</span>
         <span class="stat-label">Medium Level</span>
       </div>
-      <div class="stat-card border-hard">
+      <div class="stat-card border-hard" style="cursor: pointer;" onclick="scrollToSection('hard')" title="Scroll to Hard questions">
         <span class="stat-value text-hard">{{ stats.hard }}</span>
         <span class="stat-label">Hard Level</span>
       </div>
-      <div class="stat-card border-mandatory">
-        <span class="stat-value text-mandatory">★ {{ stats.mandatory }}</span>
+      <div class="stat-card border-mandatory" style="cursor: pointer;" onclick="scrollToSection('mandatory')" title="Filter Lab Manual questions">
+        <span class="stat-value text-mandatory">{{ stats.mandatory }}</span>
         <span class="stat-label">Lab Manual (Mandatory)</span>
       </div>
     </div>
@@ -62,7 +62,7 @@
         <button class="filter-pill" onclick="setFilter('easy', this)">Easy</button>
         <button class="filter-pill" onclick="setFilter('medium', this)">Medium</button>
         <button class="filter-pill" onclick="setFilter('hard', this)">Hard</button>
-        <button class="filter-pill pill-mandatory" onclick="setFilter('mandatory', this)">★ Lab Manual Only</button>
+        <button class="filter-pill pill-mandatory" onclick="setFilter('mandatory', this)">Lab Manual Only</button>
       </div>
     </div>
 
@@ -72,7 +72,7 @@
     </div>
 
     {% for diff_label, qs in questions_by_difficulty.items %}
-      <div class="qbank-difficulty-section" data-diff-group="{{ diff_label|lower }}">
+      <div class="qbank-difficulty-section" id="diff-section-{{ diff_label|lower }}" data-diff-group="{{ diff_label|lower }}">
         <div class="qbank-diff-header">
           <span class="qbank-diff-badge
             {% if diff_label == 'Easy' %}badge-easy
@@ -121,7 +121,7 @@
                     </td>
                     <td class="col-mandatory">
                       {% if q.is_mandatory %}
-                        <span class="mandatory-badge">★ Lab Manual</span>
+                        <span class="mandatory-badge">Lab Manual</span>
                       {% endif %}
                       {% if not q.is_active %}
                         <span class="status-inactive">Inactive</span>
@@ -139,15 +139,42 @@
             </table>
           </div>
         {% else %}
-          <p class="muted" style="padding: 16px 0;">No {{ diff_label|lower }} questions in this module.</p>
+          <p class="muted">No questions in this difficulty level yet.</p>
         {% endif %}
       </div>
     {% endfor %}
+  {% else %}
+    <div class="panel text-center" style="padding: 60px;">
+      <h3 style="margin-bottom: 12px;">Select a Module</h3>
+      <p class="muted">Choose a module from the tabs above to view and manage its question bank.</p>
+    </div>
   {% endif %}
 </section>
 
 <script>
 let currentFilter = 'all';
+
+function scrollToSection(targetType) {
+  if (targetType === 'mandatory') {
+    const manBtn = document.querySelector(".filter-pills button[onclick*='mandatory']");
+    if (manBtn) setFilter('mandatory', manBtn);
+    return;
+  }
+  if (targetType === 'all') {
+    const allBtn = document.querySelector(".filter-pills button[onclick*='all']");
+    if (allBtn) setFilter('all', allBtn);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  const allBtn = document.querySelector(".filter-pills button[onclick*='all']");
+  if (allBtn) setFilter('all', allBtn);
+  setTimeout(() => {
+    const targetElem = document.getElementById('diff-section-' + targetType) || document.querySelector('[data-diff-group="' + targetType + '"]');
+    if (targetElem) {
+      targetElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 50);
+}
 
 function setFilter(filterType, btnElem) {
   currentFilter = filterType;
