@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block content %}
+<div class="dashboard-full">
+
+  <!-- Faculty Navigation -->
+  <div class="faculty-student-nav">
+    <a class="secondary as-link" href="{% url 'dashboard' %}">&larr; Back to Faculty Dashboard</a>
+    <span class="faculty-viewing-badge">Viewing Student Profile</span>
+  </div>
+
+  <!-- Hero Bar -->
+  <div class="course-hero">
+    <div>
+      <p class="eyebrow">Student Profile</p>
+      <h1>{{ viewed_student.display_name }}</h1>
+      <p class="muted">{{ viewed_student.usn|default:viewed_student.username }} · {{ questions_total }} questions across {{ modules|length }} modules</p>
+    </div>
+    <div class="hero-score" style="--score: {{ overall_percentage|floatformat:0 }}">
+      <div>
+        <span>{{ overall_percentage|floatformat:0 }}%</span>
+        <small>Complete</small>
+      </div>
+    </div>
+    <div>
+      {% if certificate_eligible %}
+        <span class="locked-badge" style="background: var(--success); color: #fff;">Certificate Eligible</span>
+      {% else %}
+        <span class="locked-badge">Certificate Locked</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Profile Header -->
+  <div class="panel" style="display: flex; gap: 32px; align-items: center; margin-bottom: 32px;">
+    <!-- Avatar -->
+    <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--color2)); color: white; display: grid; place-items: center; font-size: 48px; font-weight: 700; flex-shrink: 0; box-shadow: 0 8px 24px rgba(46, 48, 147, 0.2);">
+      {{ viewed_student.display_name|make_list|first|upper }}
+    </div>
+    
+    <!-- Info -->
+    <div style="flex-grow: 1;">
+      <h2 style="margin: 0 0 8px 0; font-size: 32px; color: var(--text-primary);">{{ viewed_student.display_name }}</h2>
+      <p style="margin: 0 0 16px 0; color: var(--text-muted); font-size: 16px;">
+        {{ viewed_student.usn|default:viewed_student.username }} | {{ viewed_student.email|default:"No Email Provided" }}
+      </p>
+      
+      <div style="display: flex; gap: 24px;">
+        <div>
+          <small class="muted" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Department</small>
+          <strong style="font-size: 15px; color: var(--text-primary);">{{ viewed_student.department|default:"CCE" }}</strong>
+        </div>
+        <div>
+          <small class="muted" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Semester</small>
+          <strong style="font-size: 15px; color: var(--text-primary);">{{ viewed_student.semester|default:"1" }}</strong>
+        </div>
+        {% if user_rank %}
+        <div>
+          <small class="muted" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Rank</small>
+          <strong style="font-size: 15px; color: var(--accent-primary);">#{{ user_rank }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Insight Cards -->
+  <div class="insight-strip">
+    <div class="insight-card">
+      <p class="eyebrow">Questions</p>
+      <span>{{ questions_total }}</span>
+      <small class="muted">Total</small>
+    </div>
+    <div class="insight-card success">
+      <p class="eyebrow">Solved</p>
+      <span>{{ completed_total }}</span>
+      <small class="muted">Accepted</small>
+    </div>
+    <div class="insight-card">
+      <p class="eyebrow">Completion</p>
+      <span>{{ overall_percentage|floatformat:1 }}%</span>
+      <small class="muted">Overall</small>
+    </div>
+    <div class="insight-card">
+      <p class="eyebrow">Flags</p>
+      <span>{{ live_flags_count|default:"0" }}</span>
+      <small class="muted">Plagiarism</small>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  {% if recent_activity %}
+  <div class="dashboard-lists">
+    <div class="panel">
+      <p class="eyebrow">Recent Activity</p>
+      <div class="list">
+        {% for sub in recent_activity %}
+          <a class="row-card" href="{% url 'submission_detail' sub.id %}">
+            <span>
+              <strong>{{ sub.question.title }}</strong>
+              <small class="muted">{{ sub.question.module.name }} · {{ sub.submitted_at|date:"M d, H:i" }}</small>
+            </span>
+            <span class="status-pill {% if sub.status == 'accepted' %}status-accepted{% elif sub.status == 'pending' %}status-pending{% elif sub.status == 'running' %}status-running{% else %}status-wrong_answer{% endif %}">
+              {{ sub.status|upper }}
+            </span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Module Answers -->
+  <div class="dashboard-lists" style="margin-top: 32px;">
+    <div class="panel">
+      <p class="eyebrow">Module Answers (Categorized by Difficulty)</p>
+      
+      {% for card in module_cards %}
+        <details style="margin-bottom: 12px;">
+          <summary style="font-weight: 600; cursor: pointer; padding: 16px; background: var(--surface-soft); border-radius: var(--radius-md); border: 1px solid rgba(46, 48, 147, 0.1);">
+            {{ card.module.name }} ({{ card.percentage|floatformat:0 }}% Complete)
+          </summary>
+          <div style="padding: 20px 16px; background: var(--surface); border: 1px solid rgba(46, 48, 147, 0.1); border-top: none; border-radius: 0 0 var(--radius-md) var(--radius-md); margin-top: -4px; display: flex; flex-direction: column; gap: 12px;">
+            
+            {% if card.easy_questions %}
+              <details>
+                <summary style="font-weight: 600; cursor: pointer; padding: 12px 16px; background: var(--bg-primary); border-left: 4px solid var(--success); border-radius: var(--radius-sm); border-top: 1px solid rgba(46, 48, 147, 0.1); border-right: 1px solid rgba(46, 48, 147, 0.1); border-bottom: 1px solid rgba(46, 48, 147, 0.1); font-size: 14px;">
+                  Easy ({{ card.easy_questions|length }})
+                </summary>
+                <div style="padding: 16px; background: var(--surface); border: 1px solid rgba(46, 48, 147, 0.1); border-top: none;">
+                  {% for q_data in card.easy_questions %}
+                    {% include "faculty/partials/question_submission_item.html" %}
+                  {% endfor %}
+                </div>
+              </details>
+            {% endif %}
+
+            {% if card.medium_questions %}
+              <details>
+                <summary style="font-weight: 600; cursor: pointer; padding: 12px 16px; background: var(--bg-primary); border-left: 4px solid var(--accent-warm); border-radius: var(--radius-sm); border-top: 1px solid rgba(46, 48, 147, 0.1); border-right: 1px solid rgba(46, 48, 147, 0.1); border-bottom: 1px solid rgba(46, 48, 147, 0.1); font-size: 14px;">
+                  Medium ({{ card.medium_questions|length }})
+                </summary>
+                <div style="padding: 16px; background: var(--surface); border: 1px solid rgba(46, 48, 147, 0.1); border-top: none;">
+                  {% for q_data in card.medium_questions %}
+                    {% include "faculty/partials/question_submission_item.html" %}
+                  {% endfor %}
+                </div>
+              </details>
+            {% endif %}
+
+            {% if card.hard_questions %}
+              <details>
+                <summary style="font-weight: 600; cursor: pointer; padding: 12px 16px; background: var(--bg-primary); border-left: 4px solid var(--danger); border-radius: var(--radius-sm); border-top: 1px solid rgba(46, 48, 147, 0.1); border-right: 1px solid rgba(46, 48, 147, 0.1); border-bottom: 1px solid rgba(46, 48, 147, 0.1); font-size: 14px;">
+                  Hard ({{ card.hard_questions|length }})
+                </summary>
+                <div style="padding: 16px; background: var(--surface); border: 1px solid rgba(46, 48, 147, 0.1); border-top: none;">
+                  {% for q_data in card.hard_questions %}
+                    {% include "faculty/partials/question_submission_item.html" %}
+                  {% endfor %}
+                </div>
+              </details>
+            {% endif %}
+            
+            {% if not card.easy_questions and not card.medium_questions and not card.hard_questions %}
+              <p class="muted" style="font-size: 14px; margin: 0;">No questions in this module.</p>
+            {% endif %}
+
+          </div>
+        </details>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Certificates -->
+  {% if certificates %}
+  <div class="dashboard-lists">
+    <div class="panel certificate-card">
+      <p class="eyebrow">Certificates</p>
+      <h3>Certificate Earned</h3>
+      <p class="muted">{{ certificates.0.semester }} · {{ certificates.0.completion_percentage|floatformat:1 }}%</p>
+      <a href="{% url 'certificate_detail' certificates.0.id %}" class="secondary">View Certificate</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+(function() {
+  const labels = document.querySelectorAll('.wheel-module-label');
+  if (labels.length === 0) return;
+  const angleStep = 360 / labels.length;
+  labels.forEach(function(label, i) {
+    var angle = -90 + i * angleStep;
+    label.style.setProperty('--wedge-angle', angle + 'deg');
+    label.style.setProperty('--wedge-radius', '190px');
+  });
+
+  var donut = document.querySelector('.wheel-donut');
+  if (!donut) return;
+  var segments = donut.querySelectorAll('.wheel-donut-segment');
+  var segCount = segments.length;
+  if (segCount === 0) return;
+  var segStep = 360 / segCount;
+  segments.forEach(function(seg, i) {
+    seg.style.setProperty('--seg-angle', (i * segStep) + 'deg');
+  });
+})();
+</script>
+{% endblock %}

@@ -2,7 +2,7 @@
 {% block content %}
 <section class="toolbar">
   <div>
-    <h1>Upload Question CSV</h1>
+    <h1>Upload Questions</h1>
     <p class="muted">Import module question maps and generate editable question scaffolds.</p>
   </div>
   <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
@@ -11,13 +11,13 @@
 <section class="grid two">
   <article class="panel form-panel">
     <div class="section-heading">
-      <h2>CSV Import</h2>
-      <p class="muted">Files named like Module1_Basics_IO.csv become modules automatically.</p>
+      <h2>File Import</h2>
+      <p class="muted">Upload CSV, TXT, or PDF files. CSV files use column headers; structured TXT/PDF files use === QUESTION === blocks.</p>
     </div>
     <form method="post" enctype="multipart/form-data" class="form-grid">
       {% csrf_token %}
       {{ form.as_p }}
-      <button class="primary" type="submit">Import CSV Files</button>
+      <button class="primary" type="submit">Import Question Files</button>
     </form>
   </article>
 

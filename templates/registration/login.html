@@ -1,20 +1,51 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Login - Dept. of Computer and Communication{% endblock %}
+
+{% block body_class %}login-page{% endblock %}
+
 {% block content %}
-<div style="display:grid;place-items:center;min-height:60vh;padding:20px 0;">
-  <section class="auth-panel" style="max-width: 440px;">
-    <div style="text-align:center;margin-bottom:24px;display:flex;flex-direction:column;align-items:center;gap:12px;">
-      <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE Logo" class="brand-logo" style="height: 54px; width: auto; object-fit: contain;">
-      <span class="auth-brand-text">Dept. of Computer and Communication</span>
-      <p class="muted" style="margin:0;font-size:14px;">CCE e-Lab Portal · Sign in to continue</p>
+<div class="login-cinematic">
+  <!-- Video Background Layer -->
+  <div class="login-video-container">
+    <video class="login-bg-video active" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg1.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg2.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg3.mp4' %}" type="video/mp4">
+    </video>
+    <div class="login-video-overlay"></div>
+  </div>
+
+  <!-- Glassmorphic Login Card -->
+  <div class="login-glass-card">
+    <div class="login-brand">
+      <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE Logo" class="login-logo">
+      <span class="login-dept-name">Dept. of Computer and Communication Engineering</span>
+      <p class="login-subtitle">CCE e-Lab Portal · Sign in to continue</p>
     </div>
-    <form method="post" class="form-grid">
+    <form method="post" class="login-form">
       {% csrf_token %}
       {{ form.as_p }}
-      <button class="primary" type="submit">Sign In</button>
+      <button class="primary login-btn" type="submit">Sign In</button>
     </form>
-    <p class="muted" style="text-align:center;margin-top:16px;">New student? <a href="{% url 'signup' %}">Create an account</a></p>
-  </section>
+    <p class="login-signup-link">New student? <a href="{% url 'signup' %}">Create an account</a></p>
+  </div>
 </div>
+
+<script>
+(function() {
+  var videos = document.querySelectorAll('.login-bg-video');
+  if (videos.length <= 1) return;
+  var current = 0;
+  setInterval(function() {
+    videos[current].classList.remove('active');
+    current = (current + 1) % videos.length;
+    videos[current].classList.add('active');
+  }, 8000);
+})();
+</script>
 {% endblock %}

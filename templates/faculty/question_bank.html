@@ -14,17 +14,16 @@
     </div>
   </div>
 
-  <!-- Module selector tabs -->
-  <div class="qbank-module-tabs">
-    {% for mod in modules %}
-      <a
-        class="qbank-tab {% if selected_module.id == mod.id %}active{% endif %}"
-        href="{% url 'faculty_question_bank_module' mod.id %}"
-      >
-        <span class="qbank-tab-name">{{ mod.name }}</span>
-        <span class="qbank-tab-count">{{ mod.question_count }} Qs</span>
-      </a>
-    {% endfor %}
+  <!-- Module selector dropdown -->
+  <div class="qbank-module-selector" style="margin-bottom: 24px;">
+    <select onchange="window.location.href=this.value" style="width: 100%; max-width: 400px; padding: 12px 16px; font-size: 15px; border-radius: var(--radius-md); border: 1px solid rgba(46, 48, 147, 0.2); background: var(--surface); color: var(--text-primary); cursor: pointer; box-shadow: 0 4px 12px rgba(46, 48, 147, 0.05);">
+      <option value="" disabled {% if not selected_module %}selected{% endif %}>Select a Module...</option>
+      {% for mod in modules %}
+        <option value="{% url 'faculty_question_bank_module' mod.id %}" {% if selected_module.id == mod.id %}selected{% endif %}>
+          {{ mod.name }} ({{ mod.question_count }} Qs)
+        </option>
+      {% endfor %}
+    </select>
   </div>
 
   {% if selected_module %}

@@ -41,6 +41,7 @@ urlpatterns = [
     path("faculty/questions/upload/", views.faculty_question_upload, name="faculty_question_upload"),
     path("faculty/questions/new/", views.faculty_question_form, name="faculty_question_new"),
     path("faculty/questions/<int:question_id>/", views.faculty_question_form, name="faculty_question_edit"),
+    path("faculty/student/<int:student_id>/", views.faculty_student_detail, name="faculty_student_detail"),
     path("faculty/questions/<int:question_id>/tests/new/", views.faculty_testcase_form, name="faculty_testcase_new"),
     # Notifications
     path("notifications/", views.notifications_list, name="notifications_list"),

@@ -12,7 +12,6 @@ project_root = os.path.dirname(script_dir)
 sys.path.insert(0, project_root)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-os.environ["USE_SQLITE"] = "true"
 django.setup()
 
 from core.models import User, Module, Question

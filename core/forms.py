@@ -10,7 +10,7 @@ class MultipleFileInput(forms.ClearableFileInput):
 
 class MultipleFileField(forms.FileField):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput(attrs={"accept": ".csv", "multiple": True}))
+        kwargs.setdefault("widget", MultipleFileInput(attrs={"accept": ".csv,.txt,.pdf", "multiple": True}))
         super().__init__(*args, **kwargs)
 
     def clean(self, data, initial=None):
@@ -60,8 +60,8 @@ class ModuleForm(forms.ModelForm):
 
 class CSVQuestionUploadForm(forms.Form):
     files = MultipleFileField(
-        label="CSV files",
-        help_text="Upload one or more module CSV files with Question_ID, Topic, Level, Difficulty, and score columns.",
+        label="Question files",
+        help_text="Upload CSV, TXT, or PDF files. CSV files use column headers; TXT/PDF files use structured === QUESTION === blocks.",
     )
 
 

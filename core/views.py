@@ -783,6 +783,195 @@ def row_test_cases(row):
     return cases
 
 
+def extract_text_from_pdf(file_obj):
+    """Extract raw text from a PDF file using pypdf."""
+    import pypdf
+    reader = pypdf.PdfReader(file_obj)
+    text_parts = []
+    for page in reader.pages:
+        text_parts.append(page.extract_text() or "")
+    return "\n".join(text_parts)
+
+
+def import_question_text(file_name, text, faculty):
+    """Parse structured text (from TXT or PDF) into questions and test cases."""
+    module_name, order = module_name_from_csv(file_name)
+    module, _ = Module.objects.update_or_create(
+        name=module_name,
+        defaults={
+            "description": f"Imported question bank for {module_name}.",
+            "level": order,
+            "order": order,
+            "is_active": True,
+        },
+    )
+
+    questions_raw = re.split(r'={3,}\s*QUESTION\s*={3,}', text)
+    created = 0
+    updated = 0
+    active = 0
+    test_cases_count = 0
+    imported_slugs = []
+
+    for q_index, q_block in enumerate(questions_raw, start=1):
+        q_block = q_block.strip()
+        if not q_block:
+            continue
+
+        # Split question body from test cases
+        parts = re.split(r'={3,}\s*TEST\s*CASE\s*\d+\s*={3,}', q_block)
+        q_body = parts[0].strip()
+        test_blocks = parts[1:] if len(parts) > 1 else []
+
+        # Parse question fields
+        title = ""
+        difficulty_str = "easy"
+        level = "1"
+        description = ""
+        starter_code = ""
+
+        lines = q_body.split("\n")
+        current_field = None
+        field_lines = []
+
+        for line in lines:
+            stripped = line.strip()
+            lower = stripped.lower()
+            if lower.startswith("title:"):
+                if current_field == "description":
+                    description = "\n".join(field_lines).strip()
+                elif current_field == "starter_code":
+                    starter_code = "\n".join(field_lines).strip()
+                current_field = "title"
+                title = stripped[len("title:"):].strip()
+                field_lines = []
+            elif lower.startswith("difficulty:"):
+                if current_field == "description":
+                    description = "\n".join(field_lines).strip()
+                elif current_field == "starter_code":
+                    starter_code = "\n".join(field_lines).strip()
+                current_field = "difficulty"
+                difficulty_str = stripped[len("difficulty:"):].strip().lower()
+                field_lines = []
+            elif lower.startswith("level:"):
+                if current_field == "description":
+                    description = "\n".join(field_lines).strip()
+                elif current_field == "starter_code":
+                    starter_code = "\n".join(field_lines).strip()
+                current_field = "level"
+                level = stripped[len("level:"):].strip()
+                field_lines = []
+            elif lower.startswith("description:"):
+                if current_field == "starter_code":
+                    starter_code = "\n".join(field_lines).strip()
+                current_field = "description"
+                rest = stripped[len("description:"):].strip()
+                field_lines = [rest] if rest else []
+            elif lower.startswith("starter code:") or lower.startswith("starter_code:"):
+                if current_field == "description":
+                    description = "\n".join(field_lines).strip()
+                current_field = "starter_code"
+                rest = stripped.split(":", 1)[1].strip()
+                field_lines = [rest] if rest else []
+            else:
+                field_lines.append(line)
+
+        # Flush remaining
+        if current_field == "description":
+            description = "\n".join(field_lines).strip()
+        elif current_field == "starter_code":
+            starter_code = "\n".join(field_lines).strip()
+
+        if not title:
+            title = f"Q{q_index:03d} - {module_name} (Level {level})"
+
+        slug = slugify(f"Q{q_index:03d}-{title}")[:180]
+        imported_slugs.append(slug)
+
+        # Parse test cases
+        tests = []
+        for tc_index, tc_block in enumerate(test_blocks, start=1):
+            tc_block = tc_block.strip()
+            stdin = ""
+            expected = ""
+            tc_field = None
+            tc_lines = []
+            for tc_line in tc_block.split("\n"):
+                tc_stripped = tc_line.strip()
+                tc_lower = tc_stripped.lower()
+                if tc_lower.startswith("input:"):
+                    if tc_field == "output":
+                        expected = "\n".join(tc_lines).strip()
+                    tc_field = "input"
+                    rest = tc_stripped[len("input:"):].strip()
+                    tc_lines = [rest] if rest else []
+                elif tc_lower.startswith("output:") or tc_lower.startswith("expected output:") or tc_lower.startswith("expected_output:"):
+                    if tc_field == "input":
+                        stdin = "\n".join(tc_lines).strip()
+                    tc_field = "output"
+                    rest = tc_stripped.split(":", 1)[1].strip()
+                    tc_lines = [rest] if rest else []
+                else:
+                    tc_lines.append(tc_line)
+            if tc_field == "input":
+                stdin = "\n".join(tc_lines).strip()
+            elif tc_field == "output":
+                expected = "\n".join(tc_lines).strip()
+            if stdin or expected:
+                tests.append((tc_index, stdin, expected))
+
+        difficulty = difficulty_from_csv(difficulty_str)
+        has_content = bool(description.strip())
+        has_tests = bool(tests)
+
+        obj, was_created = Question.objects.update_or_create(
+            module=module,
+            slug=slug,
+            defaults={
+                "title": title,
+                "description": description or f"Topic: {title}\nModule: {module_name}\nLevel: {level}\nDifficulty: {difficulty_str}\n\nWrite a C program for this exercise.",
+                "difficulty": difficulty,
+                "csv_level": int(level or 1),
+                "starter_code": starter_code or starter_code_for_csv_question(None),
+                "language_id": 50,
+                "time_limit": 2.0,
+                "memory_limit_kb": 128000,
+                "is_active": has_content and has_tests,
+                "created_by": faculty,
+            },
+        )
+        for test_order, stdin, expected in tests:
+            TestCase.objects.update_or_create(
+                question=obj,
+                order=test_order,
+                defaults={
+                    "stdin": stdin,
+                    "expected_output": expected,
+                    "is_sample": test_order == 1,
+                },
+            )
+        if tests:
+            TestCase.objects.filter(question=obj).exclude(order__in=[c[0] for c in tests]).delete()
+        test_cases_count += len(tests)
+        if obj.is_active:
+            active += 1
+        if was_created:
+            created += 1
+        else:
+            updated += 1
+
+    return {
+        "module": module,
+        "created": created,
+        "updated": updated,
+        "active": active,
+        "test_cases": test_cases_count,
+        "stale_deleted": 0,
+        "replaced_deleted": 0,
+        "assignments_reset": 0,
+    }
+
+
 def import_question_csv(file_obj, faculty):
     module_name, order = module_name_from_csv(file_obj.name)
     module, _ = Module.objects.update_or_create(
@@ -891,7 +1080,15 @@ def faculty_question_upload(request):
     if request.method == "POST" and form.is_valid():
         for file_obj in form.cleaned_data["files"]:
             try:
-                results.append(import_question_csv(file_obj, request.user))
+                ext = os.path.splitext(file_obj.name)[1].lower()
+                if ext == ".pdf":
+                    text = extract_text_from_pdf(file_obj)
+                    results.append(import_question_text(file_obj.name, text, request.user))
+                elif ext == ".txt":
+                    text = file_obj.read().decode("utf-8-sig")
+                    results.append(import_question_text(file_obj.name, text, request.user))
+                else:
+                    results.append(import_question_csv(file_obj, request.user))
             except Exception as exc:
                 messages.error(request, str(exc))
         if results:
@@ -948,6 +1145,158 @@ def faculty_question_form(request, question_id=None):
         request,
         "faculty/question_form.html",
         {"form": form, "question": question, "tests": tests, "test_form": test_form},
+    )
+
+
+@login_required
+def faculty_student_detail(request, student_id):
+    """Faculty view showing a specific student's full dashboard."""
+    faculty_required(request.user)
+    student = get_object_or_404(User, pk=student_id)
+    
+    progress_rows = student_progress(student)
+    modules = Module.objects.filter(is_active=True).prefetch_related("questions")
+    progress_by_module = {row.module_id: row for row in progress_rows}
+    user_submissions = Submission.objects.filter(student=student).values("question_id", "status")
+    question_status_map = {}
+    for sub in user_submissions:
+        qid = sub["question_id"]
+        st = sub["status"]
+        if qid not in question_status_map:
+            question_status_map[qid] = set()
+        question_status_map[qid].add(st)
+        
+    all_subs = Submission.objects.filter(student=student).order_by('-submitted_at')
+    latest_submissions = {}
+    for sub in all_subs:
+        if sub.question_id not in latest_submissions:
+            latest_submissions[sub.question_id] = sub
+
+    module_cards = []
+    for module in modules:
+        progress = progress_by_module.get(module.id)
+        module_questions = module.questions.filter(is_active=True)
+        module_total = min(15, module_questions.count())
+        assigned_qs = AssignedQuestion.objects.filter(
+            assignment__student=student, assignment__module=module
+        )
+        if assigned_qs.exists():
+            module_completed = assigned_qs.filter(completed_at__isnull=False).count()
+            questions_for_dots = [aq.question for aq in assigned_qs.select_related("question")]
+        else:
+            module_completed = module_questions.filter(
+                submissions__student=student,
+                submissions__status=Submission.Status.ACCEPTED,
+            ).distinct().count()
+            module_completed = min(module_completed, module_total)
+            questions_for_dots = list(module_questions[:module_total])
+
+        question_statuses = []
+        questions_with_subs = []
+        easy_questions = []
+        medium_questions = []
+        hard_questions = []
+        
+        for q in questions_for_dots:
+            st_set = question_status_map.get(q.id, set())
+            if Submission.Status.ACCEPTED in st_set:
+                status_str = "completed"
+                question_statuses.append("completed")
+            elif any(
+                s in st_set
+                for s in [
+                    Submission.Status.WRONG_ANSWER,
+                    Submission.Status.TLE,
+                    Submission.Status.RUNTIME_ERROR,
+                    Submission.Status.COMPILE_ERROR,
+                    Submission.Status.INTERNAL_ERROR,
+                ]
+            ):
+                status_str = "failed"
+                question_statuses.append("failed")
+            else:
+                status_str = "pending"
+                question_statuses.append("pending")
+                
+            q_data = {
+                "question": q,
+                "status": status_str,
+                "latest_submission": latest_submissions.get(q.id)
+            }
+            questions_with_subs.append(q_data)
+            
+            if q.difficulty == Question.Difficulty.EASY:
+                easy_questions.append(q_data)
+            elif q.difficulty == Question.Difficulty.MEDIUM:
+                medium_questions.append(q_data)
+            elif q.difficulty == Question.Difficulty.HARD:
+                hard_questions.append(q_data)
+
+        if not question_statuses and module_total > 0:
+            question_statuses = ["pending"] * module_total
+
+        module_percentage = (module_completed / module_total * 100) if module_total else 0
+        module_cards.append(
+            {
+                "module": module,
+                "progress": progress,
+                "percentage": module_percentage,
+                "module_total": module_total,
+                "module_completed": module_completed,
+                "completed": module_total > 0 and module_completed == module_total,
+                "question_statuses": question_statuses,
+                "questions_with_subs": questions_with_subs,
+                "easy_questions": easy_questions,
+                "medium_questions": medium_questions,
+                "hard_questions": hard_questions,
+            }
+        )
+
+    pct = overall_percentage(student)
+    questions_total = sum(card["module_total"] for card in module_cards)
+    completed_total = sum(card["module_completed"] for card in module_cards)
+    eligible, _ = certificate_eligible(student)
+    certificates = student.certificates.all()
+
+    # Rank
+    leaderboard_qs = (
+        User.objects.filter(role=User.Role.STUDENT)
+        .annotate(
+            total_score=Coalesce(Sum("submissions__score"), Value(0)),
+            problems_solved=Count("submissions__question", filter=Q(submissions__status=Submission.Status.ACCEPTED), distinct=True),
+        )
+    )
+    try:
+        current_user_stats = leaderboard_qs.get(id=student.id)
+        user_rank = leaderboard_qs.filter(
+            Q(total_score__gt=current_user_stats.total_score) |
+            Q(total_score=current_user_stats.total_score, problems_solved__gt=current_user_stats.problems_solved) |
+            Q(total_score=current_user_stats.total_score, problems_solved=current_user_stats.problems_solved, username__lt=current_user_stats.username)
+        ).count() + 1
+    except User.DoesNotExist:
+        user_rank = None
+
+    recent_activity = Submission.objects.filter(student=student).select_related("question", "question__module")[:10]
+    live_flags_count = Submission.objects.filter(student=student, plagiarism_flagged=True).count()
+
+    return render(
+        request,
+        "faculty/student_detail.html",
+        {
+            "viewed_student": student,
+            "modules": modules,
+            "module_cards": module_cards,
+            "progress_rows": progress_rows,
+            "overall_percentage": pct,
+            "questions_total": questions_total,
+            "completed_total": completed_total,
+            "not_attempted_total": max(questions_total - completed_total, 0),
+            "certificate_eligible": eligible,
+            "certificates": certificates,
+            "user_rank": user_rank,
+            "recent_activity": recent_activity,
+            "live_flags_count": live_flags_count,
+        },
     )
 
 

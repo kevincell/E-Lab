@@ -1,0 +1,17 @@
+<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(46, 48, 147, 0.1);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <strong style="font-size: 15px;">{{ q_data.question.title }}</strong>
+    <span class="status-pill {% if q_data.status == 'completed' %}status-accepted{% elif q_data.status == 'failed' %}status-wrong_answer{% else %}status-pending{% endif %}">
+      {{ q_data.status|upper }}
+    </span>
+  </div>
+  
+  {% if q_data.latest_submission %}
+    <pre style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-primary); border: 1px solid rgba(46, 48, 147, 0.15); overflow-x: auto; white-space: pre-wrap;">{{ q_data.latest_submission.code }}</pre>
+    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+      Submitted on: {{ q_data.latest_submission.submitted_at|date:"M d, Y H:i" }}
+    </div>
+  {% else %}
+    <p class="muted" style="font-size: 13px; font-style: italic;">No submission available.</p>
+  {% endif %}
+</div>

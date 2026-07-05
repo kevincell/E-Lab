@@ -58,7 +58,7 @@
           <tr>
             <td>#{{ row.rank }}</td>
             <td>{{ row.student_usn }}</td>
-            <td>{{ row.student.display_name }}</td>
+            <td><a href="{% url 'faculty_student_detail' row.student.id %}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">{{ row.student.display_name }}</a></td>
             <td>{{ row.attempted }}/{{ row.total }}</td>
             <td>{{ row.completed }}/{{ row.total }}</td>
             <td>

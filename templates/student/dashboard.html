@@ -101,34 +101,25 @@
       </div>
     </div>
 
-    <!-- Right: Module Progress & Syllabus -->
+    <!-- Right: Combined Module Progress -->
     <div class="levels-panel">
-      <div class="course-card">
+      <div class="course-card" style="padding-bottom: 24px;">
         <p class="eyebrow">Module Progress</p>
-        <div class="module-progress-list">
+        <div class="module-progress-list" style="display: flex; flex-direction: column; gap: 16px;">
           {% for card in module_cards %}
             <div class="module-progress-item {% if card.completed %}completed{% endif %}"
-                 style="--mp-color: var(--lvl-{{ forloop.counter }})">
-              <span class="mp-label">
-                <span class="mp-dot"></span>
-                <span>M{{ forloop.counter }}</span>
+                 style="--mp-color: var(--lvl-{{ forloop.counter }}); display: flex; align-items: center; justify-content: space-between;">
+              <span class="mp-label" style="display: flex; align-items: center; gap: 8px; flex: 2; overflow: hidden;">
+                <span class="mp-dot" style="flex-shrink: 0;"></span>
+                <span class="mp-label-text" style="font-weight: 600; font-size: 14px; line-height: 1.3;" title="{{ card.module.name }}">{{ card.module.name }}</span>
               </span>
-              <span class="mp-bar">
+              <span class="mp-bar" style="flex: 1; margin: 0 16px; min-width: 60px;">
                 <div class="mp-bar-fill" style="width:{{ card.percentage|floatformat:0 }}%;background:var(--lvl-{{ forloop.counter }})"></div>
               </span>
-              <span class="mp-value">{{ card.percentage|floatformat:0 }}%</span>
+              <span class="mp-value" style="font-weight: 600; width: 40px; text-align: right;">{{ card.percentage|floatformat:0 }}%</span>
             </div>
           {% endfor %}
         </div>
-      </div>
-
-      <div class="course-card">
-        <p class="eyebrow">Syllabus Mapping</p>
-        <ul class="syllabus-list">
-          {% for card in module_cards %}
-            <li style="--sl-color: var(--lvl-{{ forloop.counter }})">{{ card.module.name }}</li>
-          {% endfor %}
-        </ul>
       </div>
     </div>
   </div>
