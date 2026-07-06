@@ -19,23 +19,38 @@
 <section class="panel">
   <div class="list">
     {% for notif in notifications %}
-      <div class="row-card {% if not notif.is_read %}notif-unread{% endif %}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; border-left: {% if not notif.is_read %}4px solid var(--accent-primary){% else %}none{% endif %};">
+      <div class="row-card {% if not notif.is_read %}notif-unread{% endif %}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 18px; border-left: {% if not notif.is_read %}4px solid var(--accent-primary){% else %}none{% endif %}; gap: 16px;">
         <div style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
-            <strong style="font-size: 16px;">{{ notif.title }}</strong>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <a href="{% url 'notification_mark_read' notif.id %}?redirect=true" class="as-link" style="font-size: 16px; font-weight: 700; color: var(--accent-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+              {{ notif.title }} ↗
+            </a>
             {% if not notif.is_read %}
-              <span class="chips" style="background: var(--accent-primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">NEW</span>
+              <span class="chips" style="background: var(--accent-primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;">NEW</span>
             {% endif %}
           </div>
-          <p style="margin: 4px 0; font-size: 14px; line-height: 1.4;">{{ notif.message }}</p>
+          <a href="{% url 'notification_mark_read' notif.id %}?redirect=true" style="text-decoration: none; color: inherit; display: block;">
+            <p style="margin: 4px 0 8px 0; font-size: 14px; line-height: 1.5; color: var(--text-primary);">{{ notif.message }}</p>
+          </a>
           <span class="muted" style="font-size: 12px;">{{ notif.created_at|timesince }} ago</span>
         </div>
 
-        <div>
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; flex-shrink: 0;">
+          {% with state=notif.cert_action_state %}
+            {% if state %}
+              {% if state.open %}
+                <a href="{{ state.url }}" class="primary" style="padding: 6px 14px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap;">{{ state.label }}</a>
+              {% else %}
+                <span class="chips" style="padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; background: rgba(128,128,128,0.2); color: var(--text-primary); border: 1px solid rgba(128,128,128,0.3); white-space: nowrap;">{{ state.label }}</span>
+              {% endif %}
+            {% else %}
+              <a href="{% url 'notification_mark_read' notif.id %}?redirect=true" class="primary" style="padding: 6px 14px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap;">Open Action &rarr;</a>
+            {% endif %}
+          {% endwith %}
           {% if not notif.is_read %}
             <form method="post" action="{% url 'notification_mark_read' notif.id %}">
               {% csrf_token %}
-              <button type="submit" class="secondary" style="padding: 4px 10px; font-size: 12px;">Mark read</button>
+              <button type="submit" class="secondary" style="padding: 4px 10px; font-size: 12px; width: 100%;">Mark read</button>
             </form>
           {% endif %}
         </div>

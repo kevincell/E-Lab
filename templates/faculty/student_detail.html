@@ -34,6 +34,42 @@
     </div>
   </div>
 
+  {% if certificate_eligible %}
+  <div class="panel" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(79, 70, 229, 0.1)); border: 1px solid var(--success); display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; margin-bottom: 24px; gap: 16px; flex-wrap: wrap;">
+    <div>
+      <h3 style="margin: 0 0 4px 0; color: var(--success); display: flex; align-items: center; gap: 8px;">✓ Certificate Verification Status</h3>
+      <p class="muted" style="margin: 0; font-size: 14px;">
+        {% if existing_request.status == "pending_faculty" %}
+          This student has requested certificate verification. Review their lab progress below and forward approval to HoD.
+        {% elif existing_request.status == "pending_hod" %}
+          You have verified and forwarded this student's certificate approval request to the HoD.
+        {% elif existing_request.status == "approved" %}
+          The HoD has approved and issued the official certificate for this student.
+        {% elif existing_request.status == "rejected" %}
+          The previous certificate request was declined. Student must fix remarks and reapply.
+        {% else %}
+          This student has met all completion requirements (60%+ threshold & mandatory questions) and is eligible to apply for a certificate.
+        {% endif %}
+      </p>
+    </div>
+    {% if existing_request.status == "pending_faculty" %}
+      <form method="post" action="{% url 'faculty_send_cert_request' viewed_student.id %}" style="display: flex; gap: 8px; align-items: center; margin: 0;">
+        {% csrf_token %}
+        <input type="text" name="notes" placeholder="Optional review remarks..." style="padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(128,128,128,0.3); font-size: 14px; width: 200px; background: var(--surface);">
+        <button type="submit" class="primary" style="padding: 8px 18px; font-size: 14px; font-weight: 600; white-space: nowrap;">Forward Approval to HoD &rarr;</button>
+      </form>
+    {% elif existing_request.status == "pending_hod" %}
+      <span class="chips" style="background: var(--accent-warm); color: white; padding: 8px 16px; border-radius: 6px; font-weight: 700;">⏳ Req Already Sent to HoD</span>
+    {% elif existing_request.status == "approved" %}
+      <span class="chips" style="background: var(--success); color: white; padding: 8px 16px; border-radius: 6px; font-weight: 700;">✅ Certificate Issued</span>
+    {% elif existing_request.status == "rejected" %}
+      <span class="chips" style="background: #ef4444; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 700;">❌ Request Declined</span>
+    {% else %}
+      <span class="chips" style="background: rgba(128,128,128,0.2); color: var(--text-primary); border: 1px solid rgba(128,128,128,0.3); padding: 8px 16px; border-radius: 6px; font-weight: 700;">ℹ️ Awaiting Student Application</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- Profile Header -->
   <div class="panel" style="display: flex; gap: 32px; align-items: center; margin-bottom: 32px;">
     <!-- Avatar -->

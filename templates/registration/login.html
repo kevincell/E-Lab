@@ -8,14 +8,20 @@
 <div class="login-cinematic">
   <!-- Video Background Layer -->
   <div class="login-video-container">
-    <video class="login-bg-video active" autoplay muted loop playsinline>
-      <source src="{% static 'videos/login_bg1.mp4' %}" type="video/mp4">
+    <video class="login-bg-video active" data-duration="9000" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg4.mp4' %}" type="video/mp4">
     </video>
-    <video class="login-bg-video" autoplay muted loop playsinline>
+    <video class="login-bg-video" data-duration="8000" autoplay muted loop playsinline>
       <source src="{% static 'videos/login_bg2.mp4' %}" type="video/mp4">
     </video>
-    <video class="login-bg-video" autoplay muted loop playsinline>
+    <video class="login-bg-video" data-duration="8000" autoplay muted loop playsinline>
       <source src="{% static 'videos/login_bg3.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" data-duration="3500" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg1.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" data-duration="8000" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg5.mp4' %}" type="video/mp4">
     </video>
     <div class="login-video-overlay"></div>
   </div>
@@ -41,11 +47,18 @@
   var videos = document.querySelectorAll('.login-bg-video');
   if (videos.length <= 1) return;
   var current = 0;
-  setInterval(function() {
+
+  function nextVideo() {
     videos[current].classList.remove('active');
     current = (current + 1) % videos.length;
     videos[current].classList.add('active');
-  }, 8000);
+    
+    var duration = parseInt(videos[current].getAttribute('data-duration'), 10) || 8000;
+    setTimeout(nextVideo, duration);
+  }
+
+  var initialDuration = parseInt(videos[current].getAttribute('data-duration'), 10) || 8000;
+  setTimeout(nextVideo, initialDuration);
 })();
 </script>
 {% endblock %}

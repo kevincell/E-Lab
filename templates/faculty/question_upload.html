@@ -23,29 +23,39 @@
 
   <aside class="panel">
     <div class="section-heading">
-      <h2>Required Columns</h2>
-      <p class="muted">The importer expects these headers.</p>
+      <h2>Required PDF & TXT Format</h2>
+      <p class="muted">Instead of manual column mapping, download our pre-formatted demo files to see exactly how to structure your question bank.</p>
     </div>
-    <div class="chips">
-      <span>Question_ID</span>
-      <span>Topic</span>
-      <span>Level</span>
-      <span>Difficulty</span>
-      <span>Level_Range</span>
-      <span>Status</span>
-      <span>Score</span>
-      <span>Max_Score</span>
+    
+    <div style="background: rgba(46, 48, 147, 0.08); border: 1px solid rgba(79, 70, 229, 0.25); border-radius: var(--radius-md); padding: 18px; margin-bottom: 20px;">
+      <h3 style="margin: 0 0 8px; font-size: 17px; color: var(--accent-primary);">Download Demo Files</h3>
+      <p class="muted" style="margin: 0 0 16px; font-size: 14px;">Use these template files as a starting point. You can directly edit and upload them back into the portal.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <a href="{% url 'download_demo_file' 'pdf' %}" class="primary as-link" style="padding: 10px 16px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+          <span>📄 Download Demo PDF</span>
+        </a>
+        <a href="{% url 'download_demo_file' 'txt' %}" class="secondary as-link" style="padding: 10px 16px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+          <span>📝 Download Demo TXT</span>
+        </a>
+        <a href="{% url 'download_demo_file' 'csv' %}" class="secondary as-link" style="padding: 10px 16px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+          <span>📊 Download Demo CSV</span>
+        </a>
+      </div>
     </div>
-    <p class="muted import-note">Rows with Problem_Statement and test columns are imported as active questions. Files ending in _Levels.csv replace that module's old question bank and regenerate student assignments.</p>
-    <div class="chips">
-      <span>Problem_Statement</span>
-      <span>Starter_Code</span>
-      <span>Is_Active</span>
-      <span>Test1_Input</span>
-      <span>Test1_Output</span>
-      <span>...</span>
-      <span>Test10_Input</span>
-      <span>Test10_Output</span>
+
+    <div class="section-heading" style="margin-top: 24px; margin-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 16px;">PDF / TXT Block Structure</h3>
+    </div>
+    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-md); padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #9cdef2; overflow-x: auto; line-height: 1.6;">
+      <div style="color: #ffcb9a;">=== QUESTION ===</div>
+      <div>Title: <span style="color: #ffffff;">Sum of Two Integers</span></div>
+      <div>Difficulty: <span style="color: #ffffff;">Easy</span></div>
+      <div>Level: <span style="color: #ffffff;">1</span></div>
+      <div>Description: <span style="color: #ffffff;">Read two integers and print their sum.</span></div>
+      <div>Starter Code: <span style="color: #a7f3d0;">#include &lt;stdio.h&gt; ...</span></div>
+      <div style="color: #00e5ff; margin-top: 8px;">=== TEST CASE 1 ===</div>
+      <div>Input: <span style="color: #ffffff;">10 20</span></div>
+      <div>Output: <span style="color: #ffffff;">30</span></div>
     </div>
   </aside>
 </section>

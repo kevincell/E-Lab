@@ -479,12 +479,49 @@ def manual_accept_submission(request, submission_id):
 
 @login_required
 def certificate_create(request):
-    cert = generate_certificate(request.user)
-    if not cert:
-        messages.error(request, "Certificate is not available yet. Complete the required modules first.")
+    is_eligible, pct = certificate_eligible(request.user)
+    if not is_eligible:
+        messages.error(request, "You are not yet eligible for a certificate. Complete the required modules (60% threshold & mandatory questions) first.")
         return redirect("dashboard")
-    messages.success(request, "Certificate generated.")
-    return redirect("certificate_detail", cert.pk)
+
+    cert = Certificate.objects.filter(student=request.user).first()
+    approved_req = CertificateRequest.objects.filter(student=request.user, status=CertificateRequest.Status.APPROVED).first()
+
+    if cert or approved_req:
+        if not cert:
+            cert = generate_certificate(request.user)
+        messages.success(request, "Your official certificate is ready!")
+        return redirect("certificate_detail", cert.pk)
+
+    req = CertificateRequest.objects.filter(student=request.user).order_by("-updated_at").first()
+    if req and req.status == CertificateRequest.Status.REJECTED:
+        has_new_work = Submission.objects.filter(
+            student=request.user,
+            status=Submission.Status.ACCEPTED,
+            submitted_at__gt=req.updated_at
+        ).exists()
+        if not has_new_work:
+            messages.error(request, f"Your previous certificate request was declined (Remarks: {req.hod_notes or 'No remarks provided'}). You must complete at least one new assignment and address feedback before reapplying.")
+            return redirect("dashboard")
+
+        req = CertificateRequest.objects.create(
+            student=request.user,
+            status=CertificateRequest.Status.PENDING_FACULTY,
+            completion_percentage=pct,
+        )
+        notify_faculty_of_eligible_student(request.user, is_reapplication=True)
+    elif not req:
+        req = CertificateRequest.objects.create(
+            student=request.user,
+            status=CertificateRequest.Status.PENDING_FACULTY,
+            completion_percentage=pct,
+        )
+        notify_faculty_of_eligible_student(request.user, is_reapplication=False)
+
+    return render(request, "certificates/under_review.html", {
+        "request_obj": req,
+        "percentage": pct,
+    })
 
 
 @login_required
@@ -1073,6 +1110,140 @@ def import_question_csv(file_obj, faculty):
 
 
 @login_required
+def download_demo_file(request, file_type):
+    faculty_required(request.user)
+    if file_type == "txt":
+        content = """=== QUESTION ===
+Title: Sum of Two Integers
+Difficulty: Easy
+Level: 1
+Description: Write a C program to read two space-separated integers from standard input and print their sum.
+Starter Code: #include <stdio.h>
+int main() {
+    // Write your code here
+    return 0;
+}
+=== TEST CASE 1 ===
+Input: 10 20
+Output: 30
+=== TEST CASE 2 ===
+Input: -5 15
+Output: 10
+
+=== QUESTION ===
+Title: Factorial of a Number
+Difficulty: Medium
+Level: 2
+Description: Write a C program to calculate the factorial of a given non-negative integer N.
+Starter Code: #include <stdio.h>
+int main() {
+    // Write your code here
+    return 0;
+}
+=== TEST CASE 1 ===
+Input: 5
+Output: 120
+=== TEST CASE 2 ===
+Input: 0
+Output: 1
+"""
+        response = HttpResponse(content, content_type="text/plain")
+        response["Content-Disposition"] = 'attachment; filename="demo_questions_format.txt"'
+        return response
+    elif file_type == "csv":
+        content = """Question_ID,Topic,Level,Difficulty,Level_Range,Status,Score,Max_Score,Problem_Statement,Starter_Code,Is_Active,Test1_Input,Test1_Output,Test2_Input,Test2_Output
+Q001,Basics I/O,1,Easy,1-5,Active,10,10,"Write a C program to read two integers and output their sum.","#include <stdio.h>\nint main() {\n    return 0;\n}",True,"10 20","30","-5 15","10"
+Q002,Loops,2,Medium,6-10,Active,15,15,"Write a C program to calculate the factorial of a given integer N.","#include <stdio.h>\nint main() {\n    return 0;\n}",True,"5","120","0","1"
+"""
+        response = HttpResponse(content, content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="demo_questions_format.csv"'
+        return response
+    elif file_type == "pdf":
+        html_string = """
+        <html>
+        <head>
+            <style>
+                body { font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; line-height: 1.5; padding: 30px; }
+                h1 { color: #2e3093; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 20px; font-size: 24px; }
+                p.intro { color: #64748b; font-size: 14px; margin-bottom: 25px; }
+                .question-block { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+                .block-header { font-weight: bold; color: #4f46e5; font-size: 16px; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+                .field { margin-bottom: 8px; font-size: 14px; }
+                .field-label { font-weight: bold; color: #334155; }
+                pre { background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; margin: 8px 0; white-space: pre-wrap; }
+                .test-case { background: #ffffff; border-left: 4px solid #06b6d4; padding: 10px 15px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+            </style>
+        </head>
+        <body>
+            <h1>CCE e-Lab: Question Import PDF Demo Format</h1>
+            <p class="intro">When importing PDF or TXT question files into the e-Lab portal, structure each question using the exact block format shown below. The importer parses the <b>=== QUESTION ===</b> and <b>=== TEST CASE ===</b> delimiters.</p>
+            
+            <div class="question-block">
+                <div class="block-header">=== QUESTION ===</div>
+                <div class="field"><span class="field-label">Title:</span> Sum of Two Integers</div>
+                <div class="field"><span class="field-label">Difficulty:</span> Easy</div>
+                <div class="field"><span class="field-label">Level:</span> 1</div>
+                <div class="field"><span class="field-label">Description:</span> Write a C program to read two space-separated integers from standard input and print their sum.</div>
+                <div class="field"><span class="field-label">Starter Code:</span>
+<pre>#include &lt;stdio.h&gt;
+int main() {
+    // Write your code here
+    return 0;
+}</pre>
+                </div>
+                
+                <div class="test-case">
+                    <div class="block-header" style="color: #06b6d4; font-size: 14px;">=== TEST CASE 1 ===</div>
+                    <div class="field"><span class="field-label">Input:</span> 10 20</div>
+                    <div class="field"><span class="field-label">Output:</span> 30</div>
+                </div>
+
+                <div class="test-case">
+                    <div class="block-header" style="color: #06b6d4; font-size: 14px;">=== TEST CASE 2 ===</div>
+                    <div class="field"><span class="field-label">Input:</span> -5 15</div>
+                    <div class="field"><span class="field-label">Output:</span> 10</div>
+                </div>
+            </div>
+
+            <div class="question-block">
+                <div class="block-header">=== QUESTION ===</div>
+                <div class="field"><span class="field-label">Title:</span> Factorial of a Number</div>
+                <div class="field"><span class="field-label">Difficulty:</span> Medium</div>
+                <div class="field"><span class="field-label">Level:</span> 2</div>
+                <div class="field"><span class="field-label">Description:</span> Write a C program to calculate the factorial of a given non-negative integer N.</div>
+                <div class="field"><span class="field-label">Starter Code:</span>
+<pre>#include &lt;stdio.h&gt;
+int main() {
+    // Write your code here
+    return 0;
+}</pre>
+                </div>
+                
+                <div class="test-case">
+                    <div class="block-header" style="color: #06b6d4; font-size: 14px;">=== TEST CASE 1 ===</div>
+                    <div class="field"><span class="field-label">Input:</span> 5</div>
+                    <div class="field"><span class="field-label">Output:</span> 120</div>
+                </div>
+
+                <div class="test-case">
+                    <div class="block-header" style="color: #06b6d4; font-size: 14px;">=== TEST CASE 2 ===</div>
+                    <div class="field"><span class="field-label">Input:</span> 0</div>
+                    <div class="field"><span class="field-label">Output:</span> 1</div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html_string).write_pdf()
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = 'attachment; filename="demo_questions_format.pdf"'
+        return response
+    else:
+        raise PermissionDenied("Invalid demo file type requested.")
+
+
+@login_required
 def faculty_question_upload(request):
     faculty_required(request.user)
     form = CSVQuestionUploadForm(request.POST or None, request.FILES or None)
@@ -1296,6 +1467,7 @@ def faculty_student_detail(request, student_id):
             "user_rank": user_rank,
             "recent_activity": recent_activity,
             "live_flags_count": live_flags_count,
+            "existing_request": CertificateRequest.objects.filter(student=student).order_by("-updated_at").first(),
         },
     )
 
@@ -1378,12 +1550,13 @@ def hod_review_request(request, request_id):
     modules = Module.objects.filter(is_active=True).prefetch_related("questions")
     module_progress = []
     for module in modules:
-        total_q = module.questions.filter(is_active=True).count()
+        total_q = min(15, module.questions.filter(is_active=True).count())
         solved = module.questions.filter(
             is_active=True,
             submissions__student=student,
             submissions__status=Submission.Status.ACCEPTED,
         ).distinct().count()
+        solved = min(solved, total_q)
         pct = (solved / total_q * 100) if total_q else 0
         module_progress.append({
             "module": module,
@@ -1428,7 +1601,7 @@ def hod_approve_certificate(request, request_id):
         # Auto-generate the certificate
         cert = generate_certificate(cert_req.student)
         notify_student_of_cert_decision(cert_req)
-        messages.success(request, f"Certificate approved for {cert_req.student.display_name}.")
+        messages.success(request, f"The certificate for {cert_req.student.display_name} has been approved!")
     elif action == "reject":
         cert_req.status = CertificateRequest.Status.REJECTED
         cert_req.approved_by_hod = request.user
@@ -1447,18 +1620,18 @@ def hod_approve_certificate(request, request_id):
 def faculty_cert_requests(request):
     faculty_required(request.user)
 
-    # Find eligible students
-    all_students = User.objects.filter(role=User.Role.STUDENT)
+    # Find students who have applied for certificate verification
+    pending_reqs = CertificateRequest.objects.filter(
+        status=CertificateRequest.Status.PENDING_FACULTY
+    ).select_related("student").order_by("-updated_at")
     eligible_students = []
-    for student in all_students:
-        is_eligible, pct = certificate_eligible(student)
-        if is_eligible:
-            existing_req = CertificateRequest.objects.filter(student=student).order_by("-updated_at").first()
-            eligible_students.append({
-                "student": student,
-                "percentage": pct,
-                "existing_request": existing_req,
-            })
+    for req in pending_reqs:
+        _, pct = certificate_eligible(req.student)
+        eligible_students.append({
+            "student": req.student,
+            "percentage": pct,
+            "existing_request": req,
+        })
 
     # Requests that this faculty has sent
     my_requests = CertificateRequest.objects.filter(
@@ -1517,11 +1690,13 @@ def notifications_list(request):
 
 
 @login_required
-@require_POST
 def notification_mark_read(request, notification_id):
     notif = get_object_or_404(Notification, pk=notification_id, recipient=request.user)
-    notif.is_read = True
-    notif.save(update_fields=["is_read"])
+    if not notif.is_read:
+        notif.is_read = True
+        notif.save(update_fields=["is_read"])
+    if request.method == "GET" or request.POST.get("redirect") == "true" or request.GET.get("redirect") == "true":
+        return redirect(notif.get_redirect_url)
     return redirect("notifications_list")
 
 

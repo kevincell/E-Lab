@@ -153,12 +153,15 @@ def sync_assignment_completion(assignment):
         if slot.question_id in accepted_ids and not slot.completed_at:
             slot.completed_at = now
             changed = True
+        elif slot.completed_at and slot.question_id not in accepted_ids:
+            slot.completed_at = None
+            changed = True
         if slot.completed_at and index + 1 < len(slots) and not slots[index + 1].unlocked_at:
             slots[index + 1].unlocked_at = now
             changed = True
 
     for slot in slots:
-        if slot.pk and (slot.unlocked_at or slot.completed_at):
+        if slot.pk and (slot.unlocked_at or slot.completed_at or changed):
             slot.save(update_fields=["unlocked_at", "completed_at"])
 
     if slots and all(slot.completed_at for slot in slots) and not assignment.completed_at:
@@ -262,9 +265,10 @@ def evaluate_submission(submission_id):
 
 def update_progress(student, module):
     questions = Question.objects.filter(module=module, is_active=True)
-    total = questions.count()
+    total = min(15, questions.count())
     attempted = questions.filter(submissions__student=student).distinct().count()
     completed = questions.filter(submissions__student=student, submissions__status=Submission.Status.ACCEPTED).distinct().count()
+    completed = min(completed, total)
     percentage = (completed / total * 100) if total else 0
     progress, _ = Progress.objects.update_or_create(
         student=student,
@@ -283,18 +287,25 @@ def student_progress(student):
 
 
 def overall_percentage(student):
-    total = Question.objects.filter(module__is_active=True, is_active=True).count()
+    active_modules = Module.objects.filter(is_active=True).count()
+    total = active_modules * 15
     if total == 0:
         return 0
 
-    completed = (
-        Submission.objects.filter(student=student, question__module__is_active=True, question__is_active=True, status=Submission.Status.ACCEPTED)
-        .values_list("question_id", flat=True)
-        .distinct()
-        .count()
-    )
+    assigned_qs = AssignedQuestion.objects.filter(assignment__student=student, assignment__module__is_active=True)
+    if assigned_qs.exists():
+        for assignment in ModuleQuestionAssignment.objects.filter(student=student, module__is_active=True):
+            sync_assignment_completion(assignment)
+        completed = assigned_qs.filter(completed_at__isnull=False).count()
+    else:
+        completed = (
+            Submission.objects.filter(student=student, question__module__is_active=True, question__is_active=True, status=Submission.Status.ACCEPTED)
+            .values_list("question_id", flat=True)
+            .distinct()
+            .count()
+        )
 
-    return completed / total * 100
+    return min(100.0, (completed / total * 100))
 
 def certificate_eligible(student):
     pct = overall_percentage(student)
@@ -345,70 +356,92 @@ def generate_certificate(student):
             "site_name": settings.SITE_NAME,
         },
     )
-    pdf_bytes = HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
-    name_usn = student.usn or student.username
-    cert.pdf.save(f"{name_usn}_{semester.replace(' ', '_')}.pdf", ContentFile(pdf_bytes), save=False)
+    try:
+        pdf_bytes = HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
+        name_usn = student.usn or student.username
+        cert.pdf.save(f"{name_usn}_{semester.replace(' ', '_')}.pdf", ContentFile(pdf_bytes), save=False)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"PDF generation failed for {student.username}: {e}")
     cert.save()
     notify_certificate(student, cert)
     return cert
 
 
 def notify_certificate(student, certificate):
-    if not student.email:
+    """Send an email notification when a certificate is issued."""
+    if student.email:
+        send_mail(
+            subject=f"{settings.SITE_NAME} - Certificate Generated",
+            message=f"Congratulations! Your certificate for {certificate.semester} is ready.",
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[student.email],
+            fail_silently=True,
+        )
+
+
+def notify_faculty_of_eligible_student(student, is_reapplication=False):
+    """Create a notification for all faculty members when a student applies for certificate verification."""
+    eligible, pct = certificate_eligible(student)
+    if not eligible:
         return
 
-    send_mail(
-        subject=f"{settings.SITE_NAME} - Certificate Generated",
-        message=f"Congratulations! Your certificate for {certificate.semester} is ready.",
-        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-        recipient_list=[student.email],
-        fail_silently=True,
-    )
-
-
-def notify_faculty_of_eligible_student(student):
-    """Create a notification for all faculty when a student becomes certificate-eligible."""
-    pct = overall_percentage(student)
-    faculty_users = User.objects.filter(role__in=[User.Role.FACULTY, User.Role.HOD])
+    faculty_users = User.objects.filter(role=User.Role.FACULTY)
     for faculty in faculty_users:
-        # Avoid duplicate notifications for the same student
-        if not Notification.objects.filter(
-            recipient=faculty,
-            related_student=student,
-            notification_type=Notification.Type.CERT_ELIGIBLE,
-        ).exists():
+        if is_reapplication:
+            title = f"Certificate Re-application: {student.display_name}"
+            message = f"{student.display_name} ({student.usn or student.username}) has addressed review remarks, completed additional assignments ({pct:.1f}%), and re-applied for certificate verification."
             Notification.objects.create(
                 recipient=faculty,
                 notification_type=Notification.Type.CERT_ELIGIBLE,
-                title=f"{student.display_name} is certificate eligible",
-                message=f"{student.display_name} ({student.usn or student.username}) has completed {pct:.1f}% and met all mandatory requirements.",
+                title=title,
+                message=message,
                 related_student=student,
             )
+        else:
+            if not Notification.objects.filter(
+                recipient=faculty,
+                notification_type=Notification.Type.CERT_ELIGIBLE,
+                related_student=student,
+            ).exists():
+                Notification.objects.create(
+                    recipient=faculty,
+                    notification_type=Notification.Type.CERT_ELIGIBLE,
+                    title=f"Certificate Approval Requested: {student.display_name}",
+                    message=f"{student.display_name} ({student.usn or student.username}) has completed {pct:.1f}% of lab requirements and requested certificate verification and approval.",
+                    related_student=student,
+                )
 
 
 def notify_hod_of_cert_request(cert_request):
     """Create a notification for all HoD users when a faculty sends a cert approval request."""
     hod_users = User.objects.filter(role=User.Role.HOD)
+    past_rejections = CertificateRequest.objects.filter(student=cert_request.student, status=CertificateRequest.Status.REJECTED).exists()
+    title_prefix = "Certificate Re-application Forwarded" if past_rejections else "Certificate request"
     for hod in hod_users:
         Notification.objects.create(
             recipient=hod,
             notification_type=Notification.Type.CERT_FACULTY_REQUEST,
-            title=f"Certificate request for {cert_request.student.display_name}",
-            message=f"Faculty {cert_request.requested_by_faculty.display_name} has verified and sent a certificate approval request for {cert_request.student.display_name} ({cert_request.completion_percentage:.1f}% complete).",
+            title=f"{title_prefix}: {cert_request.student.display_name}",
+            message=f"Faculty {cert_request.requested_by_faculty.display_name} has verified and forwarded a certificate approval request for {cert_request.student.display_name} ({cert_request.completion_percentage:.1f}% complete).",
             related_student=cert_request.student,
         )
 
 
 def notify_student_of_cert_decision(cert_request):
-    """Notify the student when the HoD approves or rejects their certificate."""
+    """Notify the student and faculty when the HoD approves or rejects their certificate."""
     if cert_request.status == CertificateRequest.Status.APPROVED:
         ntype = Notification.Type.CERT_HOD_APPROVED
         title = "Certificate Approved!"
-        message = f"Congratulations! Your certificate has been approved by the HoD. You can now generate your certificate."
+        message = f"Congratulations! Your certificate has been approved by the HoD. You can now view and download your official academic diploma!"
+        fac_title = f"Certificate Approved by HoD: {cert_request.student.display_name}"
+        fac_msg = f"The Head of Department has approved and issued the official certificate for {cert_request.student.display_name} ({cert_request.student.usn or cert_request.student.username})."
     else:
         ntype = Notification.Type.CERT_HOD_REJECTED
         title = "Certificate Request Declined"
         message = f"Your certificate request has been declined. Notes: {cert_request.hod_notes or 'No additional notes.'}"
+        fac_title = f"Certificate Declined by HoD: {cert_request.student.display_name}"
+        fac_msg = f"The Head of Department declined the certificate request for {cert_request.student.display_name}. Remarks: {cert_request.hod_notes or 'No remarks provided.'}"
 
     Notification.objects.create(
         recipient=cert_request.student,
@@ -417,3 +450,14 @@ def notify_student_of_cert_decision(cert_request):
         message=message,
         related_student=cert_request.student,
     )
+
+    fac_recipients = [cert_request.requested_by_faculty] if cert_request.requested_by_faculty else User.objects.filter(role=User.Role.FACULTY)
+    for fac in fac_recipients:
+        if fac:
+            Notification.objects.create(
+                recipient=fac,
+                notification_type=ntype,
+                title=fac_title,
+                message=fac_msg,
+                related_student=cert_request.student,
+            )

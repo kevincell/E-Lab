@@ -271,6 +271,71 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.recipient} — {self.title}"
 
+    @property
+    def get_redirect_url(self):
+        from django.urls import reverse
+        if self.notification_type == self.Type.CERT_ELIGIBLE:
+            if self.related_student:
+                return reverse("faculty_student_detail", args=[self.related_student.id])
+            return reverse("faculty_cert_requests")
+        elif self.notification_type == self.Type.CERT_FACULTY_REQUEST:
+            if self.related_student:
+                req = CertificateRequest.objects.filter(
+                    student=self.related_student,
+                    status=CertificateRequest.Status.PENDING_HOD
+                ).order_by("-updated_at").first()
+                if not req:
+                    req = CertificateRequest.objects.filter(student=self.related_student).order_by("-updated_at").first()
+                if req:
+                    return reverse("hod_review_request", args=[req.id])
+            return reverse("hod_dashboard")
+        elif self.notification_type in [self.Type.CERT_HOD_APPROVED, self.Type.CERT_HOD_REJECTED]:
+            return reverse("dashboard")
+        return reverse("notifications_list")
+
+    @property
+    def cert_action_state(self):
+        from django.urls import reverse
+        if self.notification_type not in [self.Type.CERT_ELIGIBLE, self.Type.CERT_FACULTY_REQUEST, self.Type.CERT_HOD_APPROVED, self.Type.CERT_HOD_REJECTED]:
+            return None
+        if not self.related_student:
+            return None
+        req = CertificateRequest.objects.filter(student=self.related_student).order_by("-updated_at").first()
+        if not req:
+            return None
+
+        if self.recipient.role == "faculty":
+            if req.status == CertificateRequest.Status.PENDING_FACULTY:
+                return {"label": "Review & Forward ➔", "open": True, "url": reverse("faculty_student_detail", args=[self.related_student.id])}
+            elif req.status == CertificateRequest.Status.PENDING_HOD:
+                return {"label": "⏳ Req Already Sent to HoD", "open": False, "url": "#"}
+            elif req.status == CertificateRequest.Status.APPROVED:
+                return {"label": "✅ Certificate Approved", "open": False, "url": "#"}
+            elif req.status == CertificateRequest.Status.REJECTED:
+                return {"label": "❌ Request Declined", "open": False, "url": "#"}
+
+        elif self.recipient.role == "hod":
+            if req.status == CertificateRequest.Status.PENDING_HOD:
+                return {"label": "Authorize & Issue ➔", "open": True, "url": reverse("hod_review_request", args=[req.id])}
+            elif req.status == CertificateRequest.Status.APPROVED:
+                return {"label": "✅ Already Approved by HoD", "open": False, "url": "#"}
+            elif req.status == CertificateRequest.Status.REJECTED:
+                return {"label": "❌ Already Declined by HoD", "open": False, "url": "#"}
+            else:
+                return {"label": f"⏳ {req.get_status_display()}", "open": False, "url": "#"}
+
+        elif self.recipient.role == "student":
+            if req.status == CertificateRequest.Status.APPROVED:
+                cert = Certificate.objects.filter(student=self.related_student).first()
+                url = reverse("certificate_detail", args=[cert.id]) if cert else reverse("certificate_create")
+                return {"label": "📥 View Diploma ↗", "open": True, "url": url}
+            elif req.status == CertificateRequest.Status.REJECTED:
+                return {"label": "❌ Request Declined", "open": False, "url": "#"}
+            else:
+                return {"label": "⏳ Under Review", "open": False, "url": "#"}
+
+        return None
+
 
 class CertificateRequest(models.Model):
     class Status(models.TextChoices):

@@ -27,11 +27,10 @@ class StudentSignUpForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields["username"].label = "USN"
         self.fields["username"].help_text = "Use your student USN, for example NNM25CC001."
-        self.fields["usn"].required = False
 
     class Meta:
         model = User
-        fields = ("username", "first_name", "last_name", "email", "usn", "department", "semester")
+        fields = ("username", "first_name", "last_name", "email", "department", "semester")
 
     def save(self, commit=True):
         user = super().save(commit=False)
