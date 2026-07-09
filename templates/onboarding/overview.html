@@ -536,6 +536,133 @@
   [data-theme="dark"] .scroll-dot {
     background: #50fa7b !important;
   }
+
+  /* =========================================================
+     MEET THE CREATORS SECTION
+     ========================================================= */
+  .creators-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+
+  @media (max-width: 900px) {
+    .creators-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 520px) {
+    .creators-grid { grid-template-columns: 1fr; }
+  }
+
+  .creator-card {
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 18px;
+    padding: 28px 22px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  [data-theme="light"] .creator-card {
+    background: #F8FAFC;
+    border-color: rgba(226, 232, 240, 0.8);
+  }
+
+  .creator-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    border-color: #00e5ff;
+    box-shadow: 0 14px 32px rgba(0, 229, 255, 0.15);
+  }
+
+  [data-theme="light"] .creator-card:hover {
+    border-color: #4F46E5;
+    box-shadow: 0 14px 32px rgba(79, 70, 229, 0.12);
+  }
+
+  .creator-avatar {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 900;
+    color: #fff;
+    background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
+    box-shadow: 0 8px 22px rgba(79, 70, 229, 0.35);
+    flex-shrink: 0;
+    /* Swap for a real photo: replace this div with an img tag
+       using class="creator-avatar" (see markup comments below) */
+    object-fit: cover;
+  }
+
+  .creator-card:nth-child(2) .creator-avatar {
+    background: linear-gradient(135deg, #06B6D4 0%, #10B981 100%);
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.35);
+  }
+
+  .creator-card:nth-child(3) .creator-avatar {
+    background: linear-gradient(135deg, #e06c75 0%, #f0989e 100%);
+    box-shadow: 0 8px 22px rgba(224, 108, 117, 0.35);
+  }
+
+  .creator-card:nth-child(4) .creator-avatar {
+    background: linear-gradient(135deg, #bb86fc 0%, #6f69e6 100%);
+    box-shadow: 0 8px 22px rgba(187, 134, 252, 0.35);
+  }
+
+  .creator-name {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .creator-branch {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .creator-batch {
+    background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 5px 14px;
+    border-radius: 50px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+
+  /* Dark theme overrides (match Odysseus / Tech Dark palette) */
+  [data-theme="dark"] .creator-card {
+    background: #1e2228 !important;
+    border: 1px solid #355a66 !important;
+  }
+  [data-theme="dark"] .creator-card:hover {
+    border-color: #9cdef2 !important;
+    box-shadow: 0 8px 25px rgba(156, 222, 242, 0.15) !important;
+  }
+  [data-theme="dark"] .creator-name {
+    color: #9cdef2 !important;
+  }
+  [data-theme="dark"] .creator-branch {
+    color: #e0e6ed !important;
+  }
+  [data-theme="dark"] .creator-batch {
+    background: #1e2228 !important;
+    color: #e06c75 !important;
+    border: 1.5px solid #e06c75 !important;
+    box-shadow: 0 4px 10px rgba(224, 108, 117, 0.2) !important;
+  }
 </style>
 
 <div class="overview-container">
@@ -813,6 +940,49 @@
         <span>Continue to Course Selection</span>
         <span>→</span>
       </a>
+    </div>
+  </div>
+
+  <!-- MEET THE CREATORS -->
+  <div class="scroll-reveal">
+    <div class="section-card" style="border-left: 5px solid #bb86fc;">
+      <div class="section-header">
+        <div class="section-icon" style="color: #bb86fc; background: rgba(187, 134, 252, 0.15);">👥</div>
+        <div>
+          <h2 class="section-title">Meet the Creators</h2>
+          <p class="section-subtitle">The team behind the CCE e-Lab</p>
+        </div>
+      </div>
+      <div class="creators-grid">
+        <!-- Creator 1 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C1</div>
+          <h3 class="creator-name">Creator One</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+        <!-- Creator 2 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C2</div>
+          <h3 class="creator-name">Creator Two</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+        <!-- Creator 3 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C3</div>
+          <h3 class="creator-name">Creator Three</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+        <!-- Creator 4 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C4</div>
+          <h3 class="creator-name">Creator Four</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
