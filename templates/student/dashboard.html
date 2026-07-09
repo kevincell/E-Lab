@@ -78,8 +78,9 @@
       {% for card in module_cards %}
         <a href="{% url 'module_detail' card.module.id %}"
            class="wheel-module-label"
+           style="--mod-color: var(--lvl-{{ forloop.counter }});"
            title="{{ card.module.name }} — {{ card.percentage|floatformat:0 }}% complete">
-          M{{ forloop.counter }}
+          <span class="wheel-mod-title" style="color: var(--mod-color); font-weight: 800; font-size: 16px; display: block; margin-bottom: 2px;">M{{ forloop.counter }}</span>
           <small>{{ card.percentage|floatformat:0 }}%</small>
         </a>
       {% empty %}
@@ -97,7 +98,7 @@
       <div class="wheel-legend">
         <span><i style="background:var(--success)"></i> Completed</span>
         <span><i style="background:var(--line-strong)"></i> Pending</span>
-        <span><i style="background:var(--danger)"></i> Failed</span>
+        <span><i style="background:var(--danger)"></i> Incomplete</span>
       </div>
     </div>
 

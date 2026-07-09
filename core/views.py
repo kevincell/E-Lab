@@ -54,7 +54,7 @@ class AppLoginView(LoginView):
         user = self.request.user
         if user.is_authenticated and user.role == User.Role.HOD:
             return reverse_lazy("role_select")
-        return super().get_success_url() or reverse_lazy("dashboard")
+        return super().get_success_url() or reverse_lazy("onboarding_overview")
 
 
 class AppLogoutView(LogoutView):
@@ -68,7 +68,7 @@ class AppLogoutView(LogoutView):
 class SignUpView(CreateView):
     form_class = StudentSignUpForm
     template_name = "registration/signup.html"
-    success_url = reverse_lazy("dashboard")
+    success_url = reverse_lazy("onboarding_overview")
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -79,6 +79,20 @@ class SignUpView(CreateView):
 def faculty_required(user):
     if not user.is_authenticated or not user.is_faculty_like:
         raise PermissionDenied
+
+
+@login_required
+def onboarding_overview(request):
+    if request.user.role == User.Role.ADMIN:
+        return redirect("admin:index")
+    return render(request, "onboarding/overview.html")
+
+
+@login_required
+def onboarding_journey(request):
+    if request.user.role == User.Role.ADMIN:
+        return redirect("admin:index")
+    return render(request, "onboarding/course_selection.html")
 
 
 @login_required
@@ -1490,7 +1504,7 @@ def faculty_testcase_form(request, question_id):
 @login_required
 def role_select(request):
     if request.user.role != User.Role.HOD:
-        return redirect("dashboard")
+        return redirect("onboarding_overview")
 
     if request.method == "POST":
         chosen = request.POST.get("role", "faculty")
@@ -1498,7 +1512,7 @@ def role_select(request):
             request.session["active_role"] = chosen
         if chosen == "hod":
             return redirect("hod_dashboard")
-        return redirect("dashboard")
+        return redirect("onboarding_overview")
 
     return render(request, "registration/role_select.html")
 

@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+{% block title %}Select Your Course of Journey - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<style>
+  /* =========================================================
+     AWWARD-WINNING 3D HYPER-GLASS COURSE SELECTION JOURNEY
+     ========================================================= */
+  .journey-container {
+    max-width: 1150px;
+    margin: 0 auto;
+    padding: 30px 0 70px;
+    animation: stylishPageEnter 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    perspective: 1200px;
+  }
+
+  @keyframes stylishPageEnter {
+    0% { opacity: 0; filter: blur(20px); transform: scale(0.93) translateY(35px) rotateX(6deg); }
+    100% { opacity: 1; filter: blur(0px); transform: scale(1) translateY(0) rotateX(0deg); }
+  }
+
+  .journey-header {
+    text-align: center;
+    margin-bottom: 55px;
+  }
+
+  .journey-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    background: rgba(0, 229, 255, 0.12);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: 50px;
+    color: #00e5ff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
+  }
+
+  [data-theme="light"] .journey-badge {
+    color: #4F46E5;
+    background: rgba(79, 70, 229, 0.12);
+    border-color: rgba(79, 70, 229, 0.35);
+  }
+
+  .journey-title {
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--text-primary);
+    margin: 0 0 18px;
+    background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 45%, #00e5ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  [data-theme="light"] .journey-title {
+    background: linear-gradient(135deg, #1E1B4B 0%, #3730A3 45%, #0284C7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .journey-subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 750px;
+    margin: 0 auto;
+    line-height: 1.7;
+    font-weight: 500;
+  }
+
+  .course-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
+
+  @media (max-width: 850px) {
+    .course-grid { grid-template-columns: 1fr; }
+  }
+
+  .course-card-item {
+    position: relative;
+    background: rgba(30, 41, 59, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 26px;
+    padding: 38px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(16px);
+  }
+
+  [data-theme="light"] .course-card-item {
+    background: #ffffff;
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 15px 35px rgba(46, 48, 147, 0.08);
+  }
+
+  /* Active Card Glow & Hover Lift */
+  .course-card-item.active-course {
+    border: 2px solid #00e5ff;
+    box-shadow: 0 0 40px rgba(0, 229, 255, 0.25), inset 0 0 25px rgba(0, 229, 255, 0.06);
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+  }
+
+  [data-theme="light"] .course-card-item.active-course {
+    border-color: #4F46E5;
+    box-shadow: 0 20px 50px rgba(79, 70, 229, 0.2);
+    background: linear-gradient(145deg, #ffffff 0%, #EEF2FF 100%);
+  }
+
+  .course-card-item.active-course:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 55px rgba(0, 229, 255, 0.4);
+    border-color: #00e5ff;
+  }
+
+  [data-theme="light"] .course-card-item.active-course:hover {
+    box-shadow: 0 25px 60px rgba(79, 70, 229, 0.3);
+  }
+
+  /* Locked Card Styling */
+  .course-card-item.locked-course {
+    opacity: 0.82;
+    border: 1.5px dashed rgba(255, 255, 255, 0.16);
+  }
+
+  [data-theme="light"] .course-card-item.locked-course {
+    border-color: rgba(148, 163, 184, 0.5);
+    background: #F8FAFC;
+  }
+
+  .course-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 26px;
+  }
+
+  .course-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 900;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .icon-c {
+    background: linear-gradient(135deg, #00e5ff 0%, #3b82f6 100%);
+    color: #0f172a;
+    box-shadow: 0 10px 25px rgba(0, 229, 255, 0.45);
+  }
+
+  .icon-locked {
+    background: rgba(100, 116, 139, 0.25);
+    color: var(--text-muted);
+  }
+
+  [data-theme="light"] .icon-locked {
+    background: #E2E8F0;
+    color: #64748B;
+  }
+
+  .status-pill {
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .status-active {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  }
+
+  .status-locked {
+    background: rgba(100, 116, 139, 0.2);
+    color: var(--text-muted);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+  }
+
+  .course-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 14px;
+  }
+
+  .course-desc {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+    flex-grow: 1;
+  }
+
+  .progress-note {
+    background: rgba(15, 23, 42, 0.55);
+    border-left: 3.5px solid #ffcb9a;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #ffcb9a;
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+
+  [data-theme="light"] .progress-note {
+    background: #FEF3C7;
+    color: #92400E;
+    border-color: #F59E0B;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 18px 28px;
+    border-radius: 16px;
+    font-size: 17px;
+    font-weight: 900;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .btn-enter-c {
+    background: linear-gradient(135deg, #00e5ff 0%, #3b82f6 100%);
+    color: #0f172a;
+    box-shadow: 0 10px 25px rgba(0, 229, 255, 0.35);
+  }
+
+  [data-theme="light"] .btn-enter-c {
+    background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.35);
+  }
+
+  .btn-enter-c:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(0, 229, 255, 0.55);
+  }
+
+  .btn-locked {
+    background: rgba(100, 116, 139, 0.2);
+    color: var(--text-muted);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+    cursor: not-allowed;
+  }
+
+  [data-theme="light"] .btn-locked {
+    background: #E2E8F0;
+    color: #64748B;
+  }
+
+  /* =========================================================
+     C PROGRAMMING DARK THEME MATCH (Odysseus / Tech Dark)
+     ========================================================= */
+  [data-theme="dark"] .journey-badge {
+    background: #1e2228 !important;
+    color: #9cdef2 !important;
+    border: 1.5px solid #355a66 !important;
+    box-shadow: 0 0 15px rgba(156, 222, 242, 0.15) !important;
+  }
+  [data-theme="dark"] .journey-title {
+    background: none !important;
+    color: #9cdef2 !important;
+    -webkit-text-fill-color: #9cdef2 !important;
+  }
+  [data-theme="dark"] .course-card-item {
+    background: #111111 !important;
+    border: 1px solid #355a66 !important;
+    border-bottom: 4px solid #e06c75 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    color: #e0e6ed !important;
+  }
+  [data-theme="dark"] .course-card-item.active-course {
+    border: 2px solid #9cdef2 !important;
+    border-bottom: 4px solid #50fa7b !important;
+    background: linear-gradient(145deg, #1e2228 0%, #111111 100%) !important;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(80, 250, 123, 0.15) !important;
+  }
+  [data-theme="dark"] .course-card-item.locked-course {
+    background: #16191d !important;
+    border: 1.5px dashed #355a66 !important;
+  }
+  [data-theme="dark"] .course-title {
+    color: #9cdef2 !important;
+  }
+  [data-theme="dark"] .progress-note {
+    background: #1e2228 !important;
+    color: #f0ad4e !important;
+    border-left: 4px solid #f0ad4e !important;
+    border: 1px solid rgba(240, 173, 78, 0.3) !important;
+  }
+  [data-theme="dark"] .btn-enter-c {
+    background: linear-gradient(135deg, #e06c75 0%, #f0989e 100%) !important;
+    color: #111111 !important;
+    font-weight: 800 !important;
+    border: none !important;
+    box-shadow: 0 6px 20px rgba(224, 108, 117, 0.35) !important;
+  }
+  [data-theme="dark"] .btn-enter-c:hover {
+    background: #f0989e !important;
+    box-shadow: 0 8px 28px rgba(224, 108, 117, 0.55) !important;
+    transform: translateY(-3px) scale(1.03) !important;
+  }
+  [data-theme="dark"] .btn-locked {
+    background: #1e2228 !important;
+    color: #6b8a94 !important;
+    border: 1px solid #355a66 !important;
+  }
+  [data-theme="dark"] .status-active {
+    background: rgba(80, 250, 123, 0.15) !important;
+    color: #50fa7b !important;
+    border: 1px solid #50fa7b !important;
+  }
+  [data-theme="dark"] .status-locked {
+    background: #1e2228 !important;
+    color: #6b8a94 !important;
+    border: 1px solid #355a66 !important;
+  }
+  [data-theme="dark"] .icon-c {
+    background: #1e2228 !important;
+    color: #9cdef2 !important;
+    border: 2px solid #9cdef2 !important;
+    box-shadow: 0 6px 18px rgba(156, 222, 242, 0.25) !important;
+  }
+  [data-theme="dark"] .icon-locked {
+    background: #1e2228 !important;
+    color: #6b8a94 !important;
+    border: 1.5px solid #355a66 !important;
+  }
+  [data-theme="dark"] .course-desc,
+  [data-theme="dark"] .journey-subtitle {
+    color: #e0e6ed !important;
+  }
+</style>
+
+<div class="journey-container">
+  <div class="journey-header">
+    <div class="journey-badge">🎓 Interactive e-Lab Curriculum</div>
+    <h1 class="journey-title">Select Your Course of Journey</h1>
+    <p class="journey-subtitle">
+      {% if user.is_faculty_like %}
+      Select a programming language specialization below to manage course modules, review student submissions, upload question banks, and monitor class progress. We currently offer our comprehensive C Programming e-Lab, with additional languages expanding in the future.
+      {% else %}
+      Choose your programming language specialization below. We currently offer our comprehensive C Programming e-Lab, with additional languages expanding in the future.
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="course-grid">
+    <!-- CARD 1: C PROGRAMMING (ACTIVE) -->
+    <div class="course-card-item active-course">
+      <div>
+        <div class="course-top-row">
+          <div class="course-icon-wrap icon-c">C</div>
+          <span class="status-pill status-active">🟢 Available Now</span>
+        </div>
+        {% if user.is_faculty_like %}
+        <h2 class="course-title">C Programming e-Lab</h2>
+        <p class="course-desc">
+          Manage C programming modules, monitor real-time student completion analytics, review code submissions, and customize question banks across 15 structured learning modules.
+        </p>
+        {% else %}
+        <h2 class="course-title">C Programming e-Lab</h2>
+        <p class="course-desc">
+          Master foundational programming concepts, variables, decision-making constructs, loops, arrays, strings, functions, pointers, file handling, and memory allocation through live automated evaluation.
+        </p>
+        {% endif %}
+      </div>
+      <div>
+        <a href="{% url 'dashboard' %}" class="action-btn btn-enter-c transition-link">
+          {% if user.is_faculty_like %}
+          <span>Enter Faculty Portal</span>
+          {% else %}
+          <span>Enter C e-Lab</span>
+          {% endif %}
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- CARD 2: C++ PROGRAMMING (LOCKED) -->
+    <div class="course-card-item locked-course">
+      <div>
+        <div class="course-top-row">
+          <div class="course-icon-wrap icon-locked">C++</div>
+          <span class="status-pill status-locked">🔒 Under Progress</span>
+        </div>
+        <h2 class="course-title">C++ Programming e-Lab</h2>
+        <p class="course-desc">
+          Object-oriented programming, classes, inheritance, polymorphism, STL containers, templates, and advanced algorithmic problem solving.
+        </p>
+        <div class="progress-note">
+          <strong>⚡ Under Progress:</strong> Curriculum and automated evaluation engine under active development. Stay tuned for release!
+        </div>
+      </div>
+      <div>
+        <button disabled class="action-btn btn-locked">
+          <span>🔒 Under Progress · Coming Soon</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 3: JAVA PROGRAMMING (LOCKED) -->
+    <div class="course-card-item locked-course">
+      <div>
+        <div class="course-top-row">
+          <div class="course-icon-wrap icon-locked">Java</div>
+          <span class="status-pill status-locked">🔒 Under Progress</span>
+        </div>
+        <h2 class="course-title">Java Programming e-Lab</h2>
+        <p class="course-desc">
+          Core Java principles, object-oriented design, interfaces, multithreading, collections framework, exception handling, and JDBC database connectivity.
+        </p>
+        <div class="progress-note">
+          <strong>⚡ Under Progress:</strong> Curriculum and automated evaluation engine under active development. Stay tuned for release!
+        </div>
+      </div>
+      <div>
+        <button disabled class="action-btn btn-locked">
+          <span>🔒 Under Progress · Coming Soon</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CARD 4: PYTHON PROGRAMMING (LOCKED) -->
+    <div class="course-card-item locked-course">
+      <div>
+        <div class="course-top-row">
+          <div class="course-icon-wrap icon-locked">Py</div>
+          <span class="status-pill status-locked">🔒 Under Progress</span>
+        </div>
+        <h2 class="course-title">Python Programming e-Lab</h2>
+        <p class="course-desc">
+          Python scripting, data structures, list comprehensions, functional programming, file I/O, and introductory libraries for data analytics and automation.
+        </p>
+        <div class="progress-note">
+          <strong>⚡ Under Progress:</strong> Curriculum and automated evaluation engine under active development. Stay tuned for release!
+        </div>
+      </div>
+      <div>
+        <button disabled class="action-btn btn-locked">
+          <span>🔒 Under Progress · Coming Soon</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Stylish Hyperspace Zoom-Out & Blur Transition when entering C e-Lab
+    document.querySelectorAll('.transition-link').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetUrl = this.href;
+        document.body.style.transition = 'all 0.5s cubic-bezier(0.7, 0, 0.3, 1)';
+        document.body.style.transform = 'scale(1.08) translateY(-15px)';
+        document.body.style.filter = 'blur(18px) brightness(1.35)';
+        document.body.style.opacity = '0';
+        setTimeout(() => {
+          window.location.href = targetUrl;
+        }, 460);
+      });
+    });
+  });
+</script>
+{% endblock %}

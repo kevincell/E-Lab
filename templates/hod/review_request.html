@@ -114,7 +114,7 @@
               <strong>{{ sub.question.title }}</strong>
               <small class="muted">{{ sub.question.module.name }} &middot; {{ sub.submitted_at|timesince }} ago</small>
             </span>
-            <span style="font-size: 13px; font-weight: 600; color: {% if sub.status == 'accepted' %}var(--success){% else %}#ef4444{% endif %};">
+            <span style="font-size: 13px; font-weight: 600; color: {% if sub.status == 'accepted' %}var(--success){% else %}var(--danger){% endif %};">
               {{ sub.get_status_display }}
             </span>
           </div>
