@@ -154,11 +154,6 @@
       <span>{{ overall_percentage|floatformat:1 }}%</span>
       <small class="muted">Overall</small>
     </div>
-    <div class="insight-card">
-      <p class="eyebrow">Flags</p>
-      <span>{{ live_flags_count|default:"0"|stringformat:"02d" }}</span>
-      <small class="muted">Live</small>
-    </div>
   </div>
 
   <!-- Recent Activity -->
@@ -179,18 +174,6 @@
           </div>
         {% endfor %}
       </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Certificates -->
-  {% if certificates %}
-  <div class="dashboard-lists">
-    <div class="panel certificate-card">
-      <p class="eyebrow">Certificates</p>
-      <h3>Certificate Earned</h3>
-      <p class="muted">{{ certificates.0.semester }} · {{ certificates.0.completion_percentage|floatformat:1 }}%</p>
-      <a href="{% url 'certificate_detail' certificates.0.id %}" class="secondary">View Certificate</a>
     </div>
   </div>
   {% endif %}
@@ -220,5 +203,5 @@
     seg.style.setProperty('--seg-angle', (i * segStep) + 'deg');
   });
 })();
-</script></function></seed:tool_call>
+</script>
 {% endblock %}

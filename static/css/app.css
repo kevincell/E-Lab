@@ -801,7 +801,7 @@ body.dashboard-page .page {
    ========================================================= */
 .insight-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 
@@ -839,9 +839,6 @@ body.dashboard-page .page {
   margin-top: 12px;
 }
 
-.insight-card.success span {
-  color: var(--success);
-}
 
 /* =========================================================
    List & Cards
@@ -1788,7 +1785,7 @@ th {
     order: -1;
   }
   .insight-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .question-layout {
     grid-template-columns: 1fr;
@@ -1991,7 +1988,7 @@ th {
     order: -1;
   }
   .insight-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .question-layout {
     grid-template-columns: 1fr;
@@ -2618,6 +2615,11 @@ th {
   border-bottom: 5px solid #10B981 !important;
 }
 
+[data-theme="light"] .insight-card span,
+[data-theme="light"] .insight-card.success span {
+  color: #0F172A !important;
+}
+
 [data-theme="light"] .row-card,
 [data-theme="light"] .module-progress-item {
   background: #FFFFFF !important;
@@ -3012,6 +3014,11 @@ th {
 [data-theme="dark"] .insight-card.success {
   border-bottom: 4px solid #50fa7b !important;
   background: rgba(80, 250, 123, 0.08) !important;
+}
+
+[data-theme="dark"] .insight-card span,
+[data-theme="dark"] .insight-card.success span {
+  color: #e0e6ed !important;
 }
 
 [data-theme="dark"] .wheel-wedges {
