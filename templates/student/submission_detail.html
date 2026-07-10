@@ -63,15 +63,13 @@
       <dt>Time</dt><dd>{{ submission.execution_time|default:"-" }}</dd>
       <dt>Memory</dt><dd>{{ submission.memory_used|default:"-" }}</dd>
       <dt>Manual Grade</dt><dd>{{ submission.manually_graded|yesno:"Yes,No" }}</dd>
-      <dt>Plagiarism Flag</dt><dd>{{ submission.plagiarism_flagged|yesno:"Yes,No" }}</dd>
       {% if submission.graded_by %}
         <dt>Graded By</dt><dd>{{ submission.graded_by.display_name }}</dd>
       {% endif %}
+      {% if user.is_faculty_like %}
+        <dt>Proctoring Violations</dt><dd>{{ submission.proctoring_violations }}</dd>
+      {% endif %}
     </dl>
-    {% if submission.plagiarism_notes %}
-      <h3>Plagiarism Notes</h3>
-      <p class="muted">{{ submission.plagiarism_notes }}</p>
-    {% endif %}
   </article>
 
   <article class="panel result-card">
@@ -79,16 +77,57 @@
       <div class="panel-icon">
         <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
       </div>
-      <h2 class="panel-title">Judge Output</h2>
+      <h2 class="panel-title">Output</h2>
     </div>
     {% if submission.judge_output %}
-      <pre>{{ submission.judge_output }}</pre>
+      {{ submission.judge_output|json_script:"judge-output-data" }}
+      <div id="rich-output-container"></div>
+      <script>
+        try {
+          const rawData = JSON.parse(document.getElementById("judge-output-data").textContent);
+          const tests = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+          const container = document.getElementById("rich-output-container");
+          
+          if (!Array.isArray(tests)) throw new Error("Not an array");
+
+          let passedCount = 0;
+          tests.forEach(t => { if(t.passed) passedCount++; });
+          const allPassed = passedCount === tests.length;
+          
+          let html = `<div style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: ${allPassed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; color: ${allPassed ? '#22c55e' : '#ef4444'}; font-weight: 600;">
+            ${allPassed ? '✅ Success!' : '❌ Failed'} &middot; ${passedCount} out of ${tests.length} test cases passed.
+          </div>`;
+          
+          tests.forEach((test, i) => {
+            const color = test.passed ? '#22c55e' : '#ef4444';
+            const icon = test.passed ? '✓' : '✗';
+            html += `
+              <div style="margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
+                <div style="padding: 10px 16px; background: rgba(0,0,0,0.2); font-weight: 600; color: ${color}; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  ${icon} Test Case ${i + 1}
+                </div>
+                <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.1);">
+                  <div><strong style="color: #cbd5e1; font-size: 13px;">Input</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px;">${test.stdin || '-'}</pre></div>
+                  <div><strong style="color: #cbd5e1; font-size: 13px;">Expected Output</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px;">${test.expected || '-'}</pre></div>
+                  <div><strong style="color: #cbd5e1; font-size: 13px;">Your Output</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px; color: ${color};">${test.actual || '-'}</pre></div>
+                </div>
+              </div>
+            `;
+          });
+          container.innerHTML = html;
+        } catch(e) {
+          // Fallback if not JSON
+          let fallback = document.getElementById("judge-output-data").textContent;
+          try { fallback = JSON.parse(fallback); } catch(ex) {}
+          document.getElementById("rich-output-container").innerHTML = `<pre>${fallback}</pre>`;
+        }
+      </script>
     {% else %}
-      <p class="muted">No stdout captured yet.</p>
+      <p class="muted">No output captured yet.</p>
     {% endif %}
     {% if submission.error_output %}
-      <h3>Error</h3>
-      <pre>{{ submission.error_output }}</pre>
+      <h3 style="margin-top: 24px; color: #ef4444;">Error</h3>
+      <pre style="color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">${submission.error_output}</pre>
     {% endif %}
   </article>
 </section>

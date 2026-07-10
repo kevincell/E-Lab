@@ -127,8 +127,8 @@ class Submission(models.Model):
         blank=True,
         related_name="graded_submissions",
     )
-    plagiarism_flagged = models.BooleanField(default=False)
-    plagiarism_notes = models.TextField(blank=True)
+    proctoring_violations = models.PositiveIntegerField(default=0)
+    proctoring_logs = models.JSONField(default=list)
     submitted_at = models.DateTimeField(auto_now_add=True)
     judged_at = models.DateTimeField(null=True, blank=True)
 
@@ -251,6 +251,7 @@ class Notification(models.Model):
         CERT_FACULTY_REQUEST = "cert_faculty_request", "Faculty Sent Approval Request"
         CERT_HOD_APPROVED = "cert_hod_approved", "HoD Approved Certificate"
         CERT_HOD_REJECTED = "cert_hod_rejected", "HoD Rejected Certificate"
+        FACULTY_NOTE = "faculty_note", "Message from Faculty"
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"

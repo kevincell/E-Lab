@@ -31,25 +31,8 @@ def similarity(a, b):
     return SequenceMatcher(None, a or "", b or "").ratio()
 
 
-def check_plagiarism(submission):
-    similar = []
-    other_submissions = Submission.objects.filter(question=submission.question).exclude(pk=submission.pk)
-    for other in other_submissions.select_related("student"):
-        if similarity(submission.code, other.code) > 0.85:
-            similar.append(other)
-    return similar
-
-
-def flag_plagiarism(submission):
-    similar = check_plagiarism(submission)
-    if not similar:
-        return []
-
-    labels = [f"#{other.pk} {other.student.display_name}" for other in similar[:10]]
-    submission.plagiarism_flagged = True
-    submission.plagiarism_notes = "Similar to: " + ", ".join(labels)
-    submission.save(update_fields=["plagiarism_flagged", "plagiarism_notes"])
-    return similar
+def similarity(a, b):
+    return SequenceMatcher(None, a or "", b or "").ratio()
 
 
 def record_attendance(student, module):
@@ -213,7 +196,7 @@ def evaluate_submission(submission_id):
     submission.save(update_fields=["status"])
 
     passed = 0
-    outputs = []
+    test_results = []
     worst_status = Submission.Status.ACCEPTED
     max_time = 0.0
     max_memory = 0
@@ -229,7 +212,15 @@ def evaluate_submission(submission_id):
             )
             status_id = result.get("status_id")
             status = JUDGE0_STATUS_MAP.get(status_id, Submission.Status.INTERNAL_ERROR)
-            outputs.append(normalize_output(result.get("stdout")))
+            actual_output = normalize_output(result.get("stdout"))
+            
+            test_results.append({
+                "stdin": test.stdin or "",
+                "expected": test.expected_output or "",
+                "actual": actual_output or "",
+                "passed": status == Submission.Status.ACCEPTED,
+                "status": status,
+            })
 
             max_time = max(max_time, float(result.get("time") or 0))
             max_memory = max(max_memory, int(result.get("memory") or 0))
@@ -249,7 +240,8 @@ def evaluate_submission(submission_id):
         submission.status = Submission.Status.ACCEPTED if passed == total else worst_status
         submission.execution_time = max_time
         submission.memory_used = max_memory
-        submission.judge_output = "\n".join(outputs)
+        import json
+        submission.judge_output = json.dumps(test_results)
     except Exception as exc:
         submission.status = Submission.Status.INTERNAL_ERROR
         submission.error_output = str(exc)

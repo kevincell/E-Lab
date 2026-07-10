@@ -55,11 +55,10 @@ class SubmissionAdmin(admin.ModelAdmin):
         "status",
         "score",
         "manually_graded",
-        "plagiarism_flagged",
         "submitted_at",
         "judged_at",
     )
-    list_filter = ("status", "question__module", "manually_graded", "plagiarism_flagged")
+    list_filter = ("status", "question__module", "manually_graded")
     search_fields = ("student__username", "student__usn", "question__title")
 
 

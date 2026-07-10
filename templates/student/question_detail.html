@@ -11,6 +11,12 @@
     <h1>{{ question.title }}</h1>
   </div>
   <div class="toolbar-actions" style="display: flex; align-items: center; gap: 12px;">
+    <!-- Proctoring Badge -->
+    <div class="proctoring-badge" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50px; color: #ef4444; font-size: 13px; font-weight: 700; user-select: none;">
+      <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: pulseRed 1.5s infinite;"></span>
+      Proctoring Active
+    </div>
+
     <button type="button" class="secondary maximize-page-btn" id="editor-maximize-btn" title="Toggle Full Screen Editor" style="min-height: 42px; height: 42px; padding: 0 20px; font-size: 14px; gap: 8px; border-radius: var(--radius-full);">
       <svg class="icon-maximize" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
       <svg class="icon-minimize" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M8 3v3a2 2 0 0 1-2 2H3"></path><path d="M21 8h-3a2 2 0 0 1-2-2V3"></path><path d="M3 16h3a2 2 0 0 1 2 2v3"></path><path d="M16 21v-3a2 2 0 0 1 2-2h3"></path></svg>
@@ -399,40 +405,195 @@
     const toast = document.getElementById("fullscreen-toast");
     if (maxBtn) {
       maxBtn.addEventListener("click", function() {
-        const isMax = document.body.classList.toggle("is-maximized-page");
-        const iconMax = maxBtn.querySelector(".icon-maximize");
-        const iconMin = maxBtn.querySelector(".icon-minimize");
-        const maxText = maxBtn.querySelector(".max-text");
-        if (isMax) {
+        if (!document.body.classList.contains("is-maximized-page")) {
+          document.body.classList.add("is-maximized-page");
+          const iconMax = maxBtn.querySelector(".icon-maximize");
+          const iconMin = maxBtn.querySelector(".icon-minimize");
+          const maxText = maxBtn.querySelector(".max-text");
           if (iconMax) iconMax.style.display = "none";
           if (iconMin) iconMin.style.display = "inline-block";
-          if (maxText) maxText.textContent = "Restore";
+          if (maxText) maxText.textContent = "Proctored Mode";
+          maxBtn.style.pointerEvents = "none"; // Disable clicking it again
+          maxBtn.style.opacity = "0.5";
+          
           if (toast) {
+            toast.textContent = "Proctored mode engaged. You cannot exit until you submit.";
             toast.classList.add("show");
             clearTimeout(window._toastTimer);
             window._toastTimer = setTimeout(function() {
               toast.classList.remove("show");
             }, 4000);
           }
-        } else {
-          if (iconMax) iconMax.style.display = "inline-block";
-          if (iconMin) iconMin.style.display = "none";
-          if (maxText) maxText.textContent = "Maximize";
-          if (toast) toast.classList.remove("show");
-        }
-        setTimeout(function() {
-          if (editor) editor.layout();
-        }, 50);
-      });
-
-      window.addEventListener("keydown", function(e) {
-        if (e.key === "Escape" && document.body.classList.contains("is-maximized-page")) {
-          maxBtn.click();
+          setTimeout(function() {
+            if (editor) editor.layout();
+          }, 50);
         }
       });
     }
 
     window.addEventListener("pageshow", stopProgress);
+  })();
+</script>
+
+<!-- PROCTORING SYSTEM -->
+<style>
+  @keyframes pulseRed {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  }
+
+  .proctor-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    z-index: 99999;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+  }
+  
+  .proctor-overlay.active {
+    display: flex;
+  }
+
+  .proctor-warning-box {
+    background: #1e293b;
+    border: 2px solid #ef4444;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 500px;
+    box-shadow: 0 20px 50px rgba(239, 68, 68, 0.25);
+  }
+
+  .proctor-warning-box h2 {
+    color: #ef4444;
+    font-size: 28px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .proctor-warning-box p {
+    font-size: 16px;
+    color: #cbd5e1;
+    margin-bottom: 30px;
+    line-height: 1.6;
+  }
+  
+  [data-theme="light"] .proctor-warning-box {
+    background: #ffffff;
+    box-shadow: 0 20px 50px rgba(239, 68, 68, 0.15);
+  }
+  
+  [data-theme="light"] .proctor-warning-box p {
+    color: #475569;
+  }
+</style>
+
+<div id="proctor-overlay" class="proctor-overlay">
+  <div class="proctor-warning-box">
+    <h2>⚠️ Violation Detected</h2>
+    <p>You have switched tabs, minimized the window, or attempted an unauthorized action. This incident has been logged.</p>
+    <button class="primary" id="proctor-acknowledge-btn">I Understand</button>
+  </div>
+</div>
+
+<script>
+  (function initProctoring() {
+    const overlay = document.getElementById('proctor-overlay');
+    const ackBtn = document.getElementById('proctor-acknowledge-btn');
+    const questionId = {{ question.id }};
+    const csrfInput = document.querySelector("input[name='csrfmiddlewaretoken']");
+    const csrfToken = csrfInput ? csrfInput.value : "";
+    let violationReported = false;
+
+    function triggerViolation(reason = "Window blur/tab switch") {
+      overlay.classList.add('active');
+      
+      if (!violationReported) {
+        violationReported = true; // Prevent spamming within the same blur event
+        fetch("/api/report-violation/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+          },
+          body: JSON.stringify({ question_id: questionId, reason: reason })
+        }).then(res => res.json())
+          .then(data => {
+            console.log("Violation logged:", data);
+          }).catch(err => console.error("Violation logging failed"));
+      }
+    }
+
+    if (ackBtn) {
+      ackBtn.addEventListener('click', () => {
+        overlay.classList.remove('active');
+        violationReported = false; // Reset for next time
+      });
+    }
+
+    // 1. Tab switching / Window blur
+    window.addEventListener('blur', () => triggerViolation("Window lost focus (Tab switch)"));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        triggerViolation("Tab hidden");
+      }
+    });
+
+    // 2. Prevent Copy/Cut/Paste/Drag/Drop
+    document.addEventListener('copy', (e) => { e.preventDefault(); triggerViolation("Attempted Copy"); });
+    document.addEventListener('cut', (e) => { e.preventDefault(); triggerViolation("Attempted Cut"); });
+    document.addEventListener('paste', (e) => { e.preventDefault(); triggerViolation("Attempted Paste"); });
+    document.addEventListener('drag', (e) => { e.preventDefault(); });
+    document.addEventListener('dragstart', (e) => { e.preventDefault(); });
+    document.addEventListener('drop', (e) => { e.preventDefault(); triggerViolation("Attempted Drag & Drop"); });
+
+    // 3. Prevent Right-Click / Context Menu & Selection
+    document.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+    document.addEventListener('selectstart', (e) => { 
+      // Allow selection inside the code editor textarea if needed, but monaco handles it. 
+      // To be safe we just prevent default on the body.
+      if (!e.target.closest('#editor')) {
+        e.preventDefault();
+      }
+    });
+
+    // Prevent Ctrl+C / Ctrl+V / Ctrl+X at the window level
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        const action = e.key.toLowerCase() === 'c' ? "Copy" : e.key.toLowerCase() === 'v' ? "Paste" : "Cut";
+        triggerViolation(`Attempted Keyboard Shortcut (Ctrl+${e.key.toUpperCase()})`);
+      }
+    });
+
+    // 4. Auto-Fullscreen / Auto-Maximize on Interaction
+    // We attach it to the editor container so when they click to type, it maximizes.
+    setTimeout(() => {
+      const editorNode = document.getElementById("editor");
+      const maxBtn = document.getElementById("editor-maximize-btn");
+      if (editorNode && maxBtn) {
+        editorNode.addEventListener('mousedown', () => {
+          if (!document.body.classList.contains("is-maximized-page")) {
+            maxBtn.click();
+            // Also attempt browser fullscreen if supported
+            if (document.documentElement.requestFullscreen) {
+              document.documentElement.requestFullscreen().catch(err => {
+                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+              });
+            }
+          }
+        });
+      }
+    }, 1000);
   })();
 </script>
 {% endblock %}

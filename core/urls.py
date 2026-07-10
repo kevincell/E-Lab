@@ -16,6 +16,7 @@ urlpatterns = [
     path("signup/", views.SignUpView.as_view(), name="signup"),
     path("role-select/", views.role_select, name="role_select"),
     path("overview/", views.onboarding_overview, name="onboarding_overview"),
+    path("about/", views.about, name="about"),
     path("course-selection/", views.onboarding_journey, name="onboarding_journey"),
     path("modules/<int:module_id>/", views.module_detail, name="module_detail"),
     path("modules/<int:module_id>/<str:difficulty>/", views.module_level_detail, name="module_level_detail"),
@@ -26,6 +27,7 @@ urlpatterns = [
     path("certificates/generate/", views.certificate_create, name="certificate_create"),
     path("certificates/<int:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("verify/<str:verification_hash>/", views.certificate_verify, name="certificate_verify"),
+    path("lab-record/", views.student_lab_record, name="student_lab_record"),
     # HoD routes
     path("hod/", views.hod_dashboard, name="hod_dashboard"),
     path("hod/requests/<int:request_id>/", views.hod_review_request, name="hod_review_request"),
@@ -45,6 +47,7 @@ urlpatterns = [
     path("faculty/questions/new/", views.faculty_question_form, name="faculty_question_new"),
     path("faculty/questions/<int:question_id>/", views.faculty_question_form, name="faculty_question_edit"),
     path("faculty/student/<int:student_id>/", views.faculty_student_detail, name="faculty_student_detail"),
+    path("faculty/student/<int:student_id>/note/", views.faculty_send_note, name="faculty_send_note"),
     path("faculty/questions/<int:question_id>/tests/new/", views.faculty_testcase_form, name="faculty_testcase_new"),
     # Notifications
     path("notifications/", views.notifications_list, name="notifications_list"),
@@ -53,5 +56,6 @@ urlpatterns = [
     # Misc
     path("health/", views.health_check, name="health_check"),
     path("api/run/", views.run_code, name="run-code"),
+    path("api/report-violation/", views.report_violation, name="report_violation"),
     path("api/", include(router.urls)),
 ]

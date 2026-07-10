@@ -6,6 +6,13 @@
 {% block content %}
 <div class="dashboard-full">
 
+  <!-- BACK LINK -->
+  <div style="margin-bottom: 20px;">
+    <a href="{% url 'onboarding_journey' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 600; font-size: 14px; text-decoration: none; transition: transform 0.2s ease;" onmouseover="this.style.transform='translateX(-4px)'" onmouseout="this.style.transform='translateX(0)'">
+      ← Back to Course Selection
+    </a>
+  </div>
+
   <!-- Hero Bar -->
   <div class="course-hero">
     <div>
@@ -19,7 +26,10 @@
         <small>Complete</small>
       </div>
     </div>
-    <div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <a href="{% url 'student_lab_record' %}" target="_blank" class="secondary" style="display: flex; align-items: center; gap: 6px;">
+        📄 Print Lab Record
+      </a>
       {% if certificate_eligible %}
         <a href="{% url 'certificate_create' %}" class="primary">Get Certificate</a>
       {% else %}

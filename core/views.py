@@ -89,6 +89,14 @@ def onboarding_overview(request):
 
 
 @login_required
+def about(request):
+    if request.user.role == User.Role.ADMIN:
+        return redirect("admin:index")
+    return render(request, "onboarding/about.html")
+
+
+
+@login_required
 def onboarding_journey(request):
     if request.user.role == User.Role.ADMIN:
         return redirect("admin:index")
@@ -208,7 +216,6 @@ def dashboard(request):
 
         recent = Submission.objects.select_related("student", "question")[:12]
         recent_sessions = LabSession.objects.select_related("module").prefetch_related("attendance_rows__student")[:6]
-        flagged_submissions = Submission.objects.filter(plagiarism_flagged=True).select_related("student", "question")[:8]
         students = progress_students_qs.count()
         return render(
             request,
@@ -217,7 +224,6 @@ def dashboard(request):
                 "modules": modules,
                 "recent_submissions": recent,
                 "recent_sessions": recent_sessions,
-                "flagged_submissions": flagged_submissions,
                 "students": students,
                 "questions": Question.objects.count(),
                 "progress_tracker": progress_tracker,
@@ -334,7 +340,6 @@ def dashboard(request):
 
     global_leaderboard = leaderboard_qs.order_by("-total_score", "-problems_solved", "username")[:20]
     recent_activity = Submission.objects.filter(student=request.user).select_related("question")[:10]
-    live_flags_count = Submission.objects.filter(student=request.user, plagiarism_flagged=True).count()
 
     return render(
         request,
@@ -352,7 +357,6 @@ def dashboard(request):
             "user_rank": user_rank,
             "global_leaderboard": global_leaderboard,
             "recent_activity": recent_activity,
-            "live_flags_count": live_flags_count,
         },
     )
 
@@ -452,6 +456,11 @@ def question_detail(request, question_id):
         submission.student = request.user
         submission.question = question
         submission.language_id = question.language_id
+        
+        session_key = f"violations_{request.user.id}_{question.id}"
+        submission.proctoring_violations = request.session.get(session_key, 0)
+        request.session[session_key] = 0
+        
         submission.save()
         evaluate_submission_task.delay(submission.pk)
         messages.success(request, "Submission queued. We'll take you to the results shortly.")
@@ -1462,8 +1471,6 @@ def faculty_student_detail(request, student_id):
         user_rank = None
 
     recent_activity = Submission.objects.filter(student=student).select_related("question", "question__module")[:10]
-    live_flags_count = Submission.objects.filter(student=student, plagiarism_flagged=True).count()
-
     return render(
         request,
         "faculty/student_detail.html",
@@ -1480,7 +1487,6 @@ def faculty_student_detail(request, student_id):
             "certificates": certificates,
             "user_rank": user_rank,
             "recent_activity": recent_activity,
-            "live_flags_count": live_flags_count,
             "existing_request": CertificateRequest.objects.filter(student=student).order_by("-updated_at").first(),
         },
     )
@@ -1740,10 +1746,21 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         question = serializer.validated_data["question"]
         if not can_submit(self.request.user, question):
             raise PermissionDenied("Please wait 30 seconds before submitting again.")
+            
+        session_key = f"violations_{self.request.user.id}_{question.id}"
+        violations = self.request.session.get(session_key, 0)
+        self.request.session[session_key] = 0
+        
+        session_key_logs = f"violations_logs_{self.request.user.id}_{question.id}"
+        logs = self.request.session.get(session_key_logs, [])
+        self.request.session[session_key_logs] = []
+        
         submission = serializer.save(
             student=self.request.user,
             language_id=question.language_id,
             status=Submission.Status.PENDING,
+            proctoring_violations=violations,
+            proctoring_logs=logs,
         )
         evaluate_submission_task.delay(submission.pk)
 
@@ -1785,3 +1802,87 @@ class SubmissionLatestViewSet(viewsets.ViewSet):
         # DRF serializer uses numeric statuses for `status`; frontend expects string.
         # We send both for safety.
         return Response({"submission": {**data, "status": submission.status, "status_display": submission.get_status_display()}})
+
+@login_required
+@require_POST
+def report_violation(request):
+    import json
+    import datetime
+    data = json.loads(request.body)
+    question_id = data.get("question_id")
+    reason = data.get("reason", "Unknown Violation")
+    
+    # Store count
+    session_key_count = f"violations_{request.user.id}_{question_id}"
+    violations = request.session.get(session_key_count, 0) + 1
+    request.session[session_key_count] = violations
+    
+    # Store logs
+    session_key_logs = f"violations_logs_{request.user.id}_{question_id}"
+    logs = request.session.get(session_key_logs, [])
+    timestamp = datetime.datetime.now().strftime("%I:%M:%S %p")
+    logs.append(f"[{timestamp}] {reason}")
+    request.session[session_key_logs] = logs
+        
+    return JsonResponse({"status": "logged", "violations": violations, "reason": reason})
+
+@login_required
+@require_POST
+def faculty_send_note(request, student_id):
+    if not request.user.is_faculty_like:
+        raise PermissionDenied
+    student = get_object_or_404(User, pk=student_id, role=User.Role.STUDENT)
+    note = request.POST.get("note", "").strip()
+    question_id = request.POST.get("question_id", "").strip()
+    
+    if note:
+        title = f"Message from {request.user.display_name}"
+        if question_id:
+            try:
+                question = Question.objects.get(pk=question_id)
+                title = f"Message regarding: {question.title}"
+            except Question.DoesNotExist:
+                pass
+                
+        Notification.objects.create(
+            recipient=student,
+            notification_type=Notification.Type.FACULTY_NOTE,
+            title=title,
+            message=note,
+            related_student=request.user,  # Using this field just to store who sent it
+        )
+        messages.success(request, f"Note sent to {student.display_name}.")
+    return redirect("faculty_student_detail", student_id)
+
+@login_required
+def student_lab_record(request):
+    if request.user.role != User.Role.STUDENT:
+        raise PermissionDenied
+        
+    modules = Module.objects.filter(is_active=True).order_by("order").prefetch_related("questions")
+    all_subs = Submission.objects.filter(
+        student=request.user, 
+        status=Submission.Status.ACCEPTED
+    ).order_by("submitted_at").select_related("question")
+    
+    # Get the latest accepted submission per question
+    latest_subs = {}
+    for sub in all_subs:
+        latest_subs[sub.question_id] = sub
+        
+    module_data = []
+    for module in modules:
+        qs = []
+        for q in module.questions.filter(is_active=True).order_by("id"):
+            if q.id in latest_subs:
+                qs.append({
+                    "question": q,
+                    "submission": latest_subs[q.id]
+                })
+        if qs:
+            module_data.append({
+                "module": module,
+                "questions": qs
+            })
+            
+    return render(request, "student/lab_record.html", {"module_data": module_data})

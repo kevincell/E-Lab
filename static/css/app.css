@@ -832,7 +832,7 @@ body.dashboard-page .page {
 }
 
 .insight-card.success span {
-  color: #ffffff;
+  color: var(--success);
 }
 
 /* =========================================================

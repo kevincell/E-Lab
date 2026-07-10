@@ -14,6 +14,36 @@
     perspective: 1200px;
   }
 
+  /* BACK BUTTON */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    color: #00e5ff;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+
+  .back-link:hover {
+    transform: translateX(-4px);
+    color: #80f2ff;
+  }
+
+  [data-theme="light"] .back-link {
+    color: #4F46E5;
+  }
+
+  [data-theme="light"] .back-link:hover {
+    color: #3730A3;
+  }
+
+  [data-theme="dark"] .back-link {
+    color: #9cdef2 !important;
+  }
+
   @keyframes stylishPageEnter {
     0% { opacity: 0; filter: blur(20px); transform: scale(0.93) translateY(35px) rotateX(6deg); }
     100% { opacity: 1; filter: blur(0px); transform: scale(1) translateY(0) rotateX(0deg); }
@@ -349,10 +379,29 @@
   [data-theme="dark"] .journey-subtitle {
     color: #e0e6ed !important;
   }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .back-link:hover {
+    color: #3b82f6;
+  }
+  [data-theme="dark"] .back-link {
+    color: #94a3b8 !important;
+  }
 </style>
 
 <div class="journey-container">
-  <div class="journey-header">
+  <!-- BACK LINK -->
+  <a href="{% url 'onboarding_overview' %}" class="back-link">← Back to Overview</a>
+
+  <div class="journey-header scroll-reveal">
     <div class="journey-badge">🎓 Interactive e-Lab Curriculum</div>
     <h1 class="journey-title">Select Your Course of Journey</h1>
     <p class="journey-subtitle">

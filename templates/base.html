@@ -24,6 +24,7 @@
         Dark Mode
       </button>
       {% if user.is_authenticated %}
+        {% block nav_links %}
         {% if user.is_hod %}
           <a href="{% url 'role_select' %}" class="nav-role-badge" title="Switch Role">Switch Role</a>
         {% elif user.is_faculty_like %}
@@ -36,6 +37,7 @@
           {% endif %}
         </a>
         <a href="{% url 'leaderboard' %}">Leaderboard</a>
+        {% endblock %}
         <span>{{ user.display_name }}</span>
         <form action="{% url 'logout' %}" method="post">
           {% csrf_token %}
