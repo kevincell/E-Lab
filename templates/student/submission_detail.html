@@ -87,29 +87,55 @@
           const rawData = JSON.parse(document.getElementById("judge-output-data").textContent);
           const tests = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
           const container = document.getElementById("rich-output-container");
-          
+
           if (!Array.isArray(tests)) throw new Error("Not an array");
+
+          // Escape text before injecting as HTML so compiler/runtime messages
+          // (which may contain <, >, &) don't break the markup.
+          function esc(str) {
+            return String(str == null ? "" : str)
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;");
+          }
 
           let passedCount = 0;
           tests.forEach(t => { if(t.passed) passedCount++; });
           const allPassed = passedCount === tests.length;
-          
+
           let html = `<div style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: ${allPassed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; color: ${allPassed ? '#22c55e' : '#ef4444'}; font-weight: 600;">
             ${allPassed ? '✅ Success!' : '❌ Failed'} &middot; ${passedCount} out of ${tests.length} test cases passed.
           </div>`;
-          
+
           tests.forEach((test, i) => {
             const color = test.passed ? '#22c55e' : '#ef4444';
             const icon = test.passed ? '✓' : '✗';
+            const errorMsg = (test.error || "").trim();
+            const isError = !test.passed && errorMsg;
+            const title = isError ? (esc(test.status) || "Error") : `Test Case ${i + 1}`;
+
+            let body;
+            if (isError) {
+              // Compiler/runtime error: show the real message instead of an
+              // empty "Your Output" block.
+              body = `
+                <div><strong style="color: #ef4444; font-size: 13px;">${esc(test.status) || "Error"}</strong>
+                  <pre style="margin: 4px 0 0; padding: 10px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 4px; font-size: 13px; color: #ef4444; white-space: pre-wrap; word-break: break-word;">${esc(errorMsg)}</pre>
+                </div>`;
+            } else {
+              body = `
+                <div><strong style="color: #cbd5e1; font-size: 13px;">Input</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px;">${esc(test.stdin || '-')}</pre></div>
+                <div><strong style="color: #cbd5e1; font-size: 13px;">Expected Output</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px;">${esc(test.expected || '-')}</pre></div>
+                <div><strong style="color: #cbd5e1; font-size: 13px;">Your Output</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px; color: ${color};">${esc(test.actual || '-')}</pre></div>`;
+            }
+
             html += `
               <div style="margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
                 <div style="padding: 10px 16px; background: rgba(0,0,0,0.2); font-weight: 600; color: ${color}; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  ${icon} Test Case ${i + 1}
+                  ${icon} ${title}
                 </div>
                 <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.1);">
-                  <div><strong style="color: #cbd5e1; font-size: 13px;">Input</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px;">${test.stdin || '-'}</pre></div>
-                  <div><strong style="color: #cbd5e1; font-size: 13px;">Expected Output</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px;">${test.expected || '-'}</pre></div>
-                  <div><strong style="color: #cbd5e1; font-size: 13px;">Your Output</strong><pre style="margin: 4px 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px; color: ${color};">${test.actual || '-'}</pre></div>
+                  ${body}
                 </div>
               </div>
             `;

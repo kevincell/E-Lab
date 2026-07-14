@@ -24,7 +24,7 @@ CCE e-Lab is a web-based platform for first-year Computer & Communication Engine
 - **Database:** PostgreSQL 15
 - **Cache/Queue:** Redis 7
 - **Task Runner:** Celery
-- **Code Execution:** Custom Docker sandbox (no external dependencies)
+- **Code Execution:** Custom Docker sandbox supporting C, C++, Java, and Python (no external dependencies)
 - **Web Server:** Nginx
 - **Frontend:** HTML templates + Bootstrap
 
@@ -76,7 +76,7 @@ CERTIFICATE_THRESHOLD=60
 ### 4. Build and Start Services
 First, build the sandbox image and then start all services:
 ```bash
-# Build the C code execution sandbox
+# Build the multi-language (C/C++/Java/Python) execution sandbox
 docker build -t elab-sandbox -f sandbox/Dockerfile sandbox/
 
 # Start all containers (app, worker, nginx, db, redis)
@@ -229,7 +229,18 @@ E-Lab/
 
 ## Code Execution Sandbox
 
-The custom Docker sandbox replaces Judge0 for C code compilation and execution:
+The custom Docker sandbox replaces Judge0 for code compilation and execution. It supports four languages, each with its own compiler/runtime:
+
+| Language | language_id | Toolchain | Compile strictness |
+|----------|-------------|-----------|--------------------|
+| C | 50 | GCC (`gcc -std=c11`) | `-Wall -Wextra`; missing `return` / bad `main` are hard errors |
+| C++ | 54 | GCC (`g++ -std=c++17`) | `-Wall -Wextra`; missing `return` / bad `main` are hard errors |
+| Java | 62 | OpenJDK 17 (`javac`/`java`) | Public class name auto-detected from source |
+| Python | 71 | CPython 3 (`python3`) | Syntax errors surfaced as Compilation Error |
+
+A question's language is set by its `language_id` field (default 50 = C). Compile, runtime, and time-limit errors are detected definitively and shown to the student on both the Run panel and the Submission results page.
+
+The sandbox itself:
 
 - **Isolated containers** — Each submission runs in a fresh container
 - **Resource limits** — Memory, CPU, process count restricted

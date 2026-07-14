@@ -75,7 +75,7 @@
           <span class="dot-red"></span>
           <span class="dot-yellow"></span>
           <span class="dot-green"></span>
-          <span class="filename">main.c</span>
+          <span class="filename" id="editor-filename">main.c</span>
         </div>
         <div id="editor" class="monaco-editor"></div>
       </div>
@@ -138,10 +138,22 @@
   let editor;
   let isRunning = false;
 
+  // Map the server-side question language to a Monaco language id + filename.
+  const QUESTION_LANGUAGE = "{{ question_language|default:'c' }}";
+  const LANGUAGE_META = {
+    c:      { monaco: "c",       filename: "main.c" },
+    cpp:    { monaco: "cpp",     filename: "main.cpp" },
+    java:   { monaco: "java",    filename: "Solution.java" },
+    python: { monaco: "python",  filename: "main.py" }
+  };
+  const langMeta = LANGUAGE_META[QUESTION_LANGUAGE] || LANGUAGE_META.c;
+
   require.config({ paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } });
   require(["vs/editor/editor.main"], function() {
     const textarea = document.getElementById("id_code");
     const editorNode = document.getElementById("editor");
+    const filenameLabel = document.getElementById("editor-filename");
+    if (filenameLabel) filenameLabel.textContent = langMeta.filename;
     if (textarea && editorNode) {
       if (!textarea.value.trim() && {{ question.starter_code|length|safe }} > 0) {
         textarea.value = "{{ question.starter_code|escapejs }}";
@@ -149,7 +161,7 @@
       textarea.style.display = "none";
       editor = monaco.editor.create(editorNode, {
         value: textarea.value,
-        language: "c",
+        language: langMeta.monaco,
         theme: "vs-dark",
         automaticLayout: true,
         minimap: { enabled: false }
@@ -233,42 +245,75 @@
     function renderTestResults(tests, isRun) {
       testResultsDiv.style.display = "block";
       resultsList.innerHTML = "";
-      
+
+      // Escape any user/program text we inject as HTML to avoid breaking layout.
+      function esc(str) {
+        return String(str == null ? "" : str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
       let allPassed = true;
       tests.forEach((test, index) => {
         const testDiv = document.createElement("div");
         testDiv.className = "test-result-item " + (test.passed ? "passed" : "failed");
-        
-        const statusIcon = test.passed 
-          ? '<span class="status-icon passed">✓</span>' 
+
+        const statusIcon = test.passed
+          ? '<span class="status-icon passed">✓</span>'
           : '<span class="status-icon failed">✗</span>';
-        
-        testDiv.innerHTML = `
+
+        // When there is a compiler/runtime error, surface it prominently instead
+        // of showing a misleading empty "Your Output" block.
+        const statusName = test.status || "";
+        const errorMsg = test.error || "";
+        const isError = !test.passed && errorMsg.trim();
+        const label = isError
+          ? (statusName || "Error")
+          : (isRun ? "Sample Test" : "Test Case");
+
+        let innerHtml = `
           <div class="test-result-header">
             ${statusIcon}
-            <span class="test-name">${isRun ? "Sample Test" : "Test Case"} ${index + 1}</span>
-          </div>
-          <div class="test-result-details">
-            <div class="test-detail-block">
-              <span class="detail-label">Input</span>
-              <pre class="detail-code">${test.stdin || ""}</pre>
-            </div>
-            <div class="test-detail-block">
-              <span class="detail-label">Expected</span>
-              <pre class="detail-code">${test.expected || ""}</pre>
-            </div>
-            <div class="test-detail-block">
-              <span class="detail-label">Your Output</span>
-              <pre class="detail-code">${test.actual || ""}</pre>
-            </div>
+            <span class="test-name">${esc(label)} ${isError ? "" : (index + 1)}</span>
           </div>
         `;
-        
+
+        if (isError) {
+          innerHtml += `
+            <div class="test-result-details">
+              <div class="test-detail-block">
+                <span class="detail-label" style="color:#ef4444;">${esc(statusName) || "Error"}</span>
+                <pre class="detail-code" style="color:#ef4444; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); white-space:pre-wrap; word-break:break-word;">${esc(errorMsg)}</pre>
+              </div>
+            </div>
+          `;
+        } else {
+          innerHtml += `
+            <div class="test-result-details">
+              <div class="test-detail-block">
+                <span class="detail-label">Input</span>
+                <pre class="detail-code">${esc(test.stdin || "")}</pre>
+              </div>
+              <div class="test-detail-block">
+                <span class="detail-label">Expected</span>
+                <pre class="detail-code">${esc(test.expected || "")}</pre>
+              </div>
+              <div class="test-detail-block">
+                <span class="detail-label">Your Output</span>
+                <pre class="detail-code">${esc(test.actual || "")}</pre>
+              </div>
+            </div>
+          `;
+        }
+
+        testDiv.innerHTML = innerHtml;
+
         if (!test.passed) allPassed = false;
         resultsList.appendChild(testDiv);
       });
-      
-      resultsStatus.textContent = allPassed ? "All Test Cases Passed" : "Some Test Cases Incomplete";
+
+      resultsStatus.textContent = allPassed ? "All Test Cases Passed" : "Some Test Cases Failed";
       resultsStatus.className = "results-status " + (allPassed ? "success" : "error");
     }
 

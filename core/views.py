@@ -27,7 +27,7 @@ from rest_framework.response import Response
 
 from .forms import CSVQuestionUploadForm, ModuleForm, QuestionForm, QuickTestCaseForm, StudentSignUpForm, SubmissionForm, TestCaseForm
 from .models import AssignedQuestion, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, TestCase, User
-from .sandbox import run_c_code
+from .sandbox import run_code, language_for_id
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
 from .services import (
     certificate_eligible,
@@ -469,7 +469,12 @@ def question_detail(request, question_id):
     return render(
         request,
         "student/question_detail.html",
-        {"question": question, "form": form, "latest_submission": latest},
+        {
+            "question": question,
+            "form": form,
+            "latest_submission": latest,
+            "question_language": language_for_id(question.language_id),
+        },
     )
 
 
@@ -669,8 +674,10 @@ def run_code(request):
         ]
     
     results = []
+    language = language_for_id(question.language_id)
     for test in test_cases:
-        run_result = run_c_code(
+        run_result = run_code(
+            language,
             source_code=code,
             stdin=test.stdin or "",
             expected_output=test.expected_output or "",
@@ -678,14 +685,20 @@ def run_code(request):
             memory_limit_kb=question.memory_limit_kb,
         )
         passed = run_result.get("status_id") == 3
+        error_message = (
+            run_result.get("compile_output")
+            or run_result.get("stderr")
+            or ""
+        )
         results.append({
             "stdin": test.stdin or "",
             "expected": test.expected_output or "",
             "actual": run_result.get("stdout", ""),
             "passed": passed,
             "status": run_result.get("status", "Unknown"),
+            "error": error_message,
         })
-    
+
     return JsonResponse({
         "tests": results,
     })

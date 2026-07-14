@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import AssignedQuestion, Attendance, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, User
-from .sandbox import run_c_code
+from .sandbox import run_code, language_for_id
 
 
 JUDGE0_STATUS_MAP = {
@@ -201,9 +201,13 @@ def evaluate_submission(submission_id):
     max_time = 0.0
     max_memory = 0
 
+    # Resolve the language once from the submission (fallback to the question).
+    language = language_for_id(submission.language_id or question.language_id)
+
     try:
         for test in tests:
-            result = run_c_code(
+            result = run_code(
+                language,
                 source_code=submission.code,
                 stdin=test.stdin,
                 expected_output=test.expected_output,
@@ -213,13 +217,21 @@ def evaluate_submission(submission_id):
             status_id = result.get("status_id")
             status = JUDGE0_STATUS_MAP.get(status_id, Submission.Status.INTERNAL_ERROR)
             actual_output = normalize_output(result.get("stdout"))
-            
+
+            # Surface the real compiler/runtime message per test for the UI.
+            error_message = (
+                result.get("compile_output")
+                or result.get("stderr")
+                or ""
+            )
+
             test_results.append({
                 "stdin": test.stdin or "",
                 "expected": test.expected_output or "",
                 "actual": actual_output or "",
                 "passed": status == Submission.Status.ACCEPTED,
                 "status": status,
+                "error": error_message,
             })
 
             max_time = max(max_time, float(result.get("time") or 0))
@@ -230,10 +242,14 @@ def evaluate_submission(submission_id):
             elif worst_status == Submission.Status.ACCEPTED:
                 worst_status = status
 
-            if result.get("compile_output"):
-                submission.error_output = result.get("compile_output") or ""
-            elif result.get("stderr"):
-                submission.error_output = result.get("stderr") or ""
+            if error_message:
+                submission.error_output = error_message
+
+            # A compile error is identical for every test case — stop early so
+            # the student isn't kept waiting for the same failure N times.
+            if status == Submission.Status.COMPILE_ERROR:
+                worst_status = status
+                break
 
         total = len(tests) or 1
         submission.score = round((passed / total) * 100)
