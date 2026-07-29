@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -8,12 +9,30 @@ def env(name, default=None):
     return os.environ.get(name, default)
 
 
-SECRET_KEY = env("SECRET_KEY", "dev-only-secret-key")
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+# ---------------------------------------------------------------------------
+# Core Security
+# ---------------------------------------------------------------------------
+SECRET_KEY = env("SECRET_KEY")
+if not SECRET_KEY:
+    import warnings
+    warnings.warn(
+        "SECRET_KEY is not set! Using an insecure fallback. "
+        "Set SECRET_KEY in your .env file for production.",
+        stacklevel=1,
+    )
+    SECRET_KEY = "dev-only-insecure-key-CHANGE-ME"
+
+DEBUG = env("DEBUG", "false").lower() == "true"
+
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in env("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if h.strip()
+]
+
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in env("CSRF_TRUSTED_ORIGINS", "http://192.168.1.10,http://localhost,http://127.0.0.1").split(",")
+    for origin in env("CSRF_TRUSTED_ORIGINS", "http://localhost,http://127.0.0.1").split(",")
     if origin.strip()
 ]
 
@@ -60,6 +79,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# ---------------------------------------------------------------------------
+# Database — persistent connections for performance under concurrency
+# ---------------------------------------------------------------------------
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -68,6 +90,8 @@ DATABASES = {
         "USER": env("POSTGRES_USER", "elab"),
         "PASSWORD": env("POSTGRES_PASSWORD", "elab"),
         "PORT": env("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 600,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
@@ -110,15 +134,68 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "onboarding_overview"
 LOGOUT_REDIRECT_URL = "login"
 
+# ---------------------------------------------------------------------------
+# Caching — Redis-backed for 70-100 concurrent users
+# ---------------------------------------------------------------------------
+_REDIS_URL = env("REDIS_URL", "redis://elab-redis:6379/0")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": _REDIS_URL,
+        "KEY_PREFIX": "elab",
+        "TIMEOUT": 300,
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Sessions — cached in Redis for speed, persisted in DB for durability
+# ---------------------------------------------------------------------------
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+SESSION_COOKIE_AGE = 3600           # 1 hour — appropriate for lab sessions
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+
+# ---------------------------------------------------------------------------
+# Security headers & cookie hardening
+# ---------------------------------------------------------------------------
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
+# Enable secure cookies when served over HTTPS (detected from env/proxy)
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# ---------------------------------------------------------------------------
+# Celery
+# ---------------------------------------------------------------------------
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", env("REDIS_URL", "redis://elab-redis:6379/1"))
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://elab-redis:6379/2")
 CELERY_TASK_ALWAYS_EAGER = env("CELERY_TASK_ALWAYS_EAGER", "false").lower() == "true"
 
+# ---------------------------------------------------------------------------
+# REST Framework
+# ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "30/minute",
+        "user": "120/minute",
+    },
 }
 
+# ---------------------------------------------------------------------------
+# Application settings
+# ---------------------------------------------------------------------------
 SITE_NAME = env("SITE_NAME", "CCE e-Lab")
 SITE_BASE_URL = env("SITE_BASE_URL", "http://localhost")
 JUDGE0_URL = env("JUDGE0_URL", "http://judge0-server:2358")

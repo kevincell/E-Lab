@@ -140,3 +140,30 @@ class QuickTestCaseForm(forms.ModelForm):
             "expected_output": forms.Textarea(attrs={"rows": 4, "placeholder": "Exact expected output"}),
             "order": forms.NumberInput(attrs={"min": 1}),
         }
+
+
+class ProfileForm(forms.ModelForm):
+    """Form for users to edit their own profile details."""
+
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email", "bio")
+        widgets = {
+            "first_name": forms.TextInput(attrs={"placeholder": "First name"}),
+            "last_name": forms.TextInput(attrs={"placeholder": "Last name"}),
+            "email": forms.EmailInput(attrs={"placeholder": "you@example.com"}),
+            "bio": forms.Textarea(attrs={"rows": 3, "placeholder": "A short bio about yourself…", "maxlength": 500}),
+        }
+
+
+class FacultyModuleSelectForm(forms.Form):
+    """Form for faculty to select which modules/courses they manage."""
+
+    modules = forms.ModelMultipleChoiceField(
+        queryset=Module.objects.filter(is_active=True),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Select courses to manage",
+        help_text="You will only see students, questions, and progress for your selected courses.",
+    )
+

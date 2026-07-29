@@ -18,10 +18,28 @@ class User(AbstractUser):
     role = models.CharField(max_length=16, choices=Role.choices, default=Role.STUDENT)
     department = models.CharField(max_length=80, blank=True)
     semester = models.PositiveSmallIntegerField(default=1)
+    bio = models.TextField(blank=True, max_length=500)
+    managed_modules = models.ManyToManyField(
+        "Module",
+        blank=True,
+        related_name="managing_faculty",
+        help_text="Modules this faculty member manages (faculty/HoD only).",
+    )
 
     @property
     def display_name(self):
         return self.get_full_name() or self.username
+
+    @property
+    def initials(self):
+        """Return up to 2 initials for avatar display."""
+        name = self.get_full_name()
+        if name:
+            parts = name.split()
+            if len(parts) >= 2:
+                return (parts[0][0] + parts[-1][0]).upper()
+            return parts[0][0].upper()
+        return self.username[0].upper()
 
     @property
     def is_faculty_like(self):

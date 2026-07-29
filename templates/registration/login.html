@@ -4,7 +4,16 @@
 
 {% block body_class %}login-page{% endblock %}
 
+{% block theme_toggle %}{% endblock %}
+
 {% block content %}
+<div class="top-center-toggle-wrapper">
+  <label class="toggle" aria-label="Toggle theme">
+    <input type="checkbox" id="theme-toggle-cb" />
+    <div></div>
+  </label>
+</div>
+
 <div class="login-cinematic">
   <!-- Video Background Layer -->
   <div class="login-video-container">
@@ -57,18 +66,24 @@
 (function() {
   var videos = document.querySelectorAll('.login-bg-video');
   if (videos.length <= 1) return;
-  var current = 0;
+  var current = 0; // Starts at index 0 (login_bg4.mp4)
 
   function nextVideo() {
     videos[current].classList.remove('active');
-    current = (current + 1) % videos.length;
+    // Pick a random next video different from current
+    var next = Math.floor(Math.random() * videos.length);
+    if (next === current) {
+      next = (current + 1) % videos.length;
+    }
+    current = next;
     videos[current].classList.add('active');
     
     var duration = parseInt(videos[current].getAttribute('data-duration'), 10) || 8000;
     setTimeout(nextVideo, duration);
   }
 
-  var initialDuration = parseInt(videos[current].getAttribute('data-duration'), 10) || 8000;
+  // Play initial video (login_bg4.mp4) for its full duration before picking next random video
+  var initialDuration = parseInt(videos[current].getAttribute('data-duration'), 10) || 9000;
   setTimeout(nextVideo, initialDuration);
 })();
 

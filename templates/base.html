@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=8.2">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=11.0">
   <script>
     (function() {
       const savedTheme = localStorage.getItem('theme') || 'light';
@@ -20,9 +20,12 @@
       <span class="header-dept-text">Dept. of Computer and Communication Engineering</span>
     </a>
     <nav class="nav">
-      <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" type="button">
-        Dark Mode
-      </button>
+      {% block theme_toggle %}
+      <label class="toggle" aria-label="Toggle theme">
+        <input type="checkbox" id="theme-toggle-cb" />
+        <div></div>
+      </label>
+      {% endblock %}
       {% if user.is_authenticated %}
         {% block nav_links %}
         {% if user.is_hod %}
@@ -38,7 +41,10 @@
         </a>
         <a href="{% url 'leaderboard' %}">Leaderboard</a>
         {% endblock %}
-        <span>{{ user.display_name }}</span>
+        <a href="{% url 'profile' %}" class="user-profile-badge" title="View Profile">
+          <span class="user-avatar-circle {{ user.role }}">{{ user.initials }}</span>
+          <span class="user-display-name">{{ user.display_name }}</span>
+        </a>
         <form action="{% url 'logout' %}" method="post">
           {% csrf_token %}
           <button class="link-button" type="submit">Logout</button>
@@ -61,31 +67,59 @@
     {% block content %}{% endblock %}
   </main>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const toggleBtn = document.getElementById('theme-toggle');
-      if (!toggleBtn) return;
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggleInput = document.getElementById('theme-toggle-cb');
+      if (!toggleInput) return;
       
-      function updateToggleText() {
-        const current = document.documentElement.getAttribute('data-theme') || 'light';
-        if (current === 'light') {
-          toggleBtn.innerHTML = 'Dark Mode';
+      const rootElement = document.documentElement;
+
+      const applyTheme = (isDark) => {
+        const themeStr = isDark ? 'dark' : 'light';
+        rootElement.setAttribute('data-theme', themeStr);
+        localStorage.setItem('theme', themeStr);
+        if (isDark) {
+          rootElement.classList.add('dark');
         } else {
-          toggleBtn.innerHTML = 'Light Mode';
+          rootElement.classList.remove('dark');
         }
-      }
-      
-      updateToggleText();
-      
-      toggleBtn.addEventListener('click', function() {
-        const current = document.documentElement.getAttribute('data-theme') || 'light';
-        const next = current === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        updateToggleText();
-        
         if (typeof monaco !== 'undefined' && monaco.editor) {
-          monaco.editor.setTheme(next === 'light' ? 'vs' : 'vs-dark');
+          monaco.editor.setTheme(isDark ? 'vs-dark' : 'vs');
         }
+      };
+
+      const currentTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const isInitialDark = currentTheme === 'dark';
+      toggleInput.checked = isInitialDark;
+      applyTheme(isInitialDark);
+
+      toggleInput.addEventListener('input', (event) => {
+        const isDark = toggleInput.checked;
+
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+        
+        const toggleElement = document.querySelector('.toggle');
+        if (toggleElement) {
+          const rect = toggleElement.getBoundingClientRect();
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 2;
+        }
+
+        if (!document.startViewTransition) {
+          applyTheme(isDark);
+          return;
+        }
+
+        const transition = document.startViewTransition(() => {
+          applyTheme(isDark);
+        });
+
+        transition.ready.then(() => {
+          rootElement.style.setProperty('--x', `${x}px`);
+          rootElement.style.setProperty('--y', `${y}px`);
+        }).catch(error => {
+          console.error("Error during View Transition setup:", error);
+        });
       });
     });
   </script>

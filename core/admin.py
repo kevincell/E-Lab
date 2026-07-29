@@ -21,11 +21,12 @@ from .models import (
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ("e-Lab profile", {"fields": ("usn", "role", "department", "semester")}),
+        ("e-Lab profile", {"fields": ("usn", "role", "department", "semester", "bio", "managed_modules")}),
     )
     list_display = ("username", "email", "usn", "role", "department", "semester", "is_staff")
     list_filter = ("role", "department", "semester", "is_staff")
     search_fields = ("username", "email", "first_name", "last_name", "usn")
+    filter_horizontal = ("managed_modules",)
 
 
 class TestCaseInline(admin.TabularInline):

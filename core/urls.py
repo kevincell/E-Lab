@@ -14,6 +14,7 @@ urlpatterns = [
     path("login/", views.AppLoginView.as_view(), name="login"),
     path("logout/", views.AppLogoutView.as_view(), name="logout"),
     path("signup/", views.SignUpView.as_view(), name="signup"),
+    path("profile/", views.profile_view, name="profile"),
     path("role-select/", views.role_select, name="role_select"),
     path("overview/", views.onboarding_overview, name="onboarding_overview"),
     path("about/", views.about, name="about"),
@@ -55,7 +56,7 @@ urlpatterns = [
     path("notifications/mark-all-read/", views.notifications_mark_all_read, name="notifications_mark_all_read"),
     # Misc
     path("health/", views.health_check, name="health_check"),
-    path("api/run/", views.run_code, name="run-code"),
+    path("api/run/", views.run_code_api, name="run-code"),
     path("api/report-violation/", views.report_violation, name="report_violation"),
     path("api/", include(router.urls)),
 ]

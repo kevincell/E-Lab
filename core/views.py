@@ -5,8 +5,9 @@ import re
 import subprocess
 
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
@@ -18,16 +19,25 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import slugify
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .forms import CSVQuestionUploadForm, ModuleForm, QuestionForm, QuickTestCaseForm, StudentSignUpForm, SubmissionForm, TestCaseForm
+from .forms import (
+    CSVQuestionUploadForm,
+    FacultyModuleSelectForm,
+    ModuleForm,
+    ProfileForm,
+    QuestionForm,
+    QuickTestCaseForm,
+    StudentSignUpForm,
+    SubmissionForm,
+    TestCaseForm,
+)
 from .models import AssignedQuestion, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, TestCase, User
-from .sandbox import run_code, language_for_id
+from .sandbox import run_code as sandbox_run_code, language_for_id
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
 from .services import (
     certificate_eligible,
@@ -45,6 +55,16 @@ from .services import (
     update_progress,
 )
 from .tasks import evaluate_submission_task
+
+
+def get_faculty_modules(user):
+    """Return modules managed by a faculty user, or all active modules if none explicitly selected."""
+    if user.is_authenticated and user.is_faculty_like:
+        managed = user.managed_modules.filter(is_active=True)
+        if managed.exists():
+            return managed
+    return Module.objects.filter(is_active=True)
+
 
 
 class AppLoginView(LoginView):
@@ -117,7 +137,8 @@ def dashboard(request):
             return redirect("role_select")
 
     if request.user.is_faculty_like:
-        modules = Module.objects.annotate(
+        faculty_mods = get_faculty_modules(request.user)
+        modules = faculty_mods.annotate(
             question_count=Count("questions"),
             active_question_count=Count("questions", filter=Q(questions__is_active=True)),
         )
@@ -167,11 +188,12 @@ def dashboard(request):
             progress_students = progress_students_qs.annotate(
                 attempted_count=Count(
                     "submissions__question",
+                    filter=Q(submissions__question__module__in=progress_modules),
                     distinct=True,
                 ),
                 completed_count=Count(
                     "submissions__question",
-                    filter=Q(submissions__status=Submission.Status.ACCEPTED),
+                    filter=Q(submissions__question__module__in=progress_modules, submissions__status=Submission.Status.ACCEPTED),
                     distinct=True,
                 ),
             )
@@ -214,8 +236,8 @@ def dashboard(request):
         else:
             progress_tracker = ranked_tracker
 
-        recent = Submission.objects.select_related("student", "question")[:12]
-        recent_sessions = LabSession.objects.select_related("module").prefetch_related("attendance_rows__student")[:6]
+        recent = Submission.objects.filter(question__module__in=progress_modules).select_related("student", "question")[:12]
+        recent_sessions = LabSession.objects.filter(module__in=progress_modules).select_related("module").prefetch_related("attendance_rows__student")[:6]
         students = progress_students_qs.count()
         return render(
             request,
@@ -225,7 +247,7 @@ def dashboard(request):
                 "recent_submissions": recent,
                 "recent_sessions": recent_sessions,
                 "students": students,
-                "questions": Question.objects.count(),
+                "questions": Question.objects.filter(module__in=progress_modules).count(),
                 "progress_tracker": progress_tracker,
                 "progress_modules": progress_modules,
                 "selected_category": selected_category,
@@ -656,11 +678,17 @@ def health_check(request):
 
 @login_required
 @require_POST
-def run_code(request):
+def run_code_api(request):
     import json
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, TypeError):
+        return JsonResponse({"error": "Invalid JSON request body"}, status=400)
+
     question_id = data.get("question")
     code = data.get("code")
+    if not question_id or not code:
+        return JsonResponse({"error": "Missing question or code parameter"}, status=400)
     
     question = get_object_or_404(Question, id=question_id, is_active=True)
     test_cases = question.test_cases.filter(is_sample=True).order_by("order")
@@ -676,7 +704,7 @@ def run_code(request):
     results = []
     language = language_for_id(question.language_id)
     for test in test_cases:
-        run_result = run_code(
+        run_result = sandbox_run_code(
             language,
             source_code=code,
             stdin=test.stdin or "",
@@ -1899,3 +1927,48 @@ def student_lab_record(request):
             })
             
     return render(request, "student/lab_record.html", {"module_data": module_data})
+
+
+@login_required
+def profile_view(request):
+    user = request.user
+    profile_form = ProfileForm(request.POST or None, instance=user)
+    password_form = PasswordChangeForm(user, request.POST or None if "change_password" in request.POST else None)
+
+    faculty_module_form = None
+    if user.is_faculty_like:
+        if request.method == "POST" and "update_modules" in request.POST:
+            faculty_module_form = FacultyModuleSelectForm(request.POST)
+            if faculty_module_form.is_valid():
+                user.managed_modules.set(faculty_module_form.cleaned_data["modules"])
+                messages.success(request, "Managed courses updated successfully.")
+                return redirect("profile")
+        else:
+            faculty_module_form = FacultyModuleSelectForm(initial={"modules": user.managed_modules.all()})
+
+    if request.method == "POST":
+        if "update_profile" in request.POST:
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, "Profile updated successfully.")
+                return redirect("profile")
+        elif "change_password" in request.POST:
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Your password was successfully updated!")
+                return redirect("profile")
+
+    # User statistics
+    total_submissions = Submission.objects.filter(student=user).count()
+    accepted_submissions = Submission.objects.filter(student=user, status=Submission.Status.ACCEPTED).count()
+    
+    context = {
+        "profile_form": profile_form,
+        "password_form": password_form,
+        "faculty_module_form": faculty_module_form,
+        "total_submissions": total_submissions,
+        "accepted_submissions": accepted_submissions,
+    }
+    return render(request, "registration/profile.html", context)
+
