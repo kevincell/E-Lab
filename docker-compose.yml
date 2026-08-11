@@ -2,7 +2,7 @@ services:
   app:
     build: .
     container_name: elab-app
-    restart: always
+    restart: unless-stopped
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2
     env_file: .env
     volumes:
@@ -30,7 +30,7 @@ services:
   worker:
     build: .
     container_name: elab-worker
-    restart: always
+    restart: unless-stopped
     command: celery -A config worker -l info --concurrency 4
     env_file: .env
     volumes:
@@ -52,7 +52,7 @@ services:
   elab-db:
     image: postgres:15-alpine
     container_name: elab-db
-    restart: always
+    restart: unless-stopped
     env_file: .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -66,14 +66,14 @@ services:
   elab-redis:
     image: redis:7-alpine
     container_name: elab-redis
-    restart: always
+    restart: unless-stopped
     networks:
       - elab-network
 
   nginx:
     image: nginx:1.27-alpine
     container_name: elab-nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:

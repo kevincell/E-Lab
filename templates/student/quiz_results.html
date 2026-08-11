@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Quiz Results - {{ quiz.title }}{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Quiz Results: {{ quiz.title }}</h1>
+    <p class="muted">Review your performance.</p>
+  </div>
+  <div class="actions">
+    <a class="secondary as-link" href="{% url 'student_quiz_list' %}">Back to Quizzes</a>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="grid two" style="margin-bottom: 32px;">
+    <div class="course-card">
+      <p class="eyebrow">Your Score</p>
+      <div style="font-size: 48px; font-weight: 800; color: {% if attempt.total_score >= quiz.passing_score %}#10b981{% else %}#ef4444{% endif %}; line-height: 1;">
+        {{ attempt.total_score }} <span style="font-size: 24px; color: #94a3b8;">/ {{ attempt.max_score }}</span>
+      </div>
+      <p style="margin-top: 8px; font-weight: 500;">
+        {% if attempt.total_score >= quiz.passing_score %}
+          🎉 Passed
+        {% else %}
+          ❌ Failed (Passing score: {{ quiz.passing_score }})
+        {% endif %}
+      </p>
+    </div>
+    <div class="course-card">
+      <p class="eyebrow">Details</p>
+      <dl class="stats">
+        <dt>Completed</dt><dd>{{ attempt.finished_at|date:"M d, Y, H:i" }}</dd>
+        <dt>Time Taken</dt><dd>-- mins</dd>
+        <dt>Status</dt><dd>{% if attempt.is_timed_out %}Timed Out{% else %}Submitted{% endif %}</dd>
+      </dl>
+    </div>
+  </div>
+  
+  <div class="profile-card profile-card-full" style="text-align: center; padding: 48px;">
+    <p class="muted">Detailed answers review is currently disabled.</p>
+  </div>
+</section>
+{% endblock %}

@@ -14,8 +14,10 @@ CCE e-Lab is a web-based platform for first-year Computer & Communication Engine
 - **Automated code evaluation** — Submit C code, get instant feedback
 - **Progress tracking** — Visual dashboard showing module completion
 - **Auto-generated certificates** — Earned upon ≥60% completion
-- **Faculty monitoring** — Track student progress and manage questions
-- **Self-paced learning** — Work through 5 levels of difficulty at your own speed
+- **Faculty monitoring** — Track student progress across dedicated courses and modules
+- **Quizzes & Tests** — Faculty can create timed quizzes for students
+- **Take-Home Assignments** — Offline, open-ended assignments for notebooks
+- **Self-paced learning** — Work through levels of difficulty at your own speed
 - **LeetCode import** — Import questions directly from LeetCode!
 
 ## Architecture
@@ -97,7 +99,12 @@ docker compose exec app python manage.py migrate
 # Collect static files
 docker compose exec app python manage.py collectstatic --noinput
 
-# Seed demo data (modules, questions, test cases)
+# Import question bank CSVs — this also creates Courses automatically
+# (must run BEFORE seed_demo so faculty is linked to the correct courses)
+docker compose exec app bash -lc "python scripts/verify_and_import.py"
+
+# Seed demo user accounts (admin / faculty / student)
+# faculty is automatically assigned to all courses created above
 docker compose exec app python manage.py seed_demo
 ```
 

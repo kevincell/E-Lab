@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import Module, Question, Submission, TestCase, User
+from .models import Course, Module, OpenEndedQuestion, Question, Quiz, Submission, TestCase, User
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -156,14 +156,35 @@ class ProfileForm(forms.ModelForm):
         }
 
 
-class FacultyModuleSelectForm(forms.Form):
-    """Form for faculty to select which modules/courses they manage."""
+class FacultyCourseSelectForm(forms.Form):
+    """Form for faculty to select which courses they manage."""
 
-    modules = forms.ModelMultipleChoiceField(
-        queryset=Module.objects.filter(is_active=True),
+    courses = forms.ModelMultipleChoiceField(
+        queryset=Course.objects.filter(is_active=True),
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Select courses to manage",
         help_text="You will only see students, questions, and progress for your selected courses.",
     )
 
+
+class OpenEndedQuestionForm(forms.ModelForm):
+    class Meta:
+        model = OpenEndedQuestion
+        fields = ("course", "title", "description", "assigned_date", "due_date", "is_active")
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 8}),
+            "assigned_date": forms.DateInput(attrs={"type": "date"}),
+            "due_date": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
+class QuizForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = ("course", "title", "description", "duration_minutes", "start_time", "end_time", "is_active", "show_results")
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "start_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "end_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }

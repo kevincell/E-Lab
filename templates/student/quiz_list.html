@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Quizzes & Tests{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Quizzes & Tests</h1>
+    <p class="muted">Test your knowledge and earn points.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="grid two">
+    {% for q in quizzes %}
+    <div class="profile-card profile-card-full">
+      <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <h3>{{ q.title }}</h3>
+          <p class="card-subtitle">{{ q.course.name }}</p>
+        </div>
+        {% if q.is_open %}
+          <span class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Open</span>
+        {% else %}
+          <span class="status-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">Closed</span>
+        {% endif %}
+      </div>
+      <div style="display: flex; gap: 16px; font-size: 13px; color: #94a3b8; margin-bottom: 24px;">
+        <span><strong>Duration:</strong> {{ q.duration_minutes }} mins</span>
+        <span><strong>Total Points:</strong> {{ q.total_points }}</span>
+      </div>
+      <div>
+        {% if q.is_open %}
+          <a href="{% url 'student_quiz_take' q.id %}" class="btn primary" style="width: 100%; text-align: center;">Take Quiz</a>
+        {% else %}
+          <a href="{% url 'student_quiz_results' q.id %}" class="btn secondary" style="width: 100%; text-align: center;">View Results</a>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="profile-card profile-card-full" style="grid-column: 1 / -1; text-align: center; padding: 48px;">
+      <h3 style="color: #94a3b8; font-weight: 500;">No quizzes currently available.</h3>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

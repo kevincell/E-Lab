@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Open-Ended Assignments{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Take-Home Assignments</h1>
+    <p class="muted">Write the answers in your notebook and submit them to your instructor.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="grid two">
+    {% for q in questions %}
+    <div class="profile-card profile-card-full">
+      <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3>{{ q.title }}</h3>
+        <p class="card-subtitle">{{ q.course.name }}</p>
+      </div>
+      <div class="prose-dark" style="margin-bottom: 24px;">
+        {{ q.description|safe|linebreaks }}
+      </div>
+      <div style="display: flex; gap: 16px; font-size: 13px; color: #94a3b8;">
+        <span><strong>Assigned:</strong> {{ q.assigned_date|date:"M d, Y" }}</span>
+        {% if q.due_date %}
+        <span style="color: #ef4444;"><strong>Due:</strong> {{ q.due_date|date:"M d, Y" }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="profile-card profile-card-full" style="grid-column: 1 / -1; text-align: center; padding: 48px;">
+      <h3 style="color: #94a3b8; font-weight: 500;">No assignments currently available.</h3>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

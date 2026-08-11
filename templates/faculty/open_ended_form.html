@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{% if question %}Edit{% else %}New{% endif %} Open-Ended Question{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>{% if question %}Edit Open-Ended Question{% else %}Create Open-Ended Question{% endif %}</h1>
+    <p class="muted">For offline / take-home assignments.</p>
+  </div>
+  <div class="actions">
+    <a class="secondary as-link" href="{% url 'faculty_open_ended_list' %}">Back to List</a>
+  </div>
+</section>
+
+<section class="panel">
+  <form method="post" class="stack" style="max-width: 600px;">
+    {% csrf_token %}
+    {% for field in form %}
+      <label>
+        <span>{{ field.label }}</span>
+        {{ field }}
+        {% if field.help_text %}<small class="muted">{{ field.help_text }}</small>{% endif %}
+        {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+      </label>
+    {% endfor %}
+    <button type="submit" class="primary">Save Question</button>
+  </form>
+</section>
+{% endblock %}

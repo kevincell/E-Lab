@@ -27,7 +27,7 @@ from rest_framework.response import Response
 
 from .forms import (
     CSVQuestionUploadForm,
-    FacultyModuleSelectForm,
+    FacultyCourseSelectForm,
     ModuleForm,
     ProfileForm,
     QuestionForm,
@@ -36,7 +36,7 @@ from .forms import (
     SubmissionForm,
     TestCaseForm,
 )
-from .models import AssignedQuestion, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, TestCase, User
+from .models import AssignedQuestion, Certificate, CertificateRequest, Course, LabSession, Module, ModuleQuestionAssignment, Notification, OpenEndedQuestion, Progress, Question, Quiz, QuizAttempt, QuizQuestion, Submission, TestCase, User
 from .sandbox import run_code as sandbox_run_code, language_for_id
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
 from .services import (
@@ -58,11 +58,15 @@ from .tasks import evaluate_submission_task
 
 
 def get_faculty_modules(user):
-    """Return modules managed by a faculty user, or all active modules if none explicitly selected."""
+    """Return modules managed by a faculty user via their selected courses, or all active modules if none explicitly selected."""
     if user.is_authenticated and user.is_faculty_like:
-        managed = user.managed_modules.filter(is_active=True)
-        if managed.exists():
-            return managed
+        # Fallback to managed_modules for backward compatibility during migration
+        managed_courses = user.managed_courses.filter(is_active=True)
+        if managed_courses.exists():
+            return Module.objects.filter(course__in=managed_courses, is_active=True)
+        managed_modules = user.managed_modules.filter(is_active=True)
+        if managed_modules.exists():
+            return managed_modules
     return Module.objects.filter(is_active=True)
 
 
@@ -146,8 +150,24 @@ def dashboard(request):
             return redirect("role_select")
 
     if request.user.is_faculty_like:
-        category = request.GET.get("category", "c_programming")
-        faculty_mods = get_faculty_modules(request.user).filter(category=category)
+        courses = request.user.managed_courses.filter(is_active=True)
+        if not courses.exists():
+            courses = Course.objects.filter(is_active=True)
+        
+        course_id = request.GET.get("course")
+        if course_id:
+            try:
+                selected_course = courses.get(id=int(course_id))
+            except (ValueError, Course.DoesNotExist):
+                selected_course = courses.first()
+        else:
+            selected_course = courses.first()
+
+        if selected_course:
+            faculty_mods = get_faculty_modules(request.user).filter(course=selected_course)
+        else:
+            faculty_mods = Module.objects.none()
+
         modules = faculty_mods.annotate(
             question_count=Count("questions"),
             active_question_count=Count("questions", filter=Q(questions__is_active=True)),
@@ -253,17 +273,17 @@ def dashboard(request):
             request,
             "faculty/dashboard.html",
             {
+                "students": progress_students_qs.count(),
+                "questions": Question.objects.filter(is_active=True).count(),
                 "modules": modules,
-                "recent_submissions": recent,
-                "recent_sessions": recent_sessions,
-                "students": students,
-                "questions": Question.objects.filter(module__in=progress_modules).count(),
-                "progress_tracker": progress_tracker,
                 "progress_modules": progress_modules,
+                "progress_tracker": progress_tracker,
+                "progress_total": progress_total,
                 "selected_category": selected_category,
                 "selected_category_label": selected_category_label,
                 "selected_sort": selected_sort,
-                "progress_total": progress_total,
+                "courses": courses,
+                "selected_course": selected_course,
             },
         )
 
@@ -1113,7 +1133,7 @@ def import_question_text(file_name, text, faculty):
     }
 
 
-def import_question_csv(file_obj, faculty):
+def import_question_csv(file_obj, faculty, category="c_programming"):
     module_name, order = module_name_from_csv(file_obj.name)
     module, _ = Module.objects.update_or_create(
         name=module_name,
@@ -1122,8 +1142,23 @@ def import_question_csv(file_obj, faculty):
             "level": order,
             "order": order,
             "is_active": True,
+            "category": category,
         },
     )
+
+    # Auto-link module to its Course (create if needed)
+    COURSE_META = {
+        "c_programming": "C Programming",
+        "python_programming": "Python Programming",
+    }
+    course_name = COURSE_META.get(category, category.replace("_", " ").title())
+    course, _ = Course.objects.get_or_create(
+        slug=category,
+        defaults={"name": course_name, "is_active": True},
+    )
+    if module.course_id != course.pk:
+        module.course = course
+        module.save(update_fields=["course"])
 
     decoded = file_obj.read().decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(decoded))
@@ -1975,16 +2010,16 @@ def profile_view(request):
     profile_form = ProfileForm(request.POST or None, instance=user)
     password_form = PasswordChangeForm(user, request.POST or None if "change_password" in request.POST else None)
 
-    faculty_module_form = None
+    faculty_course_form = None
     if user.is_faculty_like:
-        if request.method == "POST" and "update_modules" in request.POST:
-            faculty_module_form = FacultyModuleSelectForm(request.POST)
-            if faculty_module_form.is_valid():
-                user.managed_modules.set(faculty_module_form.cleaned_data["modules"])
+        if request.method == "POST" and "update_courses" in request.POST:
+            faculty_course_form = FacultyCourseSelectForm(request.POST)
+            if faculty_course_form.is_valid():
+                user.managed_courses.set(faculty_course_form.cleaned_data["courses"])
                 messages.success(request, "Managed courses updated successfully.")
                 return redirect("profile")
         else:
-            faculty_module_form = FacultyModuleSelectForm(initial={"modules": user.managed_modules.all()})
+            faculty_course_form = FacultyCourseSelectForm(initial={"courses": user.managed_courses.all()})
 
     if request.method == "POST":
         if "update_profile" in request.POST:
@@ -2006,9 +2041,154 @@ def profile_view(request):
     context = {
         "profile_form": profile_form,
         "password_form": password_form,
-        "faculty_module_form": faculty_module_form,
+        "faculty_course_form": faculty_course_form,
         "total_submissions": total_submissions,
         "accepted_submissions": accepted_submissions,
     }
     return render(request, "registration/profile.html", context)
+
+
+# --- Open-Ended Questions ---
+
+@login_required
+def student_open_ended_list(request):
+    courses = get_faculty_modules(request.user).values_list('course', flat=True).distinct() if request.user.is_faculty_like else Course.objects.all()
+    questions = OpenEndedQuestion.objects.filter(is_active=True).order_by('-assigned_date')
+    return render(request, "student/open_ended_list.html", {"questions": questions})
+
+@login_required
+def faculty_open_ended_list(request):
+    faculty_required(request.user)
+    courses = request.user.managed_courses.all()
+    questions = OpenEndedQuestion.objects.filter(course__in=courses).order_by('-assigned_date')
+    return render(request, "faculty/open_ended_list.html", {"questions": questions})
+
+@login_required
+def faculty_open_ended_form(request, pk=None):
+    faculty_required(request.user)
+    question = get_object_or_404(OpenEndedQuestion, pk=pk) if pk else None
+    
+    # Check permissions
+    if question and question.course not in request.user.managed_courses.all():
+        raise PermissionDenied
+        
+    from .forms import OpenEndedQuestionForm
+    form = OpenEndedQuestionForm(request.POST or None, instance=question)
+    
+    if request.method == "POST" and form.is_valid():
+        obj = form.save(commit=False)
+        if not obj.created_by_id:
+            obj.created_by = request.user
+        obj.save()
+        messages.success(request, "Open-ended question saved.")
+        return redirect("faculty_open_ended_list")
+        
+    return render(request, "faculty/open_ended_form.html", {"form": form, "question": question})
+
+@login_required
+@require_POST
+def faculty_open_ended_delete(request, pk):
+    faculty_required(request.user)
+    question = get_object_or_404(OpenEndedQuestion, pk=pk)
+    if question.course not in request.user.managed_courses.all():
+        raise PermissionDenied
+    question.delete()
+    messages.success(request, "Question deleted.")
+    return redirect("faculty_open_ended_list")
+
+# --- Quizzes ---
+
+@login_required
+def student_quiz_list(request):
+    quizzes = Quiz.objects.filter(is_active=True).order_by('-created_at')
+    return render(request, "student/quiz_list.html", {"quizzes": quizzes})
+
+@login_required
+def student_quiz_take(request, quiz_id):
+    quiz = get_object_or_404(Quiz, pk=quiz_id, is_active=True)
+    if not quiz.is_open:
+        messages.error(request, "This quiz is not currently open.")
+        return redirect("student_quiz_list")
+        
+    attempt, created = QuizAttempt.objects.get_or_create(
+        quiz=quiz,
+        student=request.user,
+        defaults={"max_score": quiz.total_points}
+    )
+    
+    if attempt.finished_at or attempt.is_timed_out:
+        messages.info(request, "You have already completed this quiz.")
+        return redirect("student_quiz_results", quiz_id=quiz.id)
+        
+    # Simplified version for now
+    questions = quiz.quiz_questions.select_related('question').order_by('order')
+    return render(request, "student/quiz_take.html", {"quiz": quiz, "attempt": attempt, "questions": questions})
+
+@login_required
+def student_quiz_results(request, quiz_id):
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    attempt = get_object_or_404(QuizAttempt, quiz=quiz, student=request.user)
+    
+    if not quiz.show_results:
+        messages.info(request, "Results are currently hidden by the instructor.")
+        return redirect("student_quiz_list")
+        
+    return render(request, "student/quiz_results.html", {"quiz": quiz, "attempt": attempt})
+
+@login_required
+def faculty_quiz_list(request):
+    faculty_required(request.user)
+    quizzes = Quiz.objects.filter(course__in=request.user.managed_courses.all()).order_by('-created_at')
+    return render(request, "faculty/quiz_list.html", {"quizzes": quizzes})
+
+@login_required
+def faculty_quiz_form(request, quiz_id=None):
+    faculty_required(request.user)
+    quiz = get_object_or_404(Quiz, pk=quiz_id) if quiz_id else None
+    
+    if quiz and quiz.course not in request.user.managed_courses.all():
+        raise PermissionDenied
+        
+    from .forms import QuizForm
+    form = QuizForm(request.POST or None, instance=quiz)
+    
+    if request.method == "POST" and form.is_valid():
+        obj = form.save(commit=False)
+        if not obj.created_by_id:
+            obj.created_by = request.user
+        obj.save()
+        messages.success(request, "Quiz saved.")
+        return redirect("faculty_quiz_detail", quiz_id=obj.id)
+        
+    return render(request, "faculty/quiz_form.html", {"form": form, "quiz": quiz})
+
+@login_required
+def faculty_quiz_detail(request, quiz_id):
+    faculty_required(request.user)
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    
+    if quiz.course not in request.user.managed_courses.all():
+        raise PermissionDenied
+        
+    attempts = quiz.attempts.select_related('student').order_by('-total_score')
+    return render(request, "faculty/quiz_detail.html", {"quiz": quiz, "attempts": attempts})
+
+@login_required
+@require_POST
+def faculty_quiz_toggle(request, quiz_id):
+    faculty_required(request.user)
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    if quiz.course not in request.user.managed_courses.all():
+        raise PermissionDenied
+        
+    quiz.is_active = not quiz.is_active
+    quiz.save()
+    messages.success(request, f"Quiz is now {'active' if quiz.is_active else 'inactive'}.")
+    return redirect("faculty_quiz_detail", quiz_id=quiz.id)
+
+@login_required
+def faculty_quiz_upload(request):
+    faculty_required(request.user)
+    messages.info(request, "Question upload for quizzes is coming soon.")
+    return redirect("faculty_quiz_list")
 

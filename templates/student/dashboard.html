@@ -30,6 +30,12 @@
       <a href="{% url 'student_lab_record' %}" target="_blank" class="secondary" style="display: flex; align-items: center; gap: 6px;">
         📄 Print Lab Record
       </a>
+      <a href="{% url 'student_open_ended_list' %}" class="secondary" style="display: flex; align-items: center; gap: 6px;">
+        📝 Take-Home
+      </a>
+      <a href="{% url 'student_quiz_list' %}" class="secondary" style="display: flex; align-items: center; gap: 6px;">
+        ⏱️ Quizzes
+      </a>
       {% if certificate_eligible %}
         <a href="{% url 'certificate_create' %}" class="primary">Get Certificate</a>
       {% else %}

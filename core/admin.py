@@ -6,12 +6,17 @@ from .models import (
     Attendance,
     Certificate,
     CertificateRequest,
+    Course,
     LabSession,
     Module,
     ModuleQuestionAssignment,
     Notification,
+    OpenEndedQuestion,
     Progress,
     Question,
+    Quiz,
+    QuizAttempt,
+    QuizQuestion,
     Submission,
     TestCase,
     User,
@@ -21,17 +26,25 @@ from .models import (
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ("e-Lab profile", {"fields": ("usn", "role", "department", "semester", "bio", "managed_modules")}),
+        ("e-Lab profile", {"fields": ("usn", "role", "department", "semester", "bio", "managed_modules", "managed_courses")}),
     )
     list_display = ("username", "email", "usn", "role", "department", "semester", "is_staff")
     list_filter = ("role", "department", "semester", "is_staff")
     search_fields = ("username", "email", "first_name", "last_name", "usn")
-    filter_horizontal = ("managed_modules",)
+    filter_horizontal = ("managed_modules", "managed_courses")
 
 
 class TestCaseInline(admin.TabularInline):
     model = TestCase
     extra = 1
+
+
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "year", "semester", "is_active")
+    list_filter = ("year", "is_active")
+    prepopulated_fields = {"slug": ("name",)}
+    search_fields = ("name", "slug")
 
 
 @admin.register(Module)
@@ -116,5 +129,32 @@ class NotificationAdmin(admin.ModelAdmin):
 class CertificateRequestAdmin(admin.ModelAdmin):
     list_display = ("student", "status", "requested_by_faculty", "approved_by_hod", "completion_percentage", "updated_at")
     list_filter = ("status",)
+    search_fields = ("student__username", "student__usn")
+
+
+@admin.register(OpenEndedQuestion)
+class OpenEndedQuestionAdmin(admin.ModelAdmin):
+    list_display = ("title", "course", "assigned_date", "due_date", "is_active")
+    list_filter = ("course", "is_active", "assigned_date")
+    search_fields = ("title", "description")
+
+
+class QuizQuestionInline(admin.TabularInline):
+    model = QuizQuestion
+    extra = 1
+
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ("title", "course", "duration_minutes", "start_time", "end_time", "is_active")
+    list_filter = ("course", "is_active")
+    search_fields = ("title", "description")
+    inlines = [QuizQuestionInline]
+
+
+@admin.register(QuizAttempt)
+class QuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ("student", "quiz", "started_at", "finished_at", "total_score")
+    list_filter = ("quiz",)
     search_fields = ("student__username", "student__usn")
 

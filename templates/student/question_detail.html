@@ -142,15 +142,27 @@
         <span class="results-status" id="results-status"></span>
       </div>
       <div class="results-list" id="results-list"></div>
+    </div>
+    
     <!-- Custom Input Area -->
-    <div class="custom-input-section" id="custom-input-section" style="display: none; margin-top: 24px;">
-      <h3 class="results-title" style="margin-bottom: 8px;">Custom Input</h3>
-      <textarea id="custom-input-textarea" rows="4" style="width: 100%; background: rgba(31, 41, 55, 0.8); color: #e2e8f0; border: 1px solid #4a5568; border-radius: var(--radius-md); padding: 12px; font-family: 'JetBrains Mono', monospace;" placeholder="Enter custom input here..."></textarea>
-      <button type="button" id="run-custom-btn" class="secondary" style="margin-top: 12px; font-size: 13px; height: 36px; min-height: 36px;">Run Custom Input</button>
-      
-      <div id="custom-output-section" style="display: none; margin-top: 16px;">
-        <h4 style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Output</h4>
-        <pre id="custom-output-pre" style="background: rgba(0, 0, 0, 0.4); padding: 12px; border-radius: var(--radius-md); color: #e2e8f0; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace;"></pre>
+    <div class="custom-input-section" id="custom-input-section" style="display: block; margin-top: 32px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        <h3 class="results-title" style="margin: 0;">Custom Input</h3>
+      </div>
+      <textarea id="custom-input-textarea" rows="4" style="width: 100%; background: rgba(15, 20, 35, 0.7); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 14px; font-family: 'JetBrains Mono', 'Fira Mono', monospace; font-size: 13px; resize: vertical; box-sizing: border-box; outline: none; transition: border-color 0.2s;" placeholder="Enter custom stdin here…" onfocus="this.style.borderColor='rgba(99,102,241,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"></textarea>
+      <button type="button" id="run-custom-btn" class="secondary" style="margin-top: 10px; font-size: 13px; height: 36px; min-height: 36px; display: inline-flex; align-items: center; gap: 8px;">
+        <svg id="run-custom-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <span id="run-custom-label">Run</span>
+      </button>
+
+      <!-- Output -->  
+      <div id="custom-output-section" style="margin-top: 14px; display: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em;">Output</span>
+          <span id="custom-output-status" style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;"></span>
+        </div>
+        <pre id="custom-output-pre" style="background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.08); padding: 14px 16px; border-radius: 10px; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; font-family: 'JetBrains Mono', 'Fira Mono', monospace; font-size: 13px; min-height: 48px; margin: 0;"></pre>
       </div>
     </div>
   </article>
@@ -378,9 +390,9 @@
       });
 
       if (isRun && allPassed) {
-        document.getElementById("custom-input-section").style.display = "block";
+        // We always show custom input now (in a tab or alongside), so we don't need to toggle it here based on pass/fail.
       } else if (isRun) {
-        document.getElementById("custom-input-section").style.display = "none";
+        // Do nothing.
       }
 
       resultsStatus.textContent = allPassed ? "All Test Cases Passed" : "Some Test Cases Failed";
@@ -430,54 +442,65 @@
     }
 
     const runCustomBtn = document.getElementById("run-custom-btn");
+    const runCustomLabel = document.getElementById("run-custom-label");
     if (runCustomBtn) {
       runCustomBtn.addEventListener("click", function() {
         if (isRunning) return;
         isRunning = true;
-        
-        runCustomBtn.textContent = "Running...";
+
+        const outSec = document.getElementById("custom-output-section");
+        const outPre = document.getElementById("custom-output-pre");
+        const outStatus = document.getElementById("custom-output-status");
+
+        // Show loading state immediately
         runCustomBtn.disabled = true;
-        
+        if (runCustomLabel) runCustomLabel.textContent = "Running…";
+        outSec.style.display = "block";
+        outPre.textContent = "Running…";
+        outPre.style.color = "#94a3b8";
+        if (outStatus) { outStatus.textContent = ""; outStatus.style.background = "transparent"; }
+
         const code = editor ? editor.getValue() : textarea.value;
         const questionId = {{ question.id }};
         const csrfToken = getCsrfToken();
         const langSelect = document.getElementById("language-select");
         const languageId = langSelect ? langSelect.value : null;
         const customInput = document.getElementById("custom-input-textarea").value;
-        
+
         fetch("/api/run/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken
-          },
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
           body: JSON.stringify({ question: questionId, code: code, language_id: languageId, custom_input: customInput })
         })
         .then(r => {
-           if (!r.ok) throw new Error("Run failed");
-           return r.json();
+          if (!r.ok) throw new Error("Run failed: " + r.status);
+          return r.json();
         })
         .then(data => {
-           const outSec = document.getElementById("custom-output-section");
-           const outPre = document.getElementById("custom-output-pre");
-           outSec.style.display = "block";
-           if (data.tests && data.tests.length > 0) {
-             const res = data.tests[0];
-             outPre.textContent = res.error ? res.error : res.actual;
-             outPre.style.color = res.error ? "#ef4444" : "#e2e8f0";
-           } else {
-             outPre.textContent = "No output.";
-             outPre.style.color = "#e2e8f0";
-           }
+          if (data.tests && data.tests.length > 0) {
+            const res = data.tests[0];
+            const isError = !!(res.error && res.error.trim());
+            outPre.textContent = isError ? res.error : (res.actual !== undefined ? res.actual : "(no output)");
+            outPre.style.color = isError ? "#ef4444" : "#e2e8f0";
+            if (outStatus) {
+              outStatus.textContent = isError ? "Error" : "OK";
+              outStatus.style.background = isError ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)";
+              outStatus.style.color = isError ? "#ef4444" : "#10b981";
+            }
+          } else {
+            outPre.textContent = "(no output)";
+            outPre.style.color = "#94a3b8";
+          }
         })
         .catch(err => {
-           console.error(err);
-           alert("Failed to run custom input.");
+          console.error(err);
+          outPre.textContent = "Failed to run. Please check your code.";
+          outPre.style.color = "#ef4444";
         })
         .finally(() => {
-           isRunning = false;
-           runCustomBtn.textContent = "Run Custom Input";
-           runCustomBtn.disabled = false;
+          isRunning = false;
+          runCustomBtn.disabled = false;
+          if (runCustomLabel) runCustomLabel.textContent = "Run";
         });
       });
     }
@@ -558,7 +581,14 @@
             setStatus("Running tests…", "Executing hidden test cases in the Docker sandbox.");
             setStep("run");
             pollSubmission(questionId, function(sub) {
-              window.location.href = `/submissions/${sub.id}/`;
+              stopProgress();
+              let tests = [];
+              try {
+                if (sub.judge_output) {
+                  tests = JSON.parse(sub.judge_output);
+                }
+              } catch(e) {}
+              renderTestResults(tests, false);
             });
           })
           .catch(function(err) {
@@ -915,8 +945,6 @@
     }
 
     function startProctoringMonitoring() {
-      // Temporarily disabled per user request
-      return;
       if (proctoringMonitoringActive) return;
       proctoringMonitoringActive = true;
 
@@ -937,20 +965,58 @@
       document.addEventListener('drop', (e) => { if (proctoringMonitoringActive) { e.preventDefault(); triggerViolation("Attempted Drag & Drop"); } });
 
       // 3. Prevent Right-Click / Context Menu & Selection
-      document.addEventListener('contextmenu', (e) => { if (proctoringMonitoringActive) e.preventDefault(); });
+      document.addEventListener('contextmenu', (e) => { if (proctoringMonitoringActive) { e.preventDefault(); triggerViolation("Right-Click / Context Menu Opened"); } });
       document.addEventListener('selectstart', (e) => { 
         if (proctoringMonitoringActive && !e.target.closest('#editor')) {
           e.preventDefault();
         }
       });
 
-      // Prevent Ctrl+C / Ctrl+V / Ctrl+X at the window level
+      // Prevent shortcuts: F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S, Ctrl+P, Ctrl+C/V/X
       window.addEventListener('keydown', (e) => {
-        if (proctoringMonitoringActive && (e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(e.key.toLowerCase())) {
+        if (!proctoringMonitoringActive) return;
+
+        // F12 key
+        if (e.keyCode === 123) {
+          e.preventDefault();
+          triggerViolation("Developer Tools Shortcut (F12)");
+          return false;
+        }
+
+        // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, Ctrl+S, Ctrl+P
+        if ((e.ctrlKey || e.metaKey) && (
+          (e.shiftKey && ['i', 'j', 'c'].includes(e.key.toLowerCase())) || 
+          ['u', 's', 'p'].includes(e.key.toLowerCase())
+        )) {
+          e.preventDefault();
+          triggerViolation(`Attempted Keyboard Shortcut (Ctrl+${e.shiftKey ? 'Shift+' : ''}${e.key.toUpperCase()})`);
+          return false;
+        }
+
+        // Ctrl+C, Ctrl+V, Ctrl+X
+        if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(e.key.toLowerCase())) {
           e.preventDefault();
           triggerViolation(`Attempted Keyboard Shortcut (Ctrl+${e.key.toUpperCase()})`);
+          return false;
         }
       });
+
+      // 4. Console/Anti-Debugging Script Protection
+      // Clears console and pauses script debugger if DevTools is open.
+      setInterval(function() {
+        if (proctoringMonitoringActive) {
+          try {
+            console.clear();
+          } catch(e) {}
+          
+          const startTime = performance.now();
+          debugger;
+          const endTime = performance.now();
+          if (endTime - startTime > 100) {
+            triggerViolation("Developer Tools Console Open");
+          }
+        }
+      }, 1000);
     }
 
     // 4. Auto-Fullscreen / Auto-Maximize on Interaction

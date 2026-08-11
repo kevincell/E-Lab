@@ -23,7 +23,13 @@ class User(AbstractUser):
         "Module",
         blank=True,
         related_name="managing_faculty",
-        help_text="Modules this faculty member manages (faculty/HoD only).",
+        help_text="Deprecated — use managed_courses instead.",
+    )
+    managed_courses = models.ManyToManyField(
+        "Course",
+        blank=True,
+        related_name="managing_faculty",
+        help_text="Courses this faculty member manages (faculty/HoD only).",
     )
 
     @property
@@ -52,6 +58,23 @@ class User(AbstractUser):
         return self.role == self.Role.HOD
 
 
+class Course(models.Model):
+    """Top-level course that groups modules (e.g. 'C Programming', 'Python')."""
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(max_length=120, unique=True)
+    description = models.TextField(blank=True)
+    year = models.PositiveSmallIntegerField(default=1, help_text="Target year (1st, 2nd, etc.)")
+    semester = models.PositiveSmallIntegerField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["year", "name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Module(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True)
@@ -59,6 +82,11 @@ class Module(models.Model):
     order = models.PositiveSmallIntegerField(default=1)
     is_active = models.BooleanField(default=True)
     category = models.CharField(max_length=50, default="c_programming")
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="modules",
+        null=True, blank=True,
+        help_text="The course this module belongs to.",
+    )
 
     class Meta:
         ordering = ["order", "level", "name"]
@@ -391,3 +419,124 @@ class CertificateRequest(models.Model):
 
     def __str__(self):
         return f"{self.student} — {self.get_status_display()}"
+
+
+class OpenEndedQuestion(models.Model):
+    """Take-home question students write answers for in a physical notebook."""
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="open_ended_questions",
+        null=True, blank=True,
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField(
+        help_text="Full question text. Students will see this on-screen and write answers in their books.",
+    )
+    assigned_date = models.DateField(default=timezone.localdate)
+    due_date = models.DateField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="created_open_ended",
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-assigned_date", "-created_at"]
+
+    def __str__(self):
+        return self.title
+
+
+class Quiz(models.Model):
+    """A timed quiz/test that faculty can create on-demand."""
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="quizzes",
+        null=True, blank=True,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="created_quizzes",
+    )
+    duration_minutes = models.PositiveIntegerField(default=60)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=False)
+    show_results = models.BooleanField(
+        default=True,
+        help_text="Whether students can see results after completing the quiz.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "quizzes"
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_open(self):
+        now = timezone.now()
+        if not self.is_active:
+            return False
+        if self.start_time and now < self.start_time:
+            return False
+        if self.end_time and now > self.end_time:
+            return False
+        return True
+
+    @property
+    def question_count(self):
+        return self.quiz_questions.count()
+
+    @property
+    def total_points(self):
+        return sum(qq.points for qq in self.quiz_questions.all())
+
+
+class QuizQuestion(models.Model):
+    """Through-model linking a Quiz to a Question with ordering and points."""
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="quiz_questions")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="quiz_slots")
+    order = models.PositiveSmallIntegerField(default=1)
+    points = models.PositiveSmallIntegerField(default=10)
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = [("quiz", "question"), ("quiz", "order")]
+
+    def __str__(self):
+        return f"{self.quiz} — Q{self.order}: {self.question}"
+
+
+class QuizAttempt(models.Model):
+    """A student's attempt at a quiz."""
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="attempts")
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quiz_attempts",
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    total_score = models.PositiveIntegerField(default=0)
+    max_score = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-started_at"]
+        unique_together = [("quiz", "student")]
+
+    def __str__(self):
+        return f"{self.student} — {self.quiz}"
+
+    @property
+    def percentage(self):
+        return (self.total_score / self.max_score * 100) if self.max_score else 0
+
+    @property
+    def is_timed_out(self):
+        if not self.finished_at and self.quiz.duration_minutes:
+            from datetime import timedelta
+            deadline = self.started_at + timedelta(minutes=self.quiz.duration_minutes)
+            return timezone.now() > deadline
+        return False
