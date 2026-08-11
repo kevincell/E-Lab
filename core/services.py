@@ -156,7 +156,7 @@ def sync_assignment_completion(assignment):
     return slots
 
 
-def get_or_create_module_assignment(student, module, difficulty=Question.Difficulty.EASY):
+def get_or_create_module_assignment(student, module, difficulty=Question.Difficulty.EASY, count=5):
     assignment, created = ModuleQuestionAssignment.objects.get_or_create(
         student=student,
         module=module,
@@ -164,7 +164,7 @@ def get_or_create_module_assignment(student, module, difficulty=Question.Difficu
     )
     if created or not assignment.assigned_questions.exists():
         AssignedQuestion.objects.filter(assignment=assignment).delete()
-        for index, question in enumerate(choose_adaptive_questions(student, module, difficulty), start=1):
+        for index, question in enumerate(choose_adaptive_questions(student, module, difficulty, count=count), start=1):
             AssignedQuestion.objects.create(
                 assignment=assignment,
                 question=question,

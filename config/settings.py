@@ -164,7 +164,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
 # Enable secure cookies when served over HTTPS (detected from env/proxy)
-if not DEBUG:
+if env("SECURE_COOKIES", str(not DEBUG)).lower() == "true":
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_HTTPONLY = True

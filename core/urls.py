@@ -19,6 +19,7 @@ urlpatterns = [
     path("overview/", views.onboarding_overview, name="onboarding_overview"),
     path("about/", views.about, name="about"),
     path("course-selection/", views.onboarding_journey, name="onboarding_journey"),
+    path("placement-training/overview/", views.placement_training_overview, name="placement_training_overview"),
     path("modules/<int:module_id>/", views.module_detail, name="module_detail"),
     path("modules/<int:module_id>/<str:difficulty>/", views.module_level_detail, name="module_level_detail"),
     path("questions/<int:question_id>/", views.question_detail, name="question_detail"),

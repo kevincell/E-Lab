@@ -58,11 +58,24 @@
   </article>
 
   <article class="submit-panel">
-    <div class="panel-header">
-      <div class="panel-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+    <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="panel-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        </div>
+        <h2 class="panel-title">Submit Code</h2>
       </div>
-      <h2 class="panel-title">Submit Code</h2>
+      {% if question.allow_multiple_languages %}
+      <select name="language_id_selector" id="language-select" style="background: rgba(31, 41, 55, 0.8); color: #e2e8f0; border: 1px solid #4a5568; border-radius: var(--radius-sm); padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; z-index: 10;">
+        <option value="50" {% if request.POST.language_id == "50" or not request.POST.language_id %}selected{% endif %}>C</option>
+        <option value="54" {% if request.POST.language_id == "54" %}selected{% endif %}>C++</option>
+        <option value="71" {% if request.POST.language_id == "71" %}selected{% endif %}>Python</option>
+        <option value="62" {% if request.POST.language_id == "62" %}selected{% endif %}>Java</option>
+      </select>
+      {% endif %}
+      <button type="button" class="secondary" id="editor-minimize-btn" title="Exit Full Screen" style="display: none; height: 28px; min-height: 28px; padding: 0 12px; font-size: 12px; margin-left: 8px; border-radius: var(--radius-sm);">
+        Exit Fullscreen
+      </button>
     </div>
 
     <form method="post" class="submit-form" data-submit-form>
@@ -70,7 +83,7 @@
       {{ form.code.errors }}
       {{ form.code }}
 
-      <div class="editor-chrome" id="editor-chrome-container">
+      <div class="editor-chrome" id="editor-chrome-container" style="display: none;">
         <div class="editor-titlebar">
           <span class="dot-red"></span>
           <span class="dot-yellow"></span>
@@ -129,10 +142,21 @@
         <span class="results-status" id="results-status"></span>
       </div>
       <div class="results-list" id="results-list"></div>
+    <!-- Custom Input Area -->
+    <div class="custom-input-section" id="custom-input-section" style="display: none; margin-top: 24px;">
+      <h3 class="results-title" style="margin-bottom: 8px;">Custom Input</h3>
+      <textarea id="custom-input-textarea" rows="4" style="width: 100%; background: rgba(31, 41, 55, 0.8); color: #e2e8f0; border: 1px solid #4a5568; border-radius: var(--radius-md); padding: 12px; font-family: 'JetBrains Mono', monospace;" placeholder="Enter custom input here..."></textarea>
+      <button type="button" id="run-custom-btn" class="secondary" style="margin-top: 12px; font-size: 13px; height: 36px; min-height: 36px;">Run Custom Input</button>
+      
+      <div id="custom-output-section" style="display: none; margin-top: 16px;">
+        <h4 style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Output</h4>
+        <pre id="custom-output-pre" style="background: rgba(0, 0, 0, 0.4); padding: 12px; border-radius: var(--radius-md); color: #e2e8f0; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace;"></pre>
+      </div>
     </div>
   </article>
 </section>
 
+{{ question.starter_codes|json_script:"starter-codes-data" }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 <script>
   let editor;
@@ -148,6 +172,46 @@
   };
   const langMeta = LANGUAGE_META[QUESTION_LANGUAGE] || LANGUAGE_META.c;
 
+  const textarea_global = document.getElementById("id_code");
+  const starterCodesNode_global = document.getElementById("starter-codes-data");
+  const starterCodes_global = starterCodesNode_global ? JSON.parse(starterCodesNode_global.textContent) : {};
+
+  if (textarea_global && !textarea_global.value.trim()) {
+    const defaultLangId = document.getElementById("language-select") ? document.getElementById("language-select").value : "50";
+    if (starterCodes_global[defaultLangId]) {
+      textarea_global.value = starterCodes_global[defaultLangId];
+    } else if ({{ question.starter_code|length|safe }} > 0) {
+      textarea_global.value = "{{ question.starter_code|escapejs }}";
+    }
+  }
+
+  const langSelectGlobal = document.getElementById("language-select");
+  const filenameLabelGlobal = document.getElementById("editor-filename");
+  if (langSelectGlobal) {
+    langSelectGlobal.addEventListener("change", function(e) {
+      const val = e.target.value;
+      let newLangMeta;
+      if (val === "50") newLangMeta = LANGUAGE_META.c;
+      else if (val === "54") newLangMeta = LANGUAGE_META.cpp;
+      else if (val === "71") newLangMeta = LANGUAGE_META.python;
+      else if (val === "62") newLangMeta = LANGUAGE_META.java;
+      else newLangMeta = LANGUAGE_META.c;
+      
+      if (filenameLabelGlobal) filenameLabelGlobal.textContent = newLangMeta.filename;
+      
+      if (typeof editor !== 'undefined' && editor) {
+        monaco.editor.setModelLanguage(editor.getModel(), newLangMeta.monaco);
+        if (starterCodes_global[val]) {
+          editor.setValue(starterCodes_global[val]);
+        }
+      } else if (textarea_global) {
+        if (starterCodes_global[val]) {
+          textarea_global.value = starterCodes_global[val];
+        }
+      }
+    });
+  }
+
   require.config({ paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } });
   require(["vs/editor/editor.main"], function() {
     const textarea = document.getElementById("id_code");
@@ -155,10 +219,9 @@
     const filenameLabel = document.getElementById("editor-filename");
     if (filenameLabel) filenameLabel.textContent = langMeta.filename;
     if (textarea && editorNode) {
-      if (!textarea.value.trim() && {{ question.starter_code|length|safe }} > 0) {
-        textarea.value = "{{ question.starter_code|escapejs }}";
-      }
       textarea.style.display = "none";
+      const chrome = document.getElementById("editor-chrome-container");
+      if (chrome) chrome.style.display = "flex";
       editor = monaco.editor.create(editorNode, {
         value: textarea.value,
         language: langMeta.monaco,
@@ -245,6 +308,7 @@
     function renderTestResults(tests, isRun) {
       testResultsDiv.style.display = "block";
       resultsList.innerHTML = "";
+      document.getElementById("custom-output-section").style.display = "none";
 
       // Escape any user/program text we inject as HTML to avoid breaking layout.
       function esc(str) {
@@ -309,9 +373,15 @@
 
         testDiv.innerHTML = innerHtml;
 
-        if (!test.passed) allPassed = false;
         resultsList.appendChild(testDiv);
+        if (!test.passed) allPassed = false;
       });
+
+      if (isRun && allPassed) {
+        document.getElementById("custom-input-section").style.display = "block";
+      } else if (isRun) {
+        document.getElementById("custom-input-section").style.display = "none";
+      }
 
       resultsStatus.textContent = allPassed ? "All Test Cases Passed" : "Some Test Cases Failed";
       resultsStatus.className = "results-status " + (allPassed ? "success" : "error");
@@ -330,6 +400,8 @@
       const code = editor ? editor.getValue() : textarea.value;
       const questionId = {{ question.id }};
       const csrfToken = getCsrfToken();
+      const langSelect = document.getElementById("language-select");
+      const languageId = langSelect ? langSelect.value : null;
       
       fetch("/api/run/", {
         method: "POST",
@@ -337,7 +409,7 @@
           "Content-Type": "application/json",
           "X-CSRFToken": csrfToken
         },
-        body: JSON.stringify({ question: questionId, code: code })
+        body: JSON.stringify({ question: questionId, code: code, language_id: languageId })
       })
         .then(function(r) {
           if (!r.ok) throw new Error("Run failed");
@@ -355,6 +427,59 @@
         .finally(function() {
           isRunning = false;
         });
+    }
+
+    const runCustomBtn = document.getElementById("run-custom-btn");
+    if (runCustomBtn) {
+      runCustomBtn.addEventListener("click", function() {
+        if (isRunning) return;
+        isRunning = true;
+        
+        runCustomBtn.textContent = "Running...";
+        runCustomBtn.disabled = true;
+        
+        const code = editor ? editor.getValue() : textarea.value;
+        const questionId = {{ question.id }};
+        const csrfToken = getCsrfToken();
+        const langSelect = document.getElementById("language-select");
+        const languageId = langSelect ? langSelect.value : null;
+        const customInput = document.getElementById("custom-input-textarea").value;
+        
+        fetch("/api/run/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+          },
+          body: JSON.stringify({ question: questionId, code: code, language_id: languageId, custom_input: customInput })
+        })
+        .then(r => {
+           if (!r.ok) throw new Error("Run failed");
+           return r.json();
+        })
+        .then(data => {
+           const outSec = document.getElementById("custom-output-section");
+           const outPre = document.getElementById("custom-output-pre");
+           outSec.style.display = "block";
+           if (data.tests && data.tests.length > 0) {
+             const res = data.tests[0];
+             outPre.textContent = res.error ? res.error : res.actual;
+             outPre.style.color = res.error ? "#ef4444" : "#e2e8f0";
+           } else {
+             outPre.textContent = "No output.";
+             outPre.style.color = "#e2e8f0";
+           }
+        })
+        .catch(err => {
+           console.error(err);
+           alert("Failed to run custom input.");
+        })
+        .finally(() => {
+           isRunning = false;
+           runCustomBtn.textContent = "Run Custom Input";
+           runCustomBtn.disabled = false;
+        });
+      });
     }
 
     function pollSubmission(questionId, onComplete) {
@@ -410,6 +535,8 @@
         const code = editor ? editor.getValue() : textarea.value;
         const questionId = {{ question.id }};
         const csrfToken = getCsrfToken();
+        const langSelect = document.getElementById("language-select");
+        const languageId = langSelect ? langSelect.value : "{{ question.language_id }}";
 
         fetch("/api/submissions/", {
           method: "POST",
@@ -417,7 +544,7 @@
             "Content-Type": "application/json",
             "X-CSRFToken": csrfToken
           },
-          body: JSON.stringify({ question: questionId, code: code })
+          body: JSON.stringify({ question: questionId, code: code, language_id: languageId })
         })
           .then(function(r) {
             if (!r.ok) {
@@ -788,6 +915,8 @@
     }
 
     function startProctoringMonitoring() {
+      // Temporarily disabled per user request
+      return;
       if (proctoringMonitoringActive) return;
       proctoringMonitoringActive = true;
 
@@ -829,11 +958,47 @@
     setTimeout(() => {
       const editorNode = document.getElementById("editor");
       const maxBtn = document.getElementById("editor-maximize-btn");
+      const minBtn = document.getElementById("editor-minimize-btn");
+      const toast = document.getElementById("fullscreen-toast");
+      
+      function toggleMaximize() {
+        if (!document.body.classList.contains("is-maximized-page")) {
+          document.body.classList.add("is-maximized-page");
+          if (minBtn) minBtn.style.display = "inline-flex";
+          if (toast) {
+            toast.setAttribute("aria-hidden", "false");
+            setTimeout(function() { toast.setAttribute("aria-hidden", "true"); }, 4000);
+          }
+          if (typeof editor !== 'undefined' && editor.layout) editor.layout();
+        } else {
+          document.body.classList.remove("is-maximized-page");
+          if (minBtn) minBtn.style.display = "none";
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(e => console.log(e));
+          }
+          if (typeof editor !== 'undefined' && editor.layout) editor.layout();
+        }
+      }
+
+      if (maxBtn) {
+        maxBtn.addEventListener("click", function() {
+          toggleMaximize();
+        });
+      }
+      if (minBtn) {
+        minBtn.addEventListener("click", toggleMaximize);
+      }
+
+      document.addEventListener("fullscreenchange", function() {
+        if (!document.fullscreenElement && document.body.classList.contains("is-maximized-page")) {
+          // They pressed Esc to exit native fullscreen
+          toggleMaximize();
+        }
+      });
       if (editorNode && maxBtn) {
         editorNode.addEventListener('mousedown', () => {
           if (!document.body.classList.contains("is-maximized-page")) {
             maxBtn.click();
-            // Also attempt browser fullscreen if supported
             if (document.documentElement.requestFullscreen) {
               document.documentElement.requestFullscreen().catch(err => {
                 console.log(`Error attempting to enable fullscreen: ${err.message}`);

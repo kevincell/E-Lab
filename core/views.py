@@ -124,6 +124,15 @@ def onboarding_journey(request):
 
 
 @login_required
+def placement_training_overview(request):
+    if request.user.role == User.Role.ADMIN:
+        return redirect("admin:index")
+    if not request.user.usn or not request.user.usn.lower().startswith("nn25"):
+        raise PermissionDenied
+    return render(request, "placement_training/overview.html")
+
+
+@login_required
 def dashboard(request):
     if request.user.role == User.Role.ADMIN:
         return redirect("admin:index")
@@ -137,7 +146,8 @@ def dashboard(request):
             return redirect("role_select")
 
     if request.user.is_faculty_like:
-        faculty_mods = get_faculty_modules(request.user)
+        category = request.GET.get("category", "c_programming")
+        faculty_mods = get_faculty_modules(request.user).filter(category=category)
         modules = faculty_mods.annotate(
             question_count=Count("questions"),
             active_question_count=Count("questions", filter=Q(questions__is_active=True)),
@@ -257,8 +267,9 @@ def dashboard(request):
             },
         )
 
+    category = request.GET.get("category", "c_programming")
     progress_rows = student_progress(request.user)
-    modules = Module.objects.filter(is_active=True).prefetch_related("questions")
+    modules = Module.objects.filter(is_active=True, category=category).prefetch_related("questions")
     progress_by_module = {row.module_id: row for row in progress_rows}
     user_submissions = Submission.objects.filter(student=request.user).values("question_id", "status")
     question_status_map = {}
@@ -386,6 +397,9 @@ def dashboard(request):
 @login_required
 def module_detail(request, module_id):
     module = get_object_or_404(Module, pk=module_id, is_active=True)
+    if module.category == "placement_training":
+        return redirect("module_level_detail", module_id=module.id, difficulty="easy")
+        
     record_attendance(request.user, module)
     level_cards = []
     for value, label in Question.Difficulty.choices:
@@ -436,7 +450,8 @@ def module_level_detail(request, module_id, difficulty):
         assigned_slots = []
         current_slot = None
     else:
-        assignment = get_or_create_module_assignment(request.user, module, difficulty)
+        assignment_count = 10 if module.category == "placement_training" else 5
+        assignment = get_or_create_module_assignment(request.user, module, difficulty, count=assignment_count)
         assigned_slots = sync_assignment_completion(assignment)
         questions = [slot.question for slot in assigned_slots]
         current_slot = current_unlocked_question(assignment)
@@ -477,7 +492,13 @@ def question_detail(request, question_id):
         submission = form.save(commit=False)
         submission.student = request.user
         submission.question = question
-        submission.language_id = question.language_id
+        if question.allow_multiple_languages:
+            try:
+                submission.language_id = int(request.POST.get("language_id", question.language_id))
+            except ValueError:
+                submission.language_id = question.language_id
+        else:
+            submission.language_id = question.language_id
         
         session_key = f"violations_{request.user.id}_{question.id}"
         submission.proctoring_violations = request.session.get(session_key, 0)
@@ -687,22 +708,37 @@ def run_code_api(request):
 
     question_id = data.get("question")
     code = data.get("code")
+    language_id = data.get("language_id")
+    custom_input = data.get("custom_input")
+
     if not question_id or not code:
         return JsonResponse({"error": "Missing question or code parameter"}, status=400)
     
     question = get_object_or_404(Question, id=question_id, is_active=True)
-    test_cases = question.test_cases.filter(is_sample=True).order_by("order")
     
-    if not test_cases:
+    # Determine the execution language (use provided or fallback to question's default)
+    exec_language_id = int(language_id) if language_id else question.language_id
+    language = language_for_id(exec_language_id)
+
+    # If custom input is provided, run only against that
+    if custom_input is not None:
         test_cases = [
             TestCase(
-                stdin=question.sample_input,
-                expected_output=question.sample_output,
+                stdin=custom_input,
+                expected_output="",
             )
         ]
+    else:
+        test_cases = question.test_cases.filter(is_sample=True).order_by("order")
+        if not test_cases:
+            test_cases = [
+                TestCase(
+                    stdin=question.sample_input,
+                    expected_output=question.sample_output,
+                )
+            ]
     
     results = []
-    language = language_for_id(question.language_id)
     for test in test_cases:
         run_result = sandbox_run_code(
             language,
@@ -712,7 +748,11 @@ def run_code_api(request):
             time_limit=question.time_limit,
             memory_limit_kb=question.memory_limit_kb,
         )
-        passed = run_result.get("status_id") == 3
+        # Custom input doesn't check against expected output for 'passed' status, 
+        # it just runs. But sandbox_run_code might evaluate it anyway. 
+        # If expected is empty, any output will fail if the sandbox strictly diffs it.
+        # But for custom input, the frontend only cares about seeing the output.
+        passed = run_result.get("status_id") == 3 if custom_input is None else True
         error_message = (
             run_result.get("compile_output")
             or run_result.get("stderr")

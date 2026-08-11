@@ -50,7 +50,7 @@ Make sure these are installed on your machine:
 - Git
 
 ### 3. Environment Configuration
-```bashdocker compose up -d
+```bash
 cp .env.example .env
 ```
 
@@ -188,7 +188,7 @@ Demo user accounts created by `seed_demo` command:
 ## Development Workflow
 ```bash
 # Start all services
-
+docker compose up -d
 
 # Stop all services
 docker compose down

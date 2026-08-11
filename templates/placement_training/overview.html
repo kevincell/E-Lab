@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Placement Training Overview - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<style>
+  .pt-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    animation: fadeIn 0.8s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .pt-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+  .pt-title {
+    font-size: 36px;
+    font-weight: 900;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .pt-subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .pt-section {
+    background: rgba(30, 41, 59, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(16px);
+  }
+  [data-theme="light"] .pt-section {
+    background: #ffffff;
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  }
+  .pt-section h3 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #f59e0b;
+  }
+  .pt-section p {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+  }
+  .pt-list {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  .pt-list li {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    padding-left: 28px;
+    position: relative;
+  }
+  .pt-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: #f59e0b;
+    font-weight: bold;
+  }
+  .pt-action {
+    text-align: center;
+    margin-top: 50px;
+  }
+  .pt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 40px;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 900;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+  }
+  .pt-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 15px 35px rgba(245, 158, 11, 0.6);
+    color: #ffffff;
+  }
+  .back-btn {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  .back-btn:hover {
+    color: #f59e0b;
+  }
+</style>
+
+<div class="pt-container">
+  <a href="{% url 'onboarding_journey' %}" class="back-btn">← Back to Course Selection</a>
+  
+  <div class="pt-header">
+    <h1 class="pt-title">Technical Programming Placement Training</h1>
+    <p class="pt-subtitle">Department of Computer and Communication Engineering (CCE) • For III Semester B.Tech. Students</p>
+  </div>
+
+  <div class="pt-section">
+    <h3>1. Introduction</h3>
+    <p>The objective of this training program is to strengthen the programming and problem-solving skills of third-semester Computer and Communication Engineering (CCE) students. The course is designed to develop a strong foundation in programming, computational thinking, algorithms, and basic data structures, which are essential for future internships, coding competitions, and campus placements.</p>
+    <p>The program emphasizes practical learning through coding exercises, assignments, and online coding platforms. By the end of the training, students will be able to write efficient programs, solve coding challenges, and develop confidence for technical interviews.</p>
+  </div>
+
+  <div class="pt-section">
+    <h3>2. Objectives</h3>
+    <p>The training aims to:</p>
+    <ul class="pt-list">
+      <li>Develop logical and analytical thinking.</li>
+      <li>Strengthen programming fundamentals.</li>
+      <li>Introduce algorithmic problem-solving techniques.</li>
+      <li>Familiarize students with coding interview patterns.</li>
+      <li>Improve coding speed and accuracy.</li>
+      <li>Encourage participation in competitive programming platforms.</li>
+      <li>Prepare students for advanced Data Structures and Algorithms (DSA) in higher semesters.</li>
+    </ul>
+  </div>
+
+  <div class="pt-section">
+    <h3>3. Learning Outcomes</h3>
+    <p>After successful completion of the training, students will be able to:</p>
+    <ul class="pt-list">
+      <li>Understand programming constructs and their applications.</li>
+      <li>Write modular and efficient programs.</li>
+      <li>Implement searching and sorting algorithms.</li>
+      <li>Apply fundamental data structures.</li>
+      <li>Solve coding problems using systematic approaches.</li>
+      <li>Utilize online coding platforms for continuous learning.</li>
+    </ul>
+  </div>
+
+  <div class="pt-action">
+    <a href="{% url 'dashboard' %}?category=placement_training" class="pt-btn">
+      Take Me To The Training 🚀
+    </a>
+  </div>
+</div>
+{% endblock %}

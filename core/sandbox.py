@@ -96,7 +96,10 @@ def _build_inner_script(lang_config, source_filename, class_name, time_limit):
     Splitting the phases lets us distinguish compile errors from runtime errors
     definitively instead of sniffing output for "error:".
     """
-    parts = ["cd /box"]
+    parts = [
+        "cp -a /box/. /tmp/",
+        "cd /tmp"
+    ]
 
     compile_cmd = lang_config["compile"]
     if compile_cmd is not None:
@@ -108,8 +111,8 @@ def _build_inner_script(lang_config, source_filename, class_name, time_limit):
         # Compile output goes to compile.out; on failure, emit the marker and
         # the real compiler message, then exit 3.
         parts.append(
-            f"{{ {quoted} >compile.out 2>&1; }} || "
-            f"{{ echo {_COMPILE_ERROR_MARKER}; cat compile.out; exit 3; }}"
+            f"{{ {quoted} >compile.out 2>&1; cp compile.out /box/ 2>/dev/null; }} || "
+            f"{{ echo {_COMPILE_ERROR_MARKER}; cat compile.out; cp compile.out /box/ 2>/dev/null; exit 3; }}"
         )
 
     run_cmd = list(lang_config["run"])

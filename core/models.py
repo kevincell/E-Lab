@@ -58,6 +58,7 @@ class Module(models.Model):
     level = models.PositiveSmallIntegerField(default=1)
     order = models.PositiveSmallIntegerField(default=1)
     is_active = models.BooleanField(default=True)
+    category = models.CharField(max_length=50, default="c_programming")
 
     class Meta:
         ordering = ["order", "level", "name"]
@@ -85,6 +86,8 @@ class Question(models.Model):
     language_id = models.PositiveIntegerField(default=50, help_text="Judge0 language id. 50 is C (GCC).")
     time_limit = models.FloatField(default=2.0)
     memory_limit_kb = models.PositiveIntegerField(default=128000)
+    allow_multiple_languages = models.BooleanField(default=False)
+    starter_codes = models.JSONField(default=dict, blank=True)
     is_mandatory = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
