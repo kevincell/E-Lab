@@ -222,6 +222,16 @@
         }
       }
     });
+
+    textarea_global.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+        this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+        this.selectionStart = this.selectionEnd = start + 4;
+      }
+    });
   }
 
   require.config({ paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } });
@@ -234,12 +244,22 @@
       textarea.style.display = "none";
       const chrome = document.getElementById("editor-chrome-container");
       if (chrome) chrome.style.display = "flex";
+      monaco.editor.defineTheme('darker-black', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#000000',
+        }
+      });
       editor = monaco.editor.create(editorNode, {
         value: textarea.value,
         language: langMeta.monaco,
-        theme: "vs-dark",
+        theme: "darker-black",
         automaticLayout: true,
-        minimap: { enabled: false }
+        minimap: { enabled: false },
+        tabSize: 4,
+        insertSpaces: true
       });
       editor.onDidChangeModelContent(function() {
         textarea.value = editor.getValue();
@@ -413,7 +433,7 @@
       const questionId = {{ question.id }};
       const csrfToken = getCsrfToken();
       const langSelect = document.getElementById("language-select");
-      const languageId = langSelect ? langSelect.value : null;
+      const languageId = langSelect ? langSelect.value : "{{ question.language_id }}";
       
       fetch("/api/run/", {
         method: "POST",
@@ -464,7 +484,7 @@
         const questionId = {{ question.id }};
         const csrfToken = getCsrfToken();
         const langSelect = document.getElementById("language-select");
-        const languageId = langSelect ? langSelect.value : null;
+        const languageId = langSelect ? langSelect.value : "{{ question.language_id }}";
         const customInput = document.getElementById("custom-input-textarea").value;
 
         fetch("/api/run/", {
