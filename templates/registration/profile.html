@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}User Profile — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+
+  <!-- Back to Dashboard -->
+  <div style="margin-bottom: 20px;">
+    <a href="{% url 'dashboard' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--accent-primary, #6366f1); font-weight: 600; font-size: 14px; text-decoration: none; transition: transform 0.2s ease;" onmouseover="this.style.transform='translateX(-4px)'" onmouseout="this.style.transform='translateX(0)'">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Profile Hero Header -->
+  <div class="profile-header-card">
+    <div class="profile-avatar-large {{ user.role }}">
+      {{ user.initials }}
+    </div>
+    <div class="profile-header-info">
+      <div class="profile-name-row">
+        <h2>{{ user.display_name }}</h2>
+        <span class="role-pill role-{{ user.role }}">{{ user.get_role_display }}</span>
+      </div>
+      <p class="profile-username">@{{ user.username }}{% if user.usn and user.usn != user.username %} • USN: {{ user.usn }}{% endif %}</p>
+      {% if user.department %}
+        <p class="profile-dept">🏛️ {{ user.department }} {% if user.semester %}(Semester {{ user.semester }}){% endif %}</p>
+      {% endif %}
+      {% if user.bio %}
+        <p class="profile-bio-text">{{ user.bio }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="profile-grid">
+    <!-- Account Information Form Card -->
+    <div class="profile-card">
+      <div class="card-header">
+        <h3>👤 Edit Account Details</h3>
+        <p class="card-subtitle">Update your personal information</p>
+      </div>
+      <form method="post" class="profile-form">
+        {% csrf_token %}
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="{{ profile_form.first_name.id_for_label }}">First Name</label>
+            {{ profile_form.first_name }}
+            {% if profile_form.first_name.errors %}
+              <div class="field-error">{{ profile_form.first_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label for="{{ profile_form.last_name.id_for_label }}">Last Name</label>
+            {{ profile_form.last_name }}
+            {% if profile_form.last_name.errors %}
+              <div class="field-error">{{ profile_form.last_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="{{ profile_form.email.id_for_label }}">Email Address</label>
+          {{ profile_form.email }}
+          {% if profile_form.email.errors %}
+            <div class="field-error">{{ profile_form.email.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ profile_form.bio.id_for_label }}">Bio / About You</label>
+          {{ profile_form.bio }}
+          {% if profile_form.bio.errors %}
+            <div class="field-error">{{ profile_form.bio.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <button type="submit" name="update_profile" value="1" class="btn btn-primary">
+          Save Profile Changes
+        </button>
+      </form>
+    </div>
+
+    <!-- Security / Change Password Card -->
+    <div class="profile-card">
+      <div class="card-header">
+        <h3>🔒 Security &amp; Password</h3>
+        <p class="card-subtitle">Update your login password</p>
+      </div>
+      <form method="post" class="profile-form">
+        {% csrf_token %}
+        {% for field in password_form %}
+          <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div class="field-error">{{ field.errors.0 }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" name="change_password" value="1" class="btn btn-secondary">
+          Change Password
+        </button>
+      </form>
+    </div>
+
+    {% if user.is_faculty_like and faculty_course_form %}
+      <!-- Faculty Managed Courses Selection Card -->
+      <div class="profile-card profile-card-full">
+        <div class="card-header">
+          <div>
+            <h3>📚 Manage Your Courses</h3>
+            <p class="card-subtitle">Select the courses you teach. Your dashboard and student tracking will be filtered to these courses only.</p>
+          </div>
+        </div>
+        <form method="post" class="profile-form">
+          {% csrf_token %}
+
+          {% if faculty_course_form.courses.field.queryset.exists %}
+            <div class="course-selector-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px;">
+              {% for checkbox in faculty_course_form.courses %}
+                <label class="course-checkbox-card" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.2s ease; position: relative; user-select: none; -webkit-user-select: none;" onmouseover="this.style.borderColor='rgba(99,102,241,0.5)'; this.style.background='rgba(99,102,241,0.05)'" onmouseout="if(!this.querySelector('input').checked){this.style.borderColor='rgba(255,255,255,0.08)'; this.style.background='rgba(255,255,255,0.03)'}">
+                  <span style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    {{ checkbox.tag }}
+                  </span>
+                  <div>
+                    <span class="course-title" style="font-weight: 600; font-size: 14px; display: block; color: var(--text-primary);">{{ checkbox.choice_label }}</span>
+                  </div>
+                </label>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="padding: 32px; text-align: center; border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; margin-bottom: 24px;">
+              <p style="color: #94a3b8; font-size: 14px; margin: 0;">No courses have been set up yet. Ask an admin to create courses in the admin panel.</p>
+            </div>
+          {% endif %}
+
+          <button type="submit" name="update_courses" value="1" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(99,102,241,0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.3)'">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Save Course Preferences
+          </button>
+        </form>
+      </div>
+    {% endif %}
+
+    <!-- Stats & Activity Card -->
+    <div class="profile-card profile-card-full">
+      <div class="card-header">
+        <h3>📊 Activity Overview</h3>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-number">{{ total_submissions }}</span>
+          <span class="stat-label">Total Submissions</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number">{{ accepted_submissions }}</span>
+          <span class="stat-label">Accepted Code Solutions</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number">{{ user.date_joined|date:"M Y" }}</span>
+          <span class="stat-label">Member Since</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .course-checkbox-card input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #6366f1;
+    cursor: pointer;
+  }
+  .course-checkbox-card input[type="checkbox"]:checked ~ div .course-title {
+    color: #818cf8 !important;
+  }
+  .course-checkbox-card:has(input:checked) {
+    border-color: rgba(99, 102, 241, 0.6) !important;
+    background: rgba(99, 102, 241, 0.1) !important;
+  }
+</style>
+{% endblock %}

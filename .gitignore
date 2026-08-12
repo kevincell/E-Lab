@@ -23,6 +23,7 @@ local_settings.py
 # Static & Media
 staticfiles/
 media/
+static/videos/*.mp4
 
 # IDE
 .vscode/

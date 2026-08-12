@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>Certificate Status</h1>
+    <p class="muted">Your course completion verification is currently in progress</p>
+  </div>
+  <a class="secondary as-link" href="{% url 'dashboard' %}">Back to Dashboard</a>
+</section>
+
+<div class="grid two" style="max-width: 900px; margin: 40px auto; gap: 32px;">
+  <article class="panel" style="padding: 36px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(79, 70, 229, 0.15); color: var(--accent-primary); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 24px;">
+      ⏳
+    </div>
+    <p class="eyebrow" style="margin-bottom: 8px;">Current Status</p>
+    <h2 style="font-size: 24px; margin-bottom: 16px; color: var(--accent-primary);">
+      {% if request_obj.status == 'pending_faculty' %}
+        Awaiting Faculty Review
+      {% elif request_obj.status == 'pending_hod' %}
+        Awaiting HoD Approval
+      {% else %}
+        Under Review
+      {% endif %}
+    </h2>
+    <p class="muted" style="line-height: 1.6; max-width: 360px; margin-bottom: 24px;">
+      Your certificate request has been submitted and is being verified by your faculty and Head of Department (HoD). Once approved, you will receive an alert notification and can download your official certificate here.
+    </p>
+    <div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-full); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; font-weight: 600;">
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; display: inline-block;"></span>
+      Review in Progress
+    </div>
+  </article>
+
+  <article class="panel" style="padding: 36px;">
+    <p class="eyebrow" style="margin-bottom: 16px;">Verification Timeline</p>
+    
+    <div style="display: flex; flex-direction: column; gap: 24px; position: relative;">
+      <!-- Step 1 -->
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">✓</div>
+        <div>
+          <h4 style="margin: 0 0 4px; font-size: 15px;">Criteria Completed</h4>
+          <p class="muted" style="margin: 0; font-size: 13px;">You have achieved {{ percentage|floatformat:1 }}% completion and solved all mandatory questions.</p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: {% if request_obj.status == 'pending_faculty' %}#F59E0B{% else %}var(--accent-primary){% endif %}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+          {% if request_obj.status == 'pending_faculty' %}2{% else %}✓{% endif %}
+        </div>
+        <div>
+          <h4 style="margin: 0 0 4px; font-size: 15px;">Faculty Verification</h4>
+          <p class="muted" style="margin: 0; font-size: 13px;">
+            {% if request_obj.status == 'pending_faculty' %}
+              Your faculty is reviewing your lab progress and code submissions.
+            {% else %}
+              Verified by faculty ({{ request_obj.requested_by_faculty.display_name|default:"Faculty" }}).
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: {% if request_obj.status == 'pending_hod' %}#F59E0B{% else %}rgba(255,255,255,0.1){% endif %}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
+        <div>
+          <h4 style="margin: 0 0 4px; font-size: 15px;">HoD Approval</h4>
+          <p class="muted" style="margin: 0; font-size: 13px;">Final review and official certificate signature authorization by Head of Department.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+      <dl class="stats" style="margin: 0;">
+        <dt>Student Name</dt><dd>{{ request.user.display_name }}</dd>
+        <dt>USN</dt><dd>{{ request.user.usn|default:"-" }}</dd>
+        <dt>Requested On</dt><dd>{{ request_obj.created_at|date:"M d, Y" }}</dd>
+      </dl>
+    </div>
+  </article>
+</div>
+{% endblock %}

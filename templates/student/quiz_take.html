@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }}{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>{{ quiz.title }}</h1>
+    <p class="muted">Time limit: {{ quiz.duration_minutes }} minutes</p>
+  </div>
+</section>
+
+<section class="panel">
+  {% if attempt.finished_at %}
+    <div style="text-align: center; padding: 48px;">
+      <h2>Quiz Completed</h2>
+      <p class="muted" style="margin-top: 8px; margin-bottom: 24px;">You have already submitted this quiz.</p>
+      <a href="{% url 'student_quiz_results' quiz.id %}" class="btn primary">View Results</a>
+    </div>
+  {% else %}
+    <form method="post" class="stack">
+      {% csrf_token %}
+      {% for qq in questions %}
+      <div class="profile-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h3>Question {{ forloop.counter }} <span class="muted" style="font-size: 13px; font-weight: normal; margin-left: 8px;">({{ qq.points }} points)</span></h3>
+        </div>
+        <div class="prose-dark" style="margin-bottom: 16px;">
+          {{ qq.question.description|safe|linebreaks }}
+        </div>
+        
+        <!-- Simplified options for demo -->
+        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="radio" name="q_{{ qq.id }}" value="A"> Option A
+        </label>
+        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="radio" name="q_{{ qq.id }}" value="B"> Option B
+        </label>
+        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="radio" name="q_{{ qq.id }}" value="C"> Option C
+        </label>
+        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="radio" name="q_{{ qq.id }}" value="D"> Option D
+        </label>
+      </div>
+      {% endfor %}
+      
+      <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+        <button type="submit" class="btn primary">Submit Quiz</button>
+      </div>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

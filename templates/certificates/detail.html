@@ -1,33 +1,85 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="toolbar">
+<section class="toolbar" style="margin-bottom: 24px;">
   <div>
-    <h1>Certificate</h1>
-    <p class="muted">{{ certificate.semester }} · {{ certificate.completion_percentage|floatformat:1 }}% complete</p>
+    <p class="eyebrow" style="color: var(--success); font-weight: 700; display: flex; align-items: center; gap: 6px;">✓ VERIFIED & APPROVED</p>
+    <h1 style="font-size: 32px; margin: 4px 0;">Official Academic Diploma</h1>
+    <p class="muted">Issued by Dept. of Computer and Communication Engineering (CCE e-Lab) · Semester {{ certificate.semester }}</p>
   </div>
-  <a class="secondary as-link" href="{% url 'dashboard' %}">Dashboard</a>
+  <div style="display: flex; gap: 12px; align-items: center;">
+    {% if certificate.pdf %}
+      <a class="primary as-link" href="{{ certificate.pdf.url }}" download style="padding: 10px 20px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); display: inline-flex; align-items: center; gap: 8px;">
+        📥 Download Official PDF Diploma
+      </a>
+    {% endif %}
+    <a class="secondary as-link" href="{% url 'dashboard' %}">&larr; Back to Dashboard</a>
+  </div>
 </section>
 
-<div class="grid two">
-  <article class="panel certificate-card">
-    <p class="eyebrow">Verification</p>
-    <h3>Hash</h3>
-    <pre style="word-break:break-all;font-size:12px;">{{ certificate.verification_hash }}</pre>
-    <a href="{% url 'certificate_verify' certificate.verification_hash %}" class="secondary">Open Verification Page</a>
+<!-- Main Certificate Display Area -->
+{% if certificate.pdf %}
+<div class="panel" style="margin-bottom: 32px; padding: 24px; background: var(--surface); border: 1px solid rgba(79, 70, 229, 0.2); box-shadow: 0 12px 32px rgba(0,0,0,0.15);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 style="margin: 0; font-size: 18px;">Diploma Preview</h3>
+      <p class="muted" style="margin: 0; font-size: 13px;">This is your official university certificate, verified with a cryptographic hash and QR code.</p>
+    </div>
+    <a class="secondary as-link" href="{{ certificate.pdf.url }}" target="_blank" style="font-size: 13px;">↗ Open PDF in New Tab</a>
+  </div>
+  <div style="width: 100%; height: 720px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #525659; display: flex; align-items: center; justify-content: center;">
+    <iframe src="{{ certificate.pdf.url }}#toolbar=0&navpanes=0&scrollbar=0" style="width: 100%; height: 100%; border: none;"></iframe>
+  </div>
+</div>
+{% else %}
+<div class="panel" style="margin-bottom: 32px; padding: 32px; text-align: center; border: 1px solid var(--accent-warm);">
+  <h3 style="color: var(--accent-warm);">Generating PDF Diploma...</h3>
+  <p class="muted">Your certificate has been approved! If your PDF preview doesn't appear immediately, please refresh the page in a few moments.</p>
+</div>
+{% endif %}
+
+<!-- Details & Public Verification Section -->
+<div class="grid two" style="gap: 24px;">
+  <article class="panel" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <p class="eyebrow" style="color: var(--accent-primary);">Public Verification Portal</p>
+      <h3 style="margin: 4px 0 8px 0;">Cryptographic Verification</h3>
+      <p class="muted" style="font-size: 14px; line-height: 1.5; margin-bottom: 16px;">
+        Every certificate issued by CCE e-Lab includes a unique SHA-256 cryptographic hash and QR code. Employers, faculty, or third parties can scan the QR code on your diploma or visit the verification portal below to instantly confirm its authenticity.
+      </p>
+      <div style="background: var(--surface-soft); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 16px;">
+        <small class="muted" style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Unique Verification Hash</small>
+        <code style="word-break: break-all; font-size: 12px; color: var(--text-primary); font-family: monospace;">{{ certificate.verification_hash }}</code>
+      </div>
+    </div>
+    <div>
+      <a href="{% url 'certificate_verify' certificate.verification_hash %}" target="_blank" class="secondary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; width: 100%; justify-content: center; padding: 10px;">
+        ↗ Open Public Verification Page
+      </a>
+    </div>
   </article>
 
   <article class="panel">
-    <p class="eyebrow">Details</p>
-    <dl class="stats">
-      <dt>Student</dt><dd>{{ certificate.student.display_name }}</dd>
-      <dt>USN</dt><dd>{{ certificate.student.usn|default:"-" }}</dd>
-      <dt>Semester</dt><dd>{{ certificate.semester }}</dd>
-      <dt>Completion</dt><dd>{{ certificate.completion_percentage|floatformat:1 }}%</dd>
-      <dt>Issued</dt><dd>{{ certificate.issued_at }}</dd>
+    <p class="eyebrow">Academic Record</p>
+    <h3 style="margin: 4px 0 16px 0;">Student & Course Details</h3>
+    <dl class="stats" style="display: grid; grid-template-columns: 120px 1fr; gap: 12px 8px; font-size: 14px; margin: 0;">
+      <dt style="color: var(--text-muted);">Student Name</dt>
+      <dd style="font-weight: 700; margin: 0; color: var(--text-primary);">{{ certificate.student.display_name }}</dd>
+      
+      <dt style="color: var(--text-muted);">USN / ID</dt>
+      <dd style="font-weight: 600; margin: 0; color: var(--text-primary);">{{ certificate.student.usn|default:certificate.student.username }}</dd>
+      
+      <dt style="color: var(--text-muted);">Department</dt>
+      <dd style="font-weight: 600; margin: 0; color: var(--text-primary);">{{ certificate.student.department|default:"Computer and Communication Engineering" }}</dd>
+      
+      <dt style="color: var(--text-muted);">Semester</dt>
+      <dd style="font-weight: 600; margin: 0; color: var(--text-primary);">{{ certificate.semester }}</dd>
+      
+      <dt style="color: var(--text-muted);">Lab Completion</dt>
+      <dd style="font-weight: 700; margin: 0; color: var(--success);">{{ certificate.completion_percentage|floatformat:1 }}% (Minimum 60% Met)</dd>
+      
+      <dt style="color: var(--text-muted);">Date Issued</dt>
+      <dd style="margin: 0; color: var(--text-primary);">{{ certificate.issued_at|date:"F d, Y, h:i A" }}</dd>
     </dl>
-    {% if certificate.pdf %}
-      <a class="primary as-link" href="{{ certificate.pdf.url }}" style="margin-top:16px;">Download PDF</a>
-    {% endif %}
   </article>
 </div>
 {% endblock %}

@@ -7,10 +7,75 @@
   </div>
   <div class="actions">
     <a class="primary as-link" href="{% url 'faculty_question_new' %}">New Question</a>
-    <a class="secondary as-link" href="{% url 'faculty_question_upload' %}">Upload CSV</a>
+    <a class="secondary as-link" href="{% url 'faculty_question_bank' %}">Question Bank</a>
+    <a class="secondary as-link" href="{% url 'faculty_open_ended_list' %}">Take-Home</a>
+    <a class="secondary as-link" href="{% url 'faculty_quiz_list' %}">Quizzes</a>
     <a class="secondary as-link" href="{% url 'faculty_module_new' %}">New Module</a>
     <a class="secondary as-link" href="{% url 'attendance_report' %}">Attendance</a>
     <a class="secondary as-link" href="{% url 'export_progress' %}">Export CSV</a>
+  </div>
+</section>
+
+<section class="panel faculty-progress-panel">
+  <div class="progress-head">
+    <div>
+      <h2>Student Progress Tracker</h2>
+      <p class="muted">{{ selected_category_label }} &middot; {{ progress_total }} questions</p>
+    </div>
+    <form class="progress-controls" method="get">
+      <label>
+        <span>Course</span>
+        <select name="course" onchange="this.form.submit()">
+          <option value="" {% if not selected_course %}selected{% endif %}>All Courses</option>
+          {% for course in courses %}
+            <option value="{{ course.id }}" {% if selected_course and selected_course.id == course.id %}selected{% endif %}>{{ course.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>Sort by</span>
+        <select name="sort" onchange="this.form.submit()">
+          <option value="rank" {% if selected_sort == "rank" %}selected{% endif %}>Rank</option>
+          <option value="usn" {% if selected_sort == "usn" %}selected{% endif %}>USN</option>
+        </select>
+      </label>
+    </form>
+  </div>
+
+  <div class="table-wrap">
+    <table class="progress-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>USN</th>
+          <th>Student</th>
+          <th>Attempted</th>
+          <th>Completed</th>
+          <th>Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in progress_tracker %}
+          <tr>
+            <td>#{{ row.rank }}</td>
+            <td>{{ row.student_usn }}</td>
+            <td><a href="{% url 'faculty_student_detail' row.student.id %}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">{{ row.student.display_name }}</a></td>
+            <td>{{ row.attempted }}/{{ row.total }}</td>
+            <td>{{ row.completed }}/{{ row.total }}</td>
+            <td>
+              <div class="progress-cell">
+                <span class="progress-track"><span style="width: {{ row.percentage|floatformat:0 }}%"></span></span>
+                <strong>{{ row.percentage|floatformat:1 }}%</strong>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="muted">No students found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -25,6 +90,7 @@
             <small>{{ module.question_count }} questions · {{ module.active_question_count }} visible</small>
           </span>
           <span class="actions">
+            <a class="secondary as-link" href="{% url 'faculty_question_bank_module' module.id %}">View Qs</a>
             <a class="secondary as-link" href="{% url 'faculty_module_edit' module.id %}">Edit</a>
             <form method="post" action="{% url 'faculty_module_delete' module.id %}" onsubmit="return confirm('Delete this module and all its questions?');">
               {% csrf_token %}
@@ -67,22 +133,6 @@
         </a>
       {% empty %}
         <p class="muted">No attendance recorded yet.</p>
-      {% endfor %}
-    </div>
-  </div>
-  <div>
-    <h2>Plagiarism Flags</h2>
-    <div class="list">
-      {% for sub in flagged_submissions %}
-        <a class="row-card" href="{% url 'submission_detail' sub.id %}">
-          <span>
-            <strong>{{ sub.student.display_name }}</strong>
-            <small>{{ sub.question.title }}</small>
-          </span>
-          <span>Review</span>
-        </a>
-      {% empty %}
-        <p class="muted">No flagged submissions.</p>
       {% endfor %}
     </div>
   </div>

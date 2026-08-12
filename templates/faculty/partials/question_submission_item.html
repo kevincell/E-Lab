@@ -1,0 +1,43 @@
+<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(46, 48, 147, 0.1);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <strong style="font-size: 15px;">{{ q_data.question.title }}</strong>
+    <span class="status-pill {% if q_data.status == 'completed' %}status-accepted{% elif q_data.status == 'failed' or q_data.status == 'incomplete' %}status-wrong_answer{% else %}status-pending{% endif %}">
+      {% if q_data.status == 'failed' or q_data.status == 'incomplete' %}INCOMPLETE{% else %}{{ q_data.status|upper }}{% endif %}
+    </span>
+  </div>
+  
+  {% if q_data.latest_submission %}
+    <pre style="background: var(--bg-primary); padding: 16px; border-radius: var(--radius-md); font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-primary); border: 1px solid rgba(46, 48, 147, 0.15); overflow-x: auto; white-space: pre-wrap;">{{ q_data.latest_submission.code }}</pre>
+    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+      Submitted on: {{ q_data.latest_submission.submitted_at|date:"M d, Y H:i" }}
+    </div>
+    {% if q_data.latest_submission.proctoring_violations %}
+      <details style="margin-top: 8px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 6px; padding: 8px;">
+        <summary style="color: #ef4444; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none;">
+          ⚠️ {{ q_data.latest_submission.proctoring_violations }} Proctoring Violations detected! (Click to view)
+        </summary>
+        <ul style="margin: 8px 0 0 20px; padding: 0; font-size: 12px; color: var(--text-primary);">
+          {% for log in q_data.latest_submission.proctoring_logs %}
+            <li style="margin-bottom: 4px; font-family: monospace;">{{ log }}</li>
+          {% empty %}
+            <li class="muted">No detailed logs available.</li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% else %}
+      <div style="color: var(--success); font-size: 12px; margin-top: 4px; font-weight: 600;">
+        ✅ No proctoring violations
+      </div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'faculty_send_note' viewed_student.id %}" style="margin-top: 16px; display: flex; gap: 8px;">
+      {% csrf_token %}
+      <input type="hidden" name="question_id" value="{{ q_data.question.id }}">
+      <input type="text" name="note" placeholder="Send an alert note regarding this submission..." required style="flex-grow: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(128,128,128,0.3); font-size: 13px; background: var(--surface);">
+      <button type="submit" class="secondary" style="padding: 8px 16px; font-weight: 600; font-size: 13px; white-space: nowrap;">Send Alert 🔔</button>
+    </form>
+    
+  {% else %}
+    <p class="muted" style="font-size: 13px; font-style: italic;">No submission available.</p>
+  {% endif %}
+</div>

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Details{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>{{ quiz.title }}</h1>
+    <p class="muted">Course: {{ quiz.course.name }}</p>
+  </div>
+  <div class="actions">
+    <form method="post" action="{% url 'faculty_quiz_toggle' quiz.id %}" style="display: inline;">
+      {% csrf_token %}
+      <button class="secondary">Toggle Status</button>
+    </form>
+    <a class="secondary as-link" href="{% url 'faculty_quiz_edit' quiz.id %}">Edit Details</a>
+    <a class="secondary as-link" href="{% url 'faculty_quiz_upload' %}">Upload Questions</a>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="grid two" style="margin-bottom: 32px;">
+    <div class="course-card">
+      <p class="eyebrow">Settings</p>
+      <dl class="stats">
+        <dt>Duration</dt><dd>{{ quiz.duration_minutes }} min</dd>
+        <dt>Total Points</dt><dd>{{ quiz.total_points }}</dd>
+        <dt>Passing Score</dt><dd>{{ quiz.passing_score }}</dd>
+      </dl>
+    </div>
+    <div class="course-card">
+      <p class="eyebrow">Status</p>
+      <dl class="stats">
+        <dt>Visibility</dt><dd>{% if quiz.is_active %}<span style="color: #10b981;">Active</span>{% else %}<span style="color: #ef4444;">Inactive</span>{% endif %}</dd>
+        <dt>Accepting Responses</dt><dd>{% if quiz.is_open %}<span style="color: #10b981;">Yes</span>{% else %}<span style="color: #ef4444;">No</span>{% endif %}</dd>
+        <dt>Show Results</dt><dd>{% if quiz.show_results %}Yes{% else %}No{% endif %}</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h2>Student Attempts</h2>
+  <div class="table-wrap" style="margin-top: 16px;">
+    <table class="progress-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Started At</th>
+          <th>Finished At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attempt in attempts %}
+        <tr>
+          <td><a href="{% url 'faculty_student_detail' attempt.student.id %}" style="color: var(--accent-primary);">{{ attempt.student.display_name }}</a></td>
+          <td>{{ attempt.total_score }} / {{ attempt.max_score }}</td>
+          <td>
+            {% if attempt.is_timed_out %}
+              <span class="status-badge" style="color: #ef4444;">Timed Out</span>
+            {% elif attempt.finished_at %}
+              <span class="status-badge" style="color: #10b981;">Completed</span>
+            {% else %}
+              <span class="status-badge" style="color: #f59e0b;">In Progress</span>
+            {% endif %}
+          </td>
+          <td>{{ attempt.started_at|date:"M d, H:i" }}</td>
+          <td>{% if attempt.finished_at %}{{ attempt.finished_at|date:"M d, H:i" }}{% else %}-{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="muted">No attempts yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

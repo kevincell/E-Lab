@@ -1,0 +1,539 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}About - CCE e-Lab{% endblock %}
+
+{% block nav_links %}{% endblock %}
+
+{% block content %}
+<style>
+  /* =========================================================
+     ABOUT PAGE — FULL STANDALONE
+     ========================================================= */
+  .about-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 0 60px;
+    animation: aboutPageEnter 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    perspective: 1200px;
+  }
+
+  @keyframes aboutPageEnter {
+    0% { opacity: 0; filter: blur(20px); transform: scale(0.93) translateY(35px) rotateX(6deg); }
+    100% { opacity: 1; filter: blur(0px); transform: scale(1) translateY(0) rotateX(0deg); }
+  }
+
+  /* HERO */
+  .about-hero {
+    position: relative;
+    padding: 60px 45px;
+    border-radius: 28px;
+    background: radial-gradient(circle at 50% 10%, rgba(187, 134, 252, 0.22) 0%, rgba(15, 23, 42, 0.55) 70%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    text-align: center;
+    margin-bottom: 50px;
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+  }
+
+  [data-theme="light"] .about-hero {
+    background: radial-gradient(circle at 50% 10%, rgba(187, 134, 252, 0.15) 0%, rgba(255, 255, 255, 0.95) 70%);
+    border-color: rgba(124, 58, 237, 0.25);
+    box-shadow: 0 30px 60px -12px rgba(124, 58, 237, 0.15);
+  }
+
+  [data-theme="dark"] .about-hero {
+    background: linear-gradient(135deg, #1e2228 0%, #111111 100%) !important;
+    border: 2px solid #355a66 !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .about-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    background: rgba(187, 134, 252, 0.12);
+    border: 1px solid rgba(187, 134, 252, 0.4);
+    border-radius: 50px;
+    color: #bb86fc;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    box-shadow: 0 0 25px rgba(187, 134, 252, 0.2);
+  }
+
+  [data-theme="light"] .about-hero-badge {
+    color: #7C3AED;
+    background: rgba(124, 58, 237, 0.12);
+    border-color: rgba(124, 58, 237, 0.35);
+  }
+
+  [data-theme="dark"] .about-hero-badge {
+    background: #1e2228 !important;
+    color: #bb86fc !important;
+    border: 1.5px solid #355a66 !important;
+  }
+
+  .about-hero-title {
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #bb86fc 45%, #6f69e6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  [data-theme="light"] .about-hero-title {
+    background: linear-gradient(135deg, #1E1B4B 0%, #7C3AED 45%, #4F46E5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  [data-theme="dark"] .about-hero-title {
+    background: none !important;
+    color: #9cdef2 !important;
+    -webkit-text-fill-color: #9cdef2 !important;
+  }
+
+  .about-hero-subtitle {
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    max-width: 750px;
+    margin: 0 auto;
+    font-weight: 500;
+  }
+
+  [data-theme="dark"] .about-hero-subtitle {
+    color: #e0e6ed !important;
+  }
+
+  /* BACK BUTTON */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    color: #bb86fc;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+
+  .back-link:hover {
+    transform: translateX(-4px);
+    color: #d4b4ff;
+  }
+
+  [data-theme="light"] .back-link {
+    color: #7C3AED;
+  }
+
+  [data-theme="light"] .back-link:hover {
+    color: #5B21B6;
+  }
+
+  [data-theme="dark"] .back-link {
+    color: #9cdef2 !important;
+  }
+
+  /* SCROLL REVEAL */
+  .scroll-reveal {
+    opacity: 0;
+    filter: blur(16px);
+    transform: translateY(75px) scale(0.92) rotateX(8deg);
+    transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), filter 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, filter, transform;
+    margin-bottom: 52px;
+  }
+
+  .scroll-reveal.revealed {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0) scale(1) rotateX(0deg);
+  }
+
+  /* SECTION CARD */
+  .about-section-card {
+    background: rgba(30, 41, 59, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    border-left: 5px solid #bb86fc;
+    padding: 40px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(16px);
+    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  [data-theme="light"] .about-section-card {
+    background: #ffffff;
+    border-color: rgba(99, 102, 241, 0.2);
+    border-left: 5px solid #bb86fc;
+    box-shadow: 0 20px 45px rgba(46, 48, 147, 0.08);
+  }
+
+  [data-theme="dark"] .about-section-card {
+    background: #111111 !important;
+    border: 1px solid #355a66 !important;
+    border-left: 5px solid #bb86fc !important;
+    border-bottom: 4px solid #e06c75 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 18px;
+  }
+
+  [data-theme="light"] .section-header {
+    border-color: rgba(99, 102, 241, 0.15);
+  }
+
+  .section-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(187, 134, 252, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #bb86fc;
+    box-shadow: 0 4px 15px rgba(187, 134, 252, 0.2);
+  }
+
+  [data-theme="light"] .section-icon {
+    background: rgba(124, 58, 237, 0.12);
+    color: #7C3AED;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.15);
+  }
+
+  [data-theme="dark"] .section-icon {
+    background: #1e2228 !important;
+    color: #9cdef2 !important;
+    border: 1px solid #355a66 !important;
+  }
+
+  .section-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  [data-theme="dark"] .section-title {
+    color: #9cdef2 !important;
+  }
+
+  .section-subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin: 4px 0 0;
+  }
+
+  [data-theme="dark"] .section-subtitle {
+    color: #6b8a94 !important;
+  }
+
+  /* DIVIDER */
+  .about-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(187, 134, 252, 0.4), transparent);
+    margin: 40px 0;
+    border: none;
+  }
+
+  [data-theme="dark"] .about-divider {
+    background: linear-gradient(90deg, transparent, rgba(156, 222, 242, 0.25), transparent) !important;
+  }
+
+  /* SUBSECTION TITLE */
+  .about-subsection-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #bb86fc;
+    margin: 0 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  [data-theme="light"] .about-subsection-title {
+    color: #7C3AED;
+  }
+
+  [data-theme="dark"] .about-subsection-title {
+    color: #bb86fc !important;
+  }
+
+  /* =========================================================
+     MEET THE CREATORS
+     ========================================================= */
+  .creators-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+
+  @media (max-width: 900px) {
+    .creators-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 520px) {
+    .creators-grid { grid-template-columns: 1fr; }
+  }
+
+  .creator-card {
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 18px;
+    padding: 28px 22px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  [data-theme="light"] .creator-card {
+    background: #F8FAFC;
+    border-color: rgba(226, 232, 240, 0.8);
+  }
+
+  .creator-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    border-color: #00e5ff;
+    box-shadow: 0 14px 32px rgba(0, 229, 255, 0.15);
+  }
+
+  [data-theme="light"] .creator-card:hover {
+    border-color: #4F46E5;
+    box-shadow: 0 14px 32px rgba(79, 70, 229, 0.12);
+  }
+
+  .creator-avatar {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 900;
+    color: #fff;
+    background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
+    box-shadow: 0 8px 22px rgba(79, 70, 229, 0.35);
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+
+  .creator-card:nth-child(2) .creator-avatar {
+    background: linear-gradient(135deg, #06B6D4 0%, #10B981 100%);
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.35);
+  }
+
+  .creator-card:nth-child(3) .creator-avatar {
+    background: linear-gradient(135deg, #e06c75 0%, #f0989e 100%);
+    box-shadow: 0 8px 22px rgba(224, 108, 117, 0.35);
+  }
+
+  .creator-card:nth-child(4) .creator-avatar {
+    background: linear-gradient(135deg, #bb86fc 0%, #6f69e6 100%);
+    box-shadow: 0 8px 22px rgba(187, 134, 252, 0.35);
+  }
+
+  .creator-name {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .creator-branch {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .creator-batch {
+    background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 5px 14px;
+    border-radius: 50px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+
+  /* Dark theme overrides for creators */
+  [data-theme="dark"] .creator-card {
+    background: #1e2228 !important;
+    border: 1px solid #355a66 !important;
+  }
+  [data-theme="dark"] .creator-card:hover {
+    border-color: #9cdef2 !important;
+    box-shadow: 0 8px 25px rgba(156, 222, 242, 0.15) !important;
+  }
+  [data-theme="dark"] .creator-name {
+    color: #9cdef2 !important;
+  }
+  [data-theme="dark"] .creator-branch {
+    color: #e0e6ed !important;
+  }
+  [data-theme="dark"] .creator-batch {
+    background: #1e2228 !important;
+    color: #e06c75 !important;
+    border: 1.5px solid #e06c75 !important;
+    box-shadow: 0 4px 10px rgba(224, 108, 117, 0.2) !important;
+  }
+
+  /* =========================================================
+     BRANCH CLUBS — just there
+     ========================================================= */
+  .clubs-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 80px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+  }
+
+  [data-theme="light"] .clubs-footer {
+    border-top-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .clubs-footer-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.45;
+    margin: 0;
+  }
+
+  .club-logo-box {
+    width: 90px;
+    height: 90px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.5;
+  }
+
+  [data-theme="light"] .club-logo-box {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.06);
+  }
+
+  .club-logo-box img {
+    max-width: 70%;
+    max-height: 70%;
+    object-fit: contain;
+    opacity: 0.6;
+  }
+</style>
+
+<div class="about-container">
+  <!-- BACK LINK -->
+  <a href="{% url 'onboarding_overview' %}" class="back-link">← Back to Overview</a>
+
+  <!-- HERO -->
+  <div class="about-hero">
+    <div class="about-hero-badge">ℹ️ ABOUT CCE e-LAB</div>
+    <h1 class="about-hero-title">About the CCE e-Lab</h1>
+    <p class="about-hero-subtitle">
+      Learn about the team that built this platform and the branches behind the Department of Computer & Communication Engineering.
+    </p>
+  </div>
+
+  <!-- MEET THE CREATORS -->
+  <div class="scroll-reveal">
+    <div class="about-section-card">
+      <div class="section-header">
+        <div class="section-icon">👥</div>
+        <div>
+          <h2 class="section-title">Meet the Creators</h2>
+          <p class="section-subtitle">The team behind the CCE e-Lab</p>
+        </div>
+      </div>
+      <div class="creators-grid">
+        <!-- Creator 1 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C1</div>
+          <h3 class="creator-name">Creator One</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+        <!-- Creator 2 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C2</div>
+          <h3 class="creator-name">Creator Two</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+        <!-- Creator 3 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C3</div>
+          <h3 class="creator-name">Creator Three</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+        <!-- Creator 4 -->
+        <div class="creator-card">
+          <div class="creator-avatar">C4</div>
+          <h3 class="creator-name">Creator Four</h3>
+          <p class="creator-branch">Computer &amp; Communication Engineering</p>
+          <span class="creator-batch">Batch 2026</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch Clubs -->
+  <div class="clubs-footer">
+    <p class="clubs-footer-label">Branch Clubs</p>
+    <div class="club-logo-box">Logo</div>
+    <div class="club-logo-box">Logo</div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Scroll Reveal Animation
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("revealed");
+        }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -50px 0px" });
+
+    document.querySelectorAll(".scroll-reveal").forEach(el => {
+      observer.observe(el);
+    });
+  });
+</script>
+{% endblock %}

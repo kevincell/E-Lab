@@ -1,18 +1,110 @@
 {% extends "base.html" %}
-{% block title %}Login - {{ SITE_NAME }}{% endblock %}
+{% load static %}
+{% block title %}Login - Dept. of Computer and Communication{% endblock %}
+
+{% block body_class %}login-page{% endblock %}
+
+{% block theme_toggle %}{% endblock %}
+
 {% block content %}
-<div style="display:grid;place-items:center;min-height:60vh;padding:20px 0;">
-  <section class="auth-panel">
-    <div style="text-align:center;margin-bottom:20px;">
-      <span style="font-size:36px;font-weight:900;color:var(--primary);letter-spacing:-0.03em;">{{ SITE_NAME }}</span>
-      <p class="muted" style="margin-top:6px;">Sign in to continue</p>
+<div class="top-center-toggle-wrapper">
+  <label class="toggle" aria-label="Toggle theme">
+    <input type="checkbox" id="theme-toggle-cb" />
+    <div></div>
+  </label>
+</div>
+
+<div class="login-cinematic">
+  <!-- Video Background Layer -->
+  <div class="login-video-container">
+    <video class="login-bg-video active" data-duration="9000" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg4.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" data-duration="8000" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg2.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" data-duration="8000" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg3.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" data-duration="3500" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg1.mp4' %}" type="video/mp4">
+    </video>
+    <video class="login-bg-video" data-duration="8000" autoplay muted loop playsinline>
+      <source src="{% static 'videos/login_bg5.mp4' %}" type="video/mp4">
+    </video>
+    <div class="login-video-overlay"></div>
+  </div>
+
+  <!-- Glassmorphic Login Card -->
+  <div class="login-glass-card">
+    <div class="login-brand">
+      <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE Logo" class="login-logo">
+      <span class="login-dept-name">Dept. of Computer and Communication Engineering</span>
+      <p class="login-subtitle">CCE e-Lab Portal · Sign in to continue</p>
     </div>
-    <form method="post" class="form-grid">
+    <form method="post" class="login-form">
       {% csrf_token %}
       {{ form.as_p }}
-      <button class="primary" type="submit">Sign In</button>
+      <button class="primary login-btn" type="submit">Sign In</button>
     </form>
-    <p class="muted" style="text-align:center;margin-top:16px;">New student? <a href="{% url 'signup' %}">Create an account</a></p>
-  </section>
+    <p class="login-signup-link">New student? <a href="{% url 'signup' %}">Create an account</a></p>
+  </div>
+  <style>
+    /* Award-Winning Login Warp Transition */
+    .login-cinematic {
+      transition: all 0.6s cubic-bezier(0.7, 0, 0.3, 1);
+    }
+    .login-cinematic.stylish-warp-out {
+      transform: scale(1.12) translateY(-15px);
+      filter: blur(20px) brightness(1.35);
+      opacity: 0;
+    }
+  </style>
 </div>
+
+<script>
+(function() {
+  var videos = document.querySelectorAll('.login-bg-video');
+  if (videos.length <= 1) return;
+  var current = 0; // Starts at index 0 (login_bg4.mp4)
+
+  function nextVideo() {
+    videos[current].classList.remove('active');
+    // Pick a random next video different from current
+    var next = Math.floor(Math.random() * videos.length);
+    if (next === current) {
+      next = (current + 1) % videos.length;
+    }
+    current = next;
+    videos[current].classList.add('active');
+    
+    var duration = parseInt(videos[current].getAttribute('data-duration'), 10) || 8000;
+    setTimeout(nextVideo, duration);
+  }
+
+  // Play initial video (login_bg4.mp4) for its full duration before picking next random video
+  var initialDuration = parseInt(videos[current].getAttribute('data-duration'), 10) || 9000;
+  setTimeout(nextVideo, initialDuration);
+})();
+
+(function() {
+  // Stylish Warp-Out on Login Submit & Navigation
+  var form = document.querySelector('.login-form');
+  var cinematic = document.querySelector('.login-cinematic');
+  if (form && cinematic) {
+    form.addEventListener('submit', function() {
+      cinematic.classList.add('stylish-warp-out');
+    });
+  }
+  var signupLink = document.querySelector('.login-signup-link a');
+  if (signupLink && cinematic) {
+    signupLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      var href = this.href;
+      cinematic.classList.add('stylish-warp-out');
+      setTimeout(function() { window.location.href = href; }, 450);
+    });
+  }
+})();
+</script>
 {% endblock %}

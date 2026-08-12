@@ -10,8 +10,8 @@ from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import AssignedQuestion, Attendance, Certificate, LabSession, Module, ModuleQuestionAssignment, Progress, Question, Submission
-from .sandbox import run_c_code
+from .models import AssignedQuestion, Attendance, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, User
+from .sandbox import run_code, language_for_id
 
 
 JUDGE0_STATUS_MAP = {
@@ -31,25 +31,8 @@ def similarity(a, b):
     return SequenceMatcher(None, a or "", b or "").ratio()
 
 
-def check_plagiarism(submission):
-    similar = []
-    other_submissions = Submission.objects.filter(question=submission.question).exclude(pk=submission.pk)
-    for other in other_submissions.select_related("student"):
-        if similarity(submission.code, other.code) > 0.85:
-            similar.append(other)
-    return similar
-
-
-def flag_plagiarism(submission):
-    similar = check_plagiarism(submission)
-    if not similar:
-        return []
-
-    labels = [f"#{other.pk} {other.student.display_name}" for other in similar[:10]]
-    submission.plagiarism_flagged = True
-    submission.plagiarism_notes = "Similar to: " + ", ".join(labels)
-    submission.save(update_fields=["plagiarism_flagged", "plagiarism_notes"])
-    return similar
+def similarity(a, b):
+    return SequenceMatcher(None, a or "", b or "").ratio()
 
 
 def record_attendance(student, module):
@@ -97,11 +80,17 @@ def student_performance_band(student):
 
 
 def choose_adaptive_questions(student, module, difficulty, count=5):
-    questions = list(module.questions.filter(is_active=True, difficulty=difficulty).order_by("csv_level", "id"))
+    all_questions = list(module.questions.filter(is_active=True, difficulty=difficulty).order_by("csv_level", "id"))
     rng = random.SystemRandom()
-    rng.shuffle(questions)
-    if len(questions) <= count:
-        return questions
+
+    mandatory_qs = [q for q in all_questions if q.is_mandatory]
+    optional_qs = [q for q in all_questions if not q.is_mandatory]
+
+    if len(all_questions) <= count:
+        rng.shuffle(all_questions)
+        return all_questions
+
+    needed_optional = max(0, count - len(mandatory_qs))
 
     accepted_ids = set(
         Submission.objects.filter(
@@ -111,8 +100,8 @@ def choose_adaptive_questions(student, module, difficulty, count=5):
             question__difficulty=difficulty,
         ).values_list("question_id", flat=True)
     )
-    unsolved = [question for question in questions if question.id not in accepted_ids]
-    pool = unsolved if len(unsolved) >= count else unsolved + [question for question in questions if question.id in accepted_ids]
+    unsolved = [question for question in optional_qs if question.id not in accepted_ids]
+    pool = unsolved if len(unsolved) >= needed_optional else unsolved + [question for question in optional_qs if question.id in accepted_ids]
 
     band = student_performance_band(student)
     if band == "support":
@@ -121,7 +110,11 @@ def choose_adaptive_questions(student, module, difficulty, count=5):
         pool.sort(key=lambda question: (-question.csv_level, rng.random()))
     else:
         rng.shuffle(pool)
-    return pool[:count]
+
+    selected = mandatory_qs + pool[:needed_optional]
+    selected = selected[:count]
+    rng.shuffle(selected)
+    return selected
 
 
 def sync_assignment_completion(assignment):
@@ -143,12 +136,15 @@ def sync_assignment_completion(assignment):
         if slot.question_id in accepted_ids and not slot.completed_at:
             slot.completed_at = now
             changed = True
+        elif slot.completed_at and slot.question_id not in accepted_ids:
+            slot.completed_at = None
+            changed = True
         if slot.completed_at and index + 1 < len(slots) and not slots[index + 1].unlocked_at:
             slots[index + 1].unlocked_at = now
             changed = True
 
     for slot in slots:
-        if slot.pk and (slot.unlocked_at or slot.completed_at):
+        if slot.pk and (slot.unlocked_at or slot.completed_at or changed):
             slot.save(update_fields=["unlocked_at", "completed_at"])
 
     if slots and all(slot.completed_at for slot in slots) and not assignment.completed_at:
@@ -160,7 +156,7 @@ def sync_assignment_completion(assignment):
     return slots
 
 
-def get_or_create_module_assignment(student, module, difficulty=Question.Difficulty.EASY):
+def get_or_create_module_assignment(student, module, difficulty=Question.Difficulty.EASY, count=5):
     assignment, created = ModuleQuestionAssignment.objects.get_or_create(
         student=student,
         module=module,
@@ -168,7 +164,7 @@ def get_or_create_module_assignment(student, module, difficulty=Question.Difficu
     )
     if created or not assignment.assigned_questions.exists():
         AssignedQuestion.objects.filter(assignment=assignment).delete()
-        for index, question in enumerate(choose_adaptive_questions(student, module, difficulty), start=1):
+        for index, question in enumerate(choose_adaptive_questions(student, module, difficulty, count=count), start=1):
             AssignedQuestion.objects.create(
                 assignment=assignment,
                 question=question,
@@ -200,14 +196,18 @@ def evaluate_submission(submission_id):
     submission.save(update_fields=["status"])
 
     passed = 0
-    outputs = []
+    test_results = []
     worst_status = Submission.Status.ACCEPTED
     max_time = 0.0
     max_memory = 0
 
+    # Resolve the language once from the submission (fallback to the question).
+    language = language_for_id(submission.language_id or question.language_id)
+
     try:
         for test in tests:
-            result = run_c_code(
+            result = run_code(
+                language,
                 source_code=submission.code,
                 stdin=test.stdin,
                 expected_output=test.expected_output,
@@ -216,7 +216,23 @@ def evaluate_submission(submission_id):
             )
             status_id = result.get("status_id")
             status = JUDGE0_STATUS_MAP.get(status_id, Submission.Status.INTERNAL_ERROR)
-            outputs.append(normalize_output(result.get("stdout")))
+            actual_output = normalize_output(result.get("stdout"))
+
+            # Surface the real compiler/runtime message per test for the UI.
+            error_message = (
+                result.get("compile_output")
+                or result.get("stderr")
+                or ""
+            )
+
+            test_results.append({
+                "stdin": test.stdin or "",
+                "expected": test.expected_output or "",
+                "actual": actual_output or "",
+                "passed": status == Submission.Status.ACCEPTED,
+                "status": status,
+                "error": error_message,
+            })
 
             max_time = max(max_time, float(result.get("time") or 0))
             max_memory = max(max_memory, int(result.get("memory") or 0))
@@ -226,17 +242,22 @@ def evaluate_submission(submission_id):
             elif worst_status == Submission.Status.ACCEPTED:
                 worst_status = status
 
-            if result.get("compile_output"):
-                submission.error_output = result.get("compile_output") or ""
-            elif result.get("stderr"):
-                submission.error_output = result.get("stderr") or ""
+            if error_message:
+                submission.error_output = error_message
+
+            # A compile error is identical for every test case — stop early so
+            # the student isn't kept waiting for the same failure N times.
+            if status == Submission.Status.COMPILE_ERROR:
+                worst_status = status
+                break
 
         total = len(tests) or 1
         submission.score = round((passed / total) * 100)
         submission.status = Submission.Status.ACCEPTED if passed == total else worst_status
         submission.execution_time = max_time
         submission.memory_used = max_memory
-        submission.judge_output = "\n".join(outputs)
+        import json
+        submission.judge_output = json.dumps(test_results)
     except Exception as exc:
         submission.status = Submission.Status.INTERNAL_ERROR
         submission.error_output = str(exc)
@@ -252,9 +273,10 @@ def evaluate_submission(submission_id):
 
 def update_progress(student, module):
     questions = Question.objects.filter(module=module, is_active=True)
-    total = questions.count()
+    total = min(15, questions.count())
     attempted = questions.filter(submissions__student=student).distinct().count()
     completed = questions.filter(submissions__student=student, submissions__status=Submission.Status.ACCEPTED).distinct().count()
+    completed = min(completed, total)
     percentage = (completed / total * 100) if total else 0
     progress, _ = Progress.objects.update_or_create(
         student=student,
@@ -273,18 +295,25 @@ def student_progress(student):
 
 
 def overall_percentage(student):
-    total = Question.objects.filter(module__is_active=True, is_active=True).count()
+    active_modules = Module.objects.filter(is_active=True).count()
+    total = active_modules * 15
     if total == 0:
         return 0
 
-    completed = (
-        Submission.objects.filter(student=student, question__module__is_active=True, question__is_active=True, status=Submission.Status.ACCEPTED)
-        .values_list("question_id", flat=True)
-        .distinct()
-        .count()
-    )
+    assigned_qs = AssignedQuestion.objects.filter(assignment__student=student, assignment__module__is_active=True)
+    if assigned_qs.exists():
+        for assignment in ModuleQuestionAssignment.objects.filter(student=student, module__is_active=True):
+            sync_assignment_completion(assignment)
+        completed = assigned_qs.filter(completed_at__isnull=False).count()
+    else:
+        completed = (
+            Submission.objects.filter(student=student, question__module__is_active=True, question__is_active=True, status=Submission.Status.ACCEPTED)
+            .values_list("question_id", flat=True)
+            .distinct()
+            .count()
+        )
 
-    return completed / total * 100
+    return min(100.0, (completed / total * 100))
 
 def certificate_eligible(student):
     pct = overall_percentage(student)
@@ -335,22 +364,108 @@ def generate_certificate(student):
             "site_name": settings.SITE_NAME,
         },
     )
-    pdf_bytes = HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
-    name_usn = student.usn or student.username
-    cert.pdf.save(f"{name_usn}_{semester.replace(' ', '_')}.pdf", ContentFile(pdf_bytes), save=False)
+    try:
+        pdf_bytes = HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
+        name_usn = student.usn or student.username
+        cert.pdf.save(f"{name_usn}_{semester.replace(' ', '_')}.pdf", ContentFile(pdf_bytes), save=False)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"PDF generation failed for {student.username}: {e}")
     cert.save()
     notify_certificate(student, cert)
     return cert
 
 
 def notify_certificate(student, certificate):
-    if not student.email:
+    """Send an email notification when a certificate is issued."""
+    if student.email:
+        send_mail(
+            subject=f"{settings.SITE_NAME} - Certificate Generated",
+            message=f"Congratulations! Your certificate for {certificate.semester} is ready.",
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[student.email],
+            fail_silently=True,
+        )
+
+
+def notify_faculty_of_eligible_student(student, is_reapplication=False):
+    """Create a notification for all faculty members when a student applies for certificate verification."""
+    eligible, pct = certificate_eligible(student)
+    if not eligible:
         return
 
-    send_mail(
-        subject=f"{settings.SITE_NAME} - Certificate Generated",
-        message=f"Congratulations! Your certificate for {certificate.semester} is ready.",
-        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-        recipient_list=[student.email],
-        fail_silently=True,
+    faculty_users = User.objects.filter(role=User.Role.FACULTY)
+    for faculty in faculty_users:
+        if is_reapplication:
+            title = f"Certificate Re-application: {student.display_name}"
+            message = f"{student.display_name} ({student.usn or student.username}) has addressed review remarks, completed additional assignments ({pct:.1f}%), and re-applied for certificate verification."
+            Notification.objects.create(
+                recipient=faculty,
+                notification_type=Notification.Type.CERT_ELIGIBLE,
+                title=title,
+                message=message,
+                related_student=student,
+            )
+        else:
+            if not Notification.objects.filter(
+                recipient=faculty,
+                notification_type=Notification.Type.CERT_ELIGIBLE,
+                related_student=student,
+            ).exists():
+                Notification.objects.create(
+                    recipient=faculty,
+                    notification_type=Notification.Type.CERT_ELIGIBLE,
+                    title=f"Certificate Approval Requested: {student.display_name}",
+                    message=f"{student.display_name} ({student.usn or student.username}) has completed {pct:.1f}% of lab requirements and requested certificate verification and approval.",
+                    related_student=student,
+                )
+
+
+def notify_hod_of_cert_request(cert_request):
+    """Create a notification for all HoD users when a faculty sends a cert approval request."""
+    hod_users = User.objects.filter(role=User.Role.HOD)
+    past_rejections = CertificateRequest.objects.filter(student=cert_request.student, status=CertificateRequest.Status.REJECTED).exists()
+    title_prefix = "Certificate Re-application Forwarded" if past_rejections else "Certificate request"
+    for hod in hod_users:
+        Notification.objects.create(
+            recipient=hod,
+            notification_type=Notification.Type.CERT_FACULTY_REQUEST,
+            title=f"{title_prefix}: {cert_request.student.display_name}",
+            message=f"Faculty {cert_request.requested_by_faculty.display_name} has verified and forwarded a certificate approval request for {cert_request.student.display_name} ({cert_request.completion_percentage:.1f}% complete).",
+            related_student=cert_request.student,
+        )
+
+
+def notify_student_of_cert_decision(cert_request):
+    """Notify the student and faculty when the HoD approves or rejects their certificate."""
+    if cert_request.status == CertificateRequest.Status.APPROVED:
+        ntype = Notification.Type.CERT_HOD_APPROVED
+        title = "Certificate Approved!"
+        message = f"Congratulations! Your certificate has been approved by the HoD. You can now view and download your official academic diploma!"
+        fac_title = f"Certificate Approved by HoD: {cert_request.student.display_name}"
+        fac_msg = f"The Head of Department has approved and issued the official certificate for {cert_request.student.display_name} ({cert_request.student.usn or cert_request.student.username})."
+    else:
+        ntype = Notification.Type.CERT_HOD_REJECTED
+        title = "Certificate Request Declined"
+        message = f"Your certificate request has been declined. Notes: {cert_request.hod_notes or 'No additional notes.'}"
+        fac_title = f"Certificate Declined by HoD: {cert_request.student.display_name}"
+        fac_msg = f"The Head of Department declined the certificate request for {cert_request.student.display_name}. Remarks: {cert_request.hod_notes or 'No remarks provided.'}"
+
+    Notification.objects.create(
+        recipient=cert_request.student,
+        notification_type=ntype,
+        title=title,
+        message=message,
+        related_student=cert_request.student,
     )
+
+    fac_recipients = [cert_request.requested_by_faculty] if cert_request.requested_by_faculty else User.objects.filter(role=User.Role.FACULTY)
+    for fac in fac_recipients:
+        if fac:
+            Notification.objects.create(
+                recipient=fac,
+                notification_type=ntype,
+                title=fac_title,
+                message=fac_msg,
+                related_student=cert_request.student,
+            )

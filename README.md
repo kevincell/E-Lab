@@ -14,8 +14,10 @@ CCE e-Lab is a web-based platform for first-year Computer & Communication Engine
 - **Automated code evaluation** — Submit C code, get instant feedback
 - **Progress tracking** — Visual dashboard showing module completion
 - **Auto-generated certificates** — Earned upon ≥60% completion
-- **Faculty monitoring** — Track student progress and manage questions
-- **Self-paced learning** — Work through 5 levels of difficulty at your own speed
+- **Faculty monitoring** — Track student progress across dedicated courses and modules
+- **Quizzes & Tests** — Faculty can create timed quizzes for students
+- **Take-Home Assignments** — Offline, open-ended assignments for notebooks
+- **Self-paced learning** — Work through levels of difficulty at your own speed
 - **LeetCode import** — Import questions directly from LeetCode!
 
 ## Architecture
@@ -24,7 +26,7 @@ CCE e-Lab is a web-based platform for first-year Computer & Communication Engine
 - **Database:** PostgreSQL 15
 - **Cache/Queue:** Redis 7
 - **Task Runner:** Celery
-- **Code Execution:** Custom Docker sandbox (no external dependencies)
+- **Code Execution:** Custom Docker sandbox supporting C, C++, Java, and Python (no external dependencies)
 - **Web Server:** Nginx
 - **Frontend:** HTML templates + Bootstrap
 
@@ -76,7 +78,7 @@ CERTIFICATE_THRESHOLD=60
 ### 4. Build and Start Services
 First, build the sandbox image and then start all services:
 ```bash
-# Build the C code execution sandbox
+# Build the multi-language (C/C++/Java/Python) execution sandbox
 docker build -t elab-sandbox -f sandbox/Dockerfile sandbox/
 
 # Start all containers (app, worker, nginx, db, redis)
@@ -97,7 +99,12 @@ docker compose exec app python manage.py migrate
 # Collect static files
 docker compose exec app python manage.py collectstatic --noinput
 
-# Seed demo data (modules, questions, test cases)
+# Import question bank CSVs — this also creates Courses automatically
+# (must run BEFORE seed_demo so faculty is linked to the correct courses)
+docker compose exec app bash -lc "python scripts/verify_and_import.py"
+
+# Seed demo user accounts (admin / faculty / student)
+# faculty is automatically assigned to all courses created above
 docker compose exec app python manage.py seed_demo
 ```
 
@@ -111,12 +118,64 @@ docker compose exec app python manage.py import_leetcode --question two-sum --mo
 docker compose exec app python manage.py import_leetcode --question 1 --module "LeetCode Problems" --difficulty easy
 ```
 
+### 8. Updating Questions
+
+You can update the website's question bank using one of these methods.
+
+- **Via web UI (recommended for faculty):** Login as a faculty user and open the "Question Upload" page (Faculty → Question Upload). Upload one or more CSV files using the form.
+
+- **Import CSVs from the project (batch import):** The project includes a helper script that imports all CSVs found in `generated_level_question_csvs/` and runs a quick verification. From the project root run:
+
+```bash
+# On the host (development):
+python scripts/verify_and_import.py
+
+# Inside the Docker app container (recommended when using Docker):
+docker compose exec app bash -lc "python scripts/verify_and_import.py"
+```
+
+This script uses the `import_question_csv` helper (core.views) and prints a summary per module.
+
+- **Programmatic CSV import (one-off) via Django shell:** To import a single CSV file from inside the container, run:
+
+```bash
+docker compose exec app bash -lc "python - <<'PY'
+from django.core.files import File
+from core.views import import_question_csv
+from core.models import User
+faculty, _ = User.objects.get_or_create(username='faculty', defaults={'email': 'faculty@elab.local', 'role': User.Role.FACULTY})
+with open('generated_level_question_csvs/Module1_Basics_IO_Levels.csv','rb') as f:
+	res = import_question_csv(File(f), faculty)
+	print(res)
+PY"
+```
+
+- **Import LeetCode questions:** Use the management command for single LeetCode imports:
+
+```bash
+docker compose exec app python manage.py import_leetcode --question two-sum --module "LeetCode Problems" --difficulty easy --csv-level 1
+```
+
+CSV format notes:
+
+- Required columns: `Question_ID`, `Topic`, `Level`, `Difficulty`.
+- Sample/hidden test columns should be named like `Test1_Input`, `Test1_Output`, ... up to `Test20_Input`/`Test20_Output`.
+- Filenames containing `_levels` (case-insensitive) trigger a replacement behavior: questions not present in the uploaded CSV will be removed from that module and module assignments reset.
+
+After importing CSVs you may want to re-collect static files and restart Nginx:
+
+```bash
+docker compose exec app python manage.py collectstatic --noinput
+docker compose restart nginx
+```
+
 ### 8. Create Admin User
 ```bash
 docker compose exec app python manage.py createsuperuser
 ```
 
 ### 9. Access the Application
+
 Now you're ready to go!
 
 | URL | Description |
@@ -177,7 +236,18 @@ E-Lab/
 
 ## Code Execution Sandbox
 
-The custom Docker sandbox replaces Judge0 for C code compilation and execution:
+The custom Docker sandbox replaces Judge0 for code compilation and execution. It supports four languages, each with its own compiler/runtime:
+
+| Language | language_id | Toolchain | Compile strictness |
+|----------|-------------|-----------|--------------------|
+| C | 50 | GCC (`gcc -std=c11`) | `-Wall -Wextra`; missing `return` / bad `main` are hard errors |
+| C++ | 54 | GCC (`g++ -std=c++17`) | `-Wall -Wextra`; missing `return` / bad `main` are hard errors |
+| Java | 62 | OpenJDK 17 (`javac`/`java`) | Public class name auto-detected from source |
+| Python | 71 | CPython 3 (`python3`) | Syntax errors surfaced as Compilation Error |
+
+A question's language is set by its `language_id` field (default 50 = C). Compile, runtime, and time-limit errors are detected definitively and shown to the student on both the Run panel and the Submission results page.
+
+The sandbox itself:
 
 - **Isolated containers** — Each submission runs in a fresh container
 - **Resource limits** — Memory, CPU, process count restricted

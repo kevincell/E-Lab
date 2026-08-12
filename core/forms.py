@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import Module, Question, Submission, TestCase, User
+from .models import Course, Module, OpenEndedQuestion, Question, Quiz, Submission, TestCase, User
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -10,7 +10,7 @@ class MultipleFileInput(forms.ClearableFileInput):
 
 class MultipleFileField(forms.FileField):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput(attrs={"accept": ".csv", "multiple": True}))
+        kwargs.setdefault("widget", MultipleFileInput(attrs={"accept": ".csv,.txt,.pdf", "multiple": True}))
         super().__init__(*args, **kwargs)
 
     def clean(self, data, initial=None):
@@ -23,13 +23,20 @@ class MultipleFileField(forms.FileField):
 class StudentSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label = "USN"
+        self.fields["username"].help_text = "Use your student USN, for example NNM25CC001."
+
     class Meta:
         model = User
-        fields = ("username", "first_name", "last_name", "email", "usn", "department", "semester")
+        fields = ("username", "first_name", "last_name", "email", "department", "semester")
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = User.Role.STUDENT
+        if not user.usn:
+            user.usn = user.username
         if commit:
             user.save()
         return user
@@ -52,8 +59,8 @@ class ModuleForm(forms.ModelForm):
 
 class CSVQuestionUploadForm(forms.Form):
     files = MultipleFileField(
-        label="CSV files",
-        help_text="Upload one or more module CSV files with Question_ID, Topic, Level, Difficulty, and score columns.",
+        label="Question files",
+        help_text="Upload CSV, TXT, or PDF files. CSV files use column headers; TXT/PDF files use structured === QUESTION === blocks.",
     )
 
 
@@ -132,4 +139,52 @@ class QuickTestCaseForm(forms.ModelForm):
             "stdin": forms.Textarea(attrs={"rows": 4, "placeholder": "Input passed through stdin"}),
             "expected_output": forms.Textarea(attrs={"rows": 4, "placeholder": "Exact expected output"}),
             "order": forms.NumberInput(attrs={"min": 1}),
+        }
+
+
+class ProfileForm(forms.ModelForm):
+    """Form for users to edit their own profile details."""
+
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email", "bio")
+        widgets = {
+            "first_name": forms.TextInput(attrs={"placeholder": "First name"}),
+            "last_name": forms.TextInput(attrs={"placeholder": "Last name"}),
+            "email": forms.EmailInput(attrs={"placeholder": "you@example.com"}),
+            "bio": forms.Textarea(attrs={"rows": 3, "placeholder": "A short bio about yourself…", "maxlength": 500}),
+        }
+
+
+class FacultyCourseSelectForm(forms.Form):
+    """Form for faculty to select which courses they manage."""
+
+    courses = forms.ModelMultipleChoiceField(
+        queryset=Course.objects.filter(is_active=True),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Select courses to manage",
+        help_text="You will only see students, questions, and progress for your selected courses.",
+    )
+
+
+class OpenEndedQuestionForm(forms.ModelForm):
+    class Meta:
+        model = OpenEndedQuestion
+        fields = ("course", "title", "description", "assigned_date", "due_date", "is_active")
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 8}),
+            "assigned_date": forms.DateInput(attrs={"type": "date"}),
+            "due_date": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
+class QuizForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = ("course", "title", "description", "duration_minutes", "start_time", "end_time", "is_active", "show_results")
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "start_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "end_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }

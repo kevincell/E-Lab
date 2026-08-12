@@ -6,6 +6,13 @@
 {% block content %}
 <div class="dashboard-full">
 
+  <!-- BACK LINK -->
+  <div style="margin-bottom: 20px;">
+    <a href="{% url 'onboarding_journey' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 600; font-size: 14px; text-decoration: none; transition: transform 0.2s ease;" onmouseover="this.style.transform='translateX(-4px)'" onmouseout="this.style.transform='translateX(0)'">
+      ← Back to Course Selection
+    </a>
+  </div>
+
   <!-- Hero Bar -->
   <div class="course-hero">
     <div>
@@ -19,11 +26,20 @@
         <small>Complete</small>
       </div>
     </div>
-    <div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <a href="{% url 'student_lab_record' %}" target="_blank" class="secondary" style="display: flex; align-items: center; gap: 6px;">
+        📄 Print Lab Record
+      </a>
+      <a href="{% url 'student_open_ended_list' %}" class="secondary" style="display: flex; align-items: center; gap: 6px;">
+        📝 Take-Home
+      </a>
+      <a href="{% url 'student_quiz_list' %}" class="secondary" style="display: flex; align-items: center; gap: 6px;">
+        ⏱️ Quizzes
+      </a>
       {% if certificate_eligible %}
         <a href="{% url 'certificate_create' %}" class="primary">Get Certificate</a>
       {% else %}
-        <span class="locked-badge">🔒 Certificate locked</span>
+        <span class="locked-badge">Certificate locked</span>
       {% endif %}
     </div>
   </div>
@@ -37,8 +53,8 @@
         <p class="eyebrow">Course Information</p>
         <h3>E-Lab: C Programming</h3>
         <dl class="stats">
-          <dt>Credits</dt><dd>4</dd>
-          <dt>Lab Hours</dt><dd>60</dd>
+          <dt>Course Outcome</dt>
+          <dd style="font-size: 14px; font-weight: 500; line-height: 1.4; margin-bottom: 12px;">Master core C programming concepts and problem solving.</dd>
           <dt>Passed</dt><dd>{{ completed_total }}/{{ questions_total }}</dd>
         </dl>
       </div>
@@ -68,8 +84,8 @@
       <!-- Outer donut: small segments for question status -->
       <div class="wheel-donut">
         {% for card in module_cards %}
-          {% for _ in "xxxxxx" %}
-            <div class="wheel-donut-segment {% if card.completed %}status-completed{% else %}status-pending{% endif %}"></div>
+          {% for status in card.question_statuses %}
+            <div class="wheel-donut-segment status-{{ status }}" title="M{{ forloop.parentloop.counter }}: {{ status|title }}"></div>
           {% endfor %}
         {% endfor %}
       </div>
@@ -78,8 +94,9 @@
       {% for card in module_cards %}
         <a href="{% url 'module_detail' card.module.id %}"
            class="wheel-module-label"
+           style="--mod-color: var(--lvl-{{ forloop.counter }});"
            title="{{ card.module.name }} — {{ card.percentage|floatformat:0 }}% complete">
-          M{{ forloop.counter }}
+          <span class="wheel-mod-title" style="color: var(--mod-color); font-weight: 800; font-size: 16px; display: block; margin-bottom: 2px;">M{{ forloop.counter }}</span>
           <small>{{ card.percentage|floatformat:0 }}%</small>
         </a>
       {% empty %}
@@ -96,39 +113,32 @@
       <!-- Legend -->
       <div class="wheel-legend">
         <span><i style="background:var(--success)"></i> Completed</span>
-        <span><i style="background:var(--line-strong)"></i> Pending</span>
-        <span><i style="background:var(--danger)"></i> Failed</span>
+        <span><i style="background:#f59e0b"></i> Pending</span>
+        <span><i style="background:#3b82f6"></i> In Progress</span>
       </div>
     </div>
 
-    <!-- Right: Module Progress & Syllabus -->
+    <!-- Right: Combined Module Progress -->
     <div class="levels-panel">
-      <div class="course-card">
+      <div class="course-card" style="padding-bottom: 24px;">
         <p class="eyebrow">Module Progress</p>
-        <div class="module-progress-list">
+        <div class="module-progress-list" style="display: flex; flex-direction: column; gap: 16px;">
           {% for card in module_cards %}
             <div class="module-progress-item {% if card.completed %}completed{% endif %}"
-                 style="--mp-color: var(--lvl-{{ forloop.counter }})">
-              <span class="mp-label">
-                <span class="mp-dot"></span>
-                <span>M{{ forloop.counter }}</span>
+                 style="--mp-color: var(--lvl-{{ forloop.counter }}); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-radius: var(--radius-md); background: var(--surface-soft); border: 1px solid rgba(255,255,255,0.06); border-left: 4px solid var(--mp-color); min-height: 54px; transition: transform 0.2s ease;">
+              <!-- Background Progress Fill Layer -->
+              <div class="mp-bg-fill" style="position: absolute; top: 0; left: 0; bottom: 0; width: {{ card.percentage|floatformat:0 }}%; background: var(--mp-color); opacity: 0.22; pointer-events: none; z-index: 0; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              
+              <!-- Content Layer (Above Progress Fill) -->
+              <span class="mp-label" style="position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
+                <span class="mp-dot" style="background: var(--mp-color); width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px var(--mp-color);"></span>
+                <span class="mp-label-text" style="font-weight: 700; font-size: 15px; line-height: 1.3; color: var(--text-primary); text-shadow: 0 1px 2px rgba(0,0,0,0.15);" title="{{ card.module.name }}">{{ card.module.name }}</span>
               </span>
-              <span class="mp-bar">
-                <div class="mp-bar-fill" style="width:{{ card.percentage|floatformat:0 }}%;background:var(--lvl-{{ forloop.counter }})"></div>
-              </span>
-              <span class="mp-value">{{ card.percentage|floatformat:0 }}%</span>
+              
+              <span class="mp-value" style="position: relative; z-index: 1; font-weight: 800; font-size: 15px; color: var(--text-primary); margin-left: 16px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.15);">{{ card.percentage|floatformat:0 }}%</span>
             </div>
           {% endfor %}
         </div>
-      </div>
-
-      <div class="course-card">
-        <p class="eyebrow">Syllabus Mapping</p>
-        <ul class="syllabus-list">
-          {% for card in module_cards %}
-            <li style="--sl-color: var(--lvl-{{ forloop.counter }})">{{ card.module.name }}</li>
-          {% endfor %}
-        </ul>
       </div>
     </div>
   </div>
@@ -150,11 +160,6 @@
       <span>{{ overall_percentage|floatformat:1 }}%</span>
       <small class="muted">Overall</small>
     </div>
-    <div class="insight-card">
-      <p class="eyebrow">Flags</p>
-      <span>{{ live_flags_count|default:"0"|stringformat:"02d" }}</span>
-      <small class="muted">Live</small>
-    </div>
   </div>
 
   <!-- Recent Activity -->
@@ -175,19 +180,6 @@
           </div>
         {% endfor %}
       </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Certificates -->
-  {% if certificates %}
-  <div class="dashboard-lists">
-    <div class="panel certificate-card">
-      <p class="eyebrow">Certificates</p>
-      <strong>📜</strong>
-      <h3>Certificate Earned</h3>
-      <p class="muted">{{ certificates.0.semester }} · {{ certificates.0.completion_percentage|floatformat:1 }}%</p>
-      <a href="{% url 'certificate_detail' certificates.0.id %}" class="secondary">View Certificate</a>
     </div>
   </div>
   {% endif %}
@@ -217,5 +209,5 @@
     seg.style.setProperty('--seg-angle', (i * segStep) + 'deg');
   });
 })();
-</script></function></seed:tool_call>
+</script>
 {% endblock %}

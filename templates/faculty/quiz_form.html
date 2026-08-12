@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{% if quiz %}Edit{% else %}New{% endif %} Quiz{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <div>
+    <h1>{% if quiz %}Edit Quiz{% else %}Create Quiz{% endif %}</h1>
+    <p class="muted">Set up a new quiz for your students.</p>
+  </div>
+  <div class="actions">
+    <a class="secondary as-link" href="{% url 'faculty_quiz_list' %}">Back to List</a>
+  </div>
+</section>
+
+<section class="panel">
+  <form method="post" class="stack" style="max-width: 600px;">
+    {% csrf_token %}
+    {% for field in form %}
+      <label>
+        <span>{{ field.label }}</span>
+        {{ field }}
+        {% if field.help_text %}<small class="muted">{{ field.help_text }}</small>{% endif %}
+        {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+      </label>
+    {% endfor %}
+    <button type="submit" class="primary">Save Quiz</button>
+  </form>
+</section>
+{% endblock %}
