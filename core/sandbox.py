@@ -1,3 +1,4 @@
+# Standard library
 import os
 import re
 import shlex
@@ -59,7 +60,7 @@ LANGUAGES = {
     },
 }
 
-# Maps the Question/Submission `language_id` (Judge0-style ids) to a language
+# Maps the Question/Submission `language_id` to a language
 # key above. 50 (C) stays the default for backwards compatibility.
 LANGUAGE_ID_MAP = {
     50: "c",
@@ -129,7 +130,7 @@ def run_code(language, source_code, stdin="", expected_output="",
     Run source code of the given language in an isolated Docker container.
 
     Returns a dict with: status_id, status, stdout, stderr, compile_output,
-    time, memory. status_id follows the Judge0 convention used elsewhere:
+    time, memory. status_id values:
       3  Accepted, 4 Wrong Answer, 5 Time Limit Exceeded,
       6  Compilation Error, 11 Runtime Error
     """
@@ -144,6 +145,9 @@ def run_code(language, source_code, stdin="", expected_output="",
         source_filename, class_name = _java_filename(source_code)
     else:
         source_filename = lang_key["filename"]
+    
+    # Ensure source_filename is a string
+    source_filename = str(source_filename)
 
     try:
         code_file = os.path.join(tmpdir, source_filename)
@@ -177,6 +181,7 @@ def run_code(language, source_code, stdin="", expected_output="",
                 capture_output=True,
                 text=True,
                 timeout=time_limit + 5,
+                check=False,
             )
 
             stdout = (result.stdout or "").strip()

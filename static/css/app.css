@@ -2,7 +2,7 @@
    LIGHT & DARK THEMES (NMAMIT College Website & Tech Dark)
    ========================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('../fonts/fonts.css');
 
 /* View Transition Animations */
 :root {
@@ -250,6 +250,7 @@
 
 body {
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   color: var(--text-primary);
   line-height: 1.6;
@@ -1325,22 +1326,46 @@ body.dashboard-page .page {
    Question Layout
    ========================================================= */
 .question-layout {
-  width: min(1400px, 100%);
+  width: 100%;
+  max-width: 1600px;
   margin: 0 auto 32px;
   padding: 0 40px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 36px;
-  align-items: start;
+  display: flex;
+  height: calc(100vh - 120px);
+  gap: 16px;
+  align-items: stretch;
 }
 
 .question-panel, .submit-panel {
+  flex: 1;
+  overflow-y: auto;
   background: rgba(31, 41, 55, 0.6);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(209, 232, 226, 0.1);
   border-radius: var(--radius-xl);
   padding: 32px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.resizer {
+  width: 8px;
+  cursor: col-resize;
+  background: rgba(209, 232, 226, 0.1);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.resizer:hover, .resizer.is-resizing {
+  background: var(--accent-primary);
+}
+
+.submit-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .panel-header {
@@ -1417,6 +1442,8 @@ body.dashboard-page .page {
    Editor Chrome
    ========================================================= */
 .editor-chrome {
+  flex: 1;
+  min-height: 400px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid rgba(209, 232, 226, 0.15);
@@ -1707,6 +1734,8 @@ input:focus, select:focus, textarea:focus {
 textarea.code-editor {
   font-family: 'JetBrains Mono', monospace;
   min-height: 220px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* =========================================================

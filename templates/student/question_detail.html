@@ -57,6 +57,8 @@
     {% endwith %}
   </article>
 
+  <div class="resizer" id="dragMe"></div>
+
   <article class="submit-panel">
     <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between;">
       <div style="display: flex; align-items: center; gap: 16px;">
@@ -169,7 +171,7 @@
 </section>
 
 {{ question.starter_codes|json_script:"starter-codes-data" }}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<script src="{% static 'vendor/monaco-editor/vs/loader.js' %}"></script>
 <script>
   let editor;
   let isRunning = false;
@@ -234,7 +236,7 @@
     });
   }
 
-  require.config({ paths: { "vs": "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs" } });
+  require.config({ paths: { "vs": "{% static 'vendor/monaco-editor/vs' %}" } });
   require(["vs/editor/editor.main"], function() {
     const textarea = document.getElementById("id_code");
     const editorNode = document.getElementById("editor");
@@ -259,7 +261,10 @@
         automaticLayout: true,
         minimap: { enabled: false },
         tabSize: 4,
-        insertSpaces: true
+        insertSpaces: true,
+        autoIndent: 'full',
+        formatOnType: true,
+        matchBrackets: "always"
       });
       editor.onDidChangeModelContent(function() {
         textarea.value = editor.getValue();
@@ -655,6 +660,58 @@
 
     window.addEventListener("pageshow", stopProgress);
   })();
+
+  // Resizer logic
+  document.addEventListener('DOMContentLoaded', function () {
+    const resizer = document.getElementById('dragMe');
+    const leftSide = resizer.previousElementSibling;
+    const rightSide = resizer.nextElementSibling;
+
+    let x = 0;
+    let leftWidth = 0;
+
+    const mouseDownHandler = function (e) {
+      x = e.clientX;
+      leftWidth = leftSide.getBoundingClientRect().width;
+
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+      resizer.classList.add('is-resizing');
+    };
+
+    const mouseMoveHandler = function (e) {
+      const dx = e.clientX - x;
+      const newLeftWidth = ((leftWidth + dx) * 100) / resizer.parentNode.getBoundingClientRect().width;
+      
+      // Minimum constraints
+      if (newLeftWidth < 20 || newLeftWidth > 80) return;
+      
+      leftSide.style.flex = `0 0 ${newLeftWidth}%`;
+      rightSide.style.flex = `1 1 0%`;
+      
+      document.body.style.cursor = 'col-resize';
+      leftSide.style.userSelect = 'none';
+      leftSide.style.pointerEvents = 'none';
+      rightSide.style.userSelect = 'none';
+      rightSide.style.pointerEvents = 'none';
+    };
+
+    const mouseUpHandler = function () {
+      resizer.classList.remove('is-resizing');
+      document.removeEventListener('mousemove', mouseMoveHandler);
+      document.removeEventListener('mouseup', mouseUpHandler);
+
+      document.body.style.removeProperty('cursor');
+      leftSide.style.removeProperty('user-select');
+      leftSide.style.removeProperty('pointer-events');
+      rightSide.style.removeProperty('user-select');
+      rightSide.style.removeProperty('pointer-events');
+    };
+
+    if (resizer) {
+      resizer.addEventListener('mousedown', mouseDownHandler);
+    }
+  });
 </script>
 
 <!-- PROCTORING SYSTEM -->

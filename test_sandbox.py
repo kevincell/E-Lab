@@ -1,17 +1,35 @@
 import os
-import subprocess
+import sys
 
-os.makedirs('/var/elab-sandbox/test2', exist_ok=True)
-with open('/var/elab-sandbox/test2/main.c', 'w') as f:
-    f.write('int main(){return 0;}')
+# Setup Django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+import django
+django.setup()
 
-r = subprocess.run([
-    'docker', 'run', '--rm', 
-    '-v', '/var/elab-sandbox/test2:/box:rw', 
-    'elab-sandbox', 'sh', '-c', 
-    'cd /box && gcc main.c -o program && ls -la && ./program'
-], capture_output=True, text=True)
+from core.sandbox import run_code
 
-print('OUT:', r.stdout)
-print('ERR:', r.stderr)
-print('CODE:', r.returncode)
+# Test Python
+print("Testing Python...")
+python_code = """
+print("Hello from Python!")
+"""
+res = run_code("python", python_code)
+print(res)
+assert res["status_id"] == 3
+assert res["stdout"] == "Hello from Python!"
+
+# Test Java
+print("Testing Java...")
+java_code = """
+public class Solution {
+    public static void main(String[] args) {
+        System.out.println("Hello from Java!");
+    }
+}
+"""
+res = run_code("java", java_code)
+print(res)
+assert res["status_id"] == 3
+assert res["stdout"] == "Hello from Java!"
+
+print("ALL TESTS PASSED")

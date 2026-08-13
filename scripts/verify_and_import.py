@@ -1,22 +1,14 @@
-import os
-import sys
 import django
-
+import os
+from core.models import User, Question
+from core.services import choose_adaptive_questions
+from core.views import import_question_csv
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
-# FIX: Use dynamic path instead of hardcoded Windows path
-script_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(script_dir)
-sys.path.insert(0, project_root)
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
-
-from core.models import User, Module, Question
-from core.views import import_question_csv
-from core.services import choose_adaptive_questions
 
 # Get or create faculty user for import
 faculty, _ = User.objects.get_or_create(username="admin_gen", defaults={"is_staff": True, "role": User.Role.FACULTY, "email": "admin@example.com"})

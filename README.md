@@ -236,7 +236,7 @@ E-Lab/
 
 ## Code Execution Sandbox
 
-The custom Docker sandbox replaces Judge0 for code compilation and execution. It supports four languages, each with its own compiler/runtime:
+The custom Docker sandbox supports four languages, each with its own compiler/runtime:
 
 | Language | language_id | Toolchain | Compile strictness |
 |----------|-------------|-----------|--------------------|

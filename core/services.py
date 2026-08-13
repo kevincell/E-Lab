@@ -1,34 +1,22 @@
-from io import BytesIO
+# Standard library
 from difflib import SequenceMatcher
+from io import BytesIO
 import random
-
+# Third-party
 import qrcode
+# Django
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.core.mail import send_mail
 from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.utils import timezone
-
+# Local imports
 from .models import AssignedQuestion, Attendance, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, User
 from .sandbox import run_code, language_for_id
 
 
-JUDGE0_STATUS_MAP = {
-    3: Submission.Status.ACCEPTED,
-    4: Submission.Status.WRONG_ANSWER,
-    5: Submission.Status.TLE,
-    6: Submission.Status.COMPILE_ERROR,
-    11: Submission.Status.RUNTIME_ERROR,
-}
-
-
 def normalize_output(value):
     return (value or "").replace("\r\n", "\n").strip()
-
-
-def similarity(a, b):
-    return SequenceMatcher(None, a or "", b or "").ratio()
 
 
 def similarity(a, b):
@@ -215,7 +203,14 @@ def evaluate_submission(submission_id):
                 memory_limit_kb=question.memory_limit_kb,
             )
             status_id = result.get("status_id")
-            status = JUDGE0_STATUS_MAP.get(status_id, Submission.Status.INTERNAL_ERROR)
+            status_mapping = {
+                3: Submission.Status.ACCEPTED,
+                4: Submission.Status.WRONG_ANSWER,
+                5: Submission.Status.TLE,
+                6: Submission.Status.COMPILE_ERROR,
+                11: Submission.Status.RUNTIME_ERROR,
+            }
+            status = status_mapping.get(status_id, Submission.Status.INTERNAL_ERROR)
             actual_output = normalize_output(result.get("stdout"))
 
             # Surface the real compiler/runtime message per test for the UI.
@@ -264,7 +259,6 @@ def evaluate_submission(submission_id):
     finally:
         submission.judged_at = timezone.now()
         submission.save()
-        flag_plagiarism(submission)
         for assignment in ModuleQuestionAssignment.objects.filter(student=submission.student, module=submission.question.module):
             sync_assignment_completion(assignment)
         update_progress(submission.student, submission.question.module)
@@ -349,7 +343,7 @@ def generate_certificate(student):
     verify_url = f"{settings.SITE_BASE_URL}/verify/{verification_hash}/"
     qr = qrcode.make(verify_url)
     qr_buffer = BytesIO()
-    qr.save(qr_buffer, format="PNG")
+    qr.save(qr_buffer, "PNG")
     cert.qr_code.save(f"{verification_hash}.png", ContentFile(qr_buffer.getvalue()), save=False)
 
     html = render_to_string(
@@ -441,7 +435,7 @@ def notify_student_of_cert_decision(cert_request):
     if cert_request.status == CertificateRequest.Status.APPROVED:
         ntype = Notification.Type.CERT_HOD_APPROVED
         title = "Certificate Approved!"
-        message = f"Congratulations! Your certificate has been approved by the HoD. You can now view and download your official academic diploma!"
+        message = "Congratulations! Your certificate has been approved by the HoD. You can now view and download your official academic diploma!"
         fac_title = f"Certificate Approved by HoD: {cert_request.student.display_name}"
         fac_msg = f"The Head of Department has approved and issued the official certificate for {cert_request.student.display_name} ({cert_request.student.usn or cert_request.student.username})."
     else:
