@@ -18,6 +18,17 @@
     <div>
       <p class="eyebrow">Welcome back, {{ user.display_name }}</p>
       <h1>C Programming E-Lab</h1>
+      <div class="semester-info">
+        {% if request.user.semester <= 2 %}
+          <span class="badge bg-success">First Year - Semester {{ request.user.semester }}</span>
+        {% elif request.user.semester <= 4 %}
+          <span class="badge bg-primary">Second Year - Semester {{ request.user.semester }}</span>
+        {% elif request.user.semester <= 6 %}
+          <span class="badge bg-warning">Third Year - Semester {{ request.user.semester }}</span>
+        {% else %}
+          <span class="badge bg-danger">Fourth Year - Semester {{ request.user.semester }}</span>
+        {% endif %}
+      </div>
       <p class="muted">{{ questions_total }} questions across {{ modules|length }} modules</p>
     </div>
     <div class="hero-score" style="--score: {{ overall_percentage|floatformat:0 }}">

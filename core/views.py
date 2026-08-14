@@ -289,7 +289,22 @@ def dashboard(request):
 
     category = request.GET.get("category", "c_programming")
     progress_rows = student_progress(request.user)
-    modules = Module.objects.filter(is_active=True, category=category).prefetch_related("questions")
+    
+    # Filter modules by semester for students
+    if not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
+        # Students can only see modules for their current semester and below
+        current_semester = getattr(request.user, 'semester', 1)
+        if current_semester <= 2:  # First year (semesters 1-2)
+            modules = Module.objects.filter(is_active=True, category=category, semester__lte=2).prefetch_related("questions")
+        elif current_semester <= 4:  # Second year (semesters 3-4)
+            modules = Module.objects.filter(is_active=True, category=category, semester__lte=4).prefetch_related("questions")
+        elif current_semester <= 6:  # Third year (semesters 5-6)
+            modules = Module.objects.filter(is_active=True, category=category, semester__lte=6).prefetch_related("questions")
+        else:  # Fourth year (semesters 7-8)
+            modules = Module.objects.filter(is_active=True, category=category, semester__lte=8).prefetch_related("questions")
+    else:
+        # Faculty and HOD can see all modules
+        modules = Module.objects.filter(is_active=True, category=category).prefetch_related("questions")
     progress_by_module = {row.module_id: row for row in progress_rows}
     user_submissions = Submission.objects.filter(student=request.user).values("question_id", "status")
     question_status_map = {}

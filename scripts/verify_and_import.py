@@ -17,6 +17,11 @@ faculty, _ = User.objects.get_or_create(username="admin_gen", defaults={"is_staf
 
 # Get or create dummy student for testing
 student, _ = User.objects.get_or_create(username="student_test", defaults={"role": User.Role.STUDENT, "email": "student@example.com", "usn": "1RN21CS999"})
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+# Path to CSV files
+CSV_DIR = os.path.join(PROJECT_ROOT, "generated_level_question_csvs")
 
 csv_files = [
     "Module1_Basics_IO_Levels.csv",
@@ -31,20 +36,59 @@ csv_files = [
     "Module10_Advanced_Concepts_Levels.csv"
 ]
 
-print("Starting CSV import...")
-imported_modules = []
-for filename in csv_files:
-    filepath = os.path.join(PROJECT_ROOT, "generated_level_question_csvs", filename)
-    with open(filepath, "rb") as f:
-        res = import_question_csv(f, faculty)
-    
-    module = res["module"]
-    imported_modules.append(module)
-    total = module.questions.count()
-    mand = module.questions.filter(is_mandatory=True).count()
-    print(f"[{module.name} (Order {module.order})] Created: {res['created']} | Updated: {res['updated']} | Total Qs: {total} | Mandatory Qs: {mand}")
+def main():
+    print("Starting CSV import...")
+    print(f"Looking for CSV files in: {CSV_DIR}")
 
-print("\nTesting Adaptive Selection & Mandatory Guarantee...")
+    # Check if directory exists
+    if not os.path.exists(CSV_DIR):
+        print(f"ERROR: CSV directory not found at {CSV_DIR}")
+        print("Please ensure the 'generated_level_question_csvs' directory exists in your project root")
+        sys.exit(1)
+
+    # Get or create faculty user for import
+    faculty, _ = User.objects.get_or_create(
+        username="faculty_admin", 
+        defaults={
+            "is_staff": True, 
+            "role": User.Role.FACULTY, 
+            "email": "faculty@example.com"
+        }
+    )
+    
+    # Initialize imported modules list
+    imported_modules = []
+    
+    for filename in csv_files:
+        filepath = os.path.join(CSV_DIR, filename)
+        
+        if not os.path.exists(filepath):
+            print(f"WARNING: File not found: {filepath}")
+            continue
+            
+        try:
+            with open(filepath, "rb") as f:
+                res = import_question_csv(f, faculty)
+                module = res["module"]
+                imported_modules.append(module)
+                total = module.questions.count()
+                mand = module.questions.filter(is_mandatory=True).count()
+                print(f"[{module.name} (Order {module.order})] Created: {res['created']} | Updated: {res['updated']} | Total Qs: {total} | Mandatory Qs: {mand}")
+        except Exception as e:
+            print(f"ERROR importing {filename}: {str(e)}")
+            continue
+
+    # Testing Adaptive Selection & Mandatory Guarantee
+    print("\nTesting Adaptive Selection & Mandatory Guarantee...")
+    try:
+        for module in imported_modules:
+            questions = choose_adaptive_questions(module, 10, None)
+            mandatory_questions = [q for q in questions if q.is_mandatory]
+            print(f"Module: {module.name} - Selected {len(questions)} questions, {len(mandatory_questions)} mandatory")
+    except Exception as e:
+        print(f"Error during adaptive selection test: {str(e)}")
+
+    print("\nQuestions import completed!")
 for module in imported_modules:  # test all modules
     # Test Easy randomization
     easy_1 = choose_adaptive_questions(student, module, Question.Difficulty.EASY, count=5)

@@ -8,7 +8,7 @@ This document describes all available management commands for the E-Lab platform
 **Purpose**: Creates a Head of Department (HOD) user
 **Usage**:
 ```bash
-docker-compose exec web python manage.py create_hod
+ docker compose exec web python manage.py create_hod
 ```
 **Details**:
 - Creates a user with username `hod` and password `hodpassword`
@@ -36,7 +36,7 @@ docker-compose exec web python manage.py import_questions --second-year
 **Purpose**: Generates certificates for eligible students
 **Usage**:
 ```bash
-docker-compose exec web python manage.py generate_certificates
+ docker compose exec web python manage.py generate_certificates
 ```
 **Details**:
 - Generates PDF certificates for students with ≥60% completion
@@ -47,7 +47,7 @@ docker-compose exec web python manage.py generate_certificates
 **Purpose**: Creates a Django superuser (admin)
 **Usage**:
 ```bash
-docker-compose exec web python manage.py createsuperuser
+ docker compose exec web python manage.py createsuperuser
 ```
 **Details**:
 - Interactive command to create admin users
@@ -60,14 +60,14 @@ docker-compose exec web python manage.py createsuperuser
 **Purpose**: Applies database migrations
 **Usage**:
 ```bash
-docker-compose exec web python manage.py migrate
+ docker compose exec web python manage.py migrate
 ```
 
 ### `makemigrations`
 **Purpose**: Creates new migrations based on model changes
 **Usage**:
 ```bash
-docker-compose exec web python manage.py makemigrations
+ docker compose exec web python manage.py import_questions
 ```
 
 ### `dumpdata`
@@ -94,7 +94,7 @@ docker-compose exec web python manage.py loaddata data.json
 **Purpose**: Collects static files for production
 **Usage**:
 ```bash
-docker-compose exec web python manage.py collectstatic
+ docker compose exec web python manage.py collectstatic
 ```
 
 ### `check`
@@ -108,7 +108,7 @@ docker-compose exec web python manage.py check
 **Purpose**: Tests email configuration
 **Usage**:
 ```bash
-docker-compose exec web python manage.py sendtestemail your@email.com
+ docker compose exec web python manage.py sendtestemail your@email.com
 ```
 
 ### `shell`
@@ -145,42 +145,41 @@ docker-compose exec web python scripts/verify_and_import.py
 
 ### Reset Database (DANGER)
 ```bash
-docker-compose down -v  # WARNING: Deletes all data
-docker-compose up -d --build
-docker-compose exec web python manage.py migrate
-docker-compose exec web python manage.py create_hod
-docker-compose exec web python manage.py import_questions
+docker compose down -v  # WARNING: This will delete all data
+docker compose up -d --build
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py create_hod
+docker compose exec web python manage.py import_questions
 ```
 
 ### Backup Database
 ```bash
-docker-compose exec postgres pg_dump -U elab_user elab > backup.sql
+docker compose exec postgres pg_dump -U elab_user elab > backup.sql
 ```
 
 ### Restore Database
 ```bash
-docker-compose exec -T postgres psql -U elab_user elab < backup.sql
+docker compose exec -T postgres psql -U elab_user elab < backup.sql
 ```
 
 ## Troubleshooting Commands
 
 ### View Logs
 ```bash
-docker-compose logs  # All containers
-docker-compose logs web  # Web container only
-docker-compose logs postgres  # Database only
-docker-compose logs sandbox  # Code execution sandbox
+docker compose logs  # All containers
+docker compose logs web  # Web container only
+docker compose logs postgres  # Database only
 ```
 
 ### Check Container Status
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### Restart Services
 ```bash
-docker-compose restart  # Restart all services
-docker-compose restart web  # Restart web service only
+docker compose restart  # Restart all services
+docker compose restart web  # Restart web service only
 ```
 
 ### Rebuild Containers

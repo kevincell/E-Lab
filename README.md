@@ -60,18 +60,18 @@ EMAIL_USE_TLS=True
 
 4. Build and start the containers:
 ```bash
- docker-compose up -d --build
+ docker compose up -d --build
 ```
 
 5. Initialize the database:
 ```bash
- docker-compose exec web python manage.py migrate
- docker-compose exec web python manage.py create_hod  # Creates HOD user
+ docker compose exec web python manage.py migrate
+ docker compose exec web python manage.py create_hod  # Creates HOD user
 ```
 
 6. Import questions (optional):
 ```bash
- docker-compose exec web python manage.py import_questions
+ docker compose exec web python manage.py import_questions
 ```
 
 7. Access the application at `http://localhost`
@@ -110,48 +110,48 @@ EMAIL_USE_TLS=True
 
 ### Create HOD User
 ```bash
- docker-compose exec web python manage.py create_hod
+ docker compose exec web python manage.py create_hod
 ```
 
 ### Import Questions
 ```bash
  # Import first year questions (default)
- docker-compose exec web python manage.py import_questions
+ docker compose exec web python manage.py import_questions
  
  # Import second year questions
- docker-compose exec web python manage.py import_questions --second-year
+ docker compose exec web python manage.py import_questions --second-year
 ```
 
 ### Generate Certificates
 ```bash
- docker-compose exec web python manage.py generate_certificates
+ docker compose exec web python manage.py generate_certificates
 ```
 
 ### Create Superuser
 ```bash
- docker-compose exec web python manage.py createsuperuser
+ docker compose exec web python manage.py createsuperuser
 ```
 
 ### Reset Database (DANGER - Deletes all data)
 ```bash
- docker-compose down -v  # WARNING: This will delete all data
- docker-compose up -d --build
- docker-compose exec web python manage.py migrate
- docker-compose exec web python manage.py create_hod
- docker-compose exec web python manage.py import_questions
+ docker compose down -v  # WARNING: This will delete all data
+ docker compose up -d --build
+ docker compose exec web python manage.py migrate
+ docker compose exec web python manage.py create_hod
+ docker compose exec web python manage.py import_questions
 ```
 
 ## Development
 
 ### Running Tests
 ```bash
- docker-compose exec web python manage.py test
+ docker compose exec web python manage.py test
 ```
 
 ### Code Formatting
 ```bash
- docker-compose exec web black .
- docker-compose exec web isort .
+ docker compose exec web black .
+ docker compose exec web isort .
 ```
 
 ## 🛠️ Troubleshooting Guide
@@ -222,24 +222,24 @@ EMAIL_USE_TLS=True
 
 | Command | Description |
 |---------|-------------|
-| `docker-compose up -d` | Start all containers |
-| `docker-compose down` | Stop all containers |
-| `docker-compose down -v` | Stop and remove volumes (WARNING: deletes data) |
-| `docker-compose logs` | View all container logs |
-| `docker-compose logs web` | View web container logs |
-| `docker-compose ps` | Check container status |
-| `docker-compose exec web bash` | Open shell in web container |
-| `docker-compose restart` | Restart all containers |
+| `docker compose up -d` | Start all containers |
+| `docker compose down` | Stop all containers |
+| `docker compose down -v` | Stop and remove volumes (WARNING: deletes data) |
+| `docker compose logs` | View all container logs |
+| `docker compose logs web` | View web container logs |
+| `docker compose ps` | Check container status |
+| `docker compose exec web bash` | Open shell in web container |
+| `docker compose restart` | Restart all containers |
 
 ### Database Management
 
 #### Reset Database (DANGER - Deletes all data)
 ```bash
-docker-compose down -v  # WARNING: This will delete all data
-docker-compose up -d --build
-docker-compose exec web python manage.py migrate
-docker-compose exec web python manage.py create_hod
-docker-compose exec web python manage.py import_questions
+docker compose down -v  # WARNING: This will delete all data
+docker compose up -d --build
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py create_hod
+docker compose exec web python manage.py import_questions
 ```
 
 #### Backup Database

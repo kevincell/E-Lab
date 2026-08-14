@@ -27,19 +27,19 @@ else
 fi
 
 echo "🐳 Building Docker containers..."
-docker-compose up -d --build
+docker compose up -d --build
 
 echo "⏳ Waiting for database to initialize..."
 sleep 10
 
 echo "🗃️  Running database migrations..."
-docker-compose exec web python manage.py migrate
+docker compose exec web python manage.py migrate
 
 echo "👤 Creating HOD user..."
-docker-compose exec web python manage.py create_hod
+docker compose exec web python manage.py create_hod
 
 echo "📚 Importing questions..."
-docker-compose exec web python manage.py import_questions
+docker compose exec web python manage.py import_questions
 
 echo "🎯 Setup complete!"
 echo ""

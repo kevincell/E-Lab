@@ -21,11 +21,10 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.SUCCESS('Importing first year questions...'))
             # Call the existing import script
-            script_path = os.path.join(os.path.dirname(__file__), '../../../scripts/verify_and_import.py')
-            if os.path.exists(script_path):
-                with open(script_path, 'r') as f:
-                    exec(f.read())
-            else:
-                self.stdout.write(self.style.ERROR('First year questions import script not found'))
+            try:
+                from scripts.verify_and_import import main
+                main()
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Error importing questions: {str(e)}'))
         
         self.stdout.write(self.style.SUCCESS('Questions import completed'))
