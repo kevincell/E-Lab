@@ -1,12 +1,269 @@
-# CCE e-Lab — Programming with C
+# CCE e-Lab - Programming Practice Platform
 
-Continuous Practical Learning and Automated Skill Certification System for First-Year Students.
+A self-hosted web platform for Computer & Communication Engineering students to practice programming with automated evaluation, progress tracking, and skill certification.
 
----
+## Key Features
 
-## Overview
+✅ **Interactive Code Editor** - Practice coding directly in your browser
+✅ **Automated Evaluation** - Instant feedback on code submissions
+✅ **Progress Tracking** - Visual dashboard showing module completion
+✅ **Certificate Generation** - Auto-generated certificates for ≥60% completion
+✅ **Faculty Tools** - Create questions, monitor student progress
+✅ **Quiz & Assignment System** - Timed quizzes and take-home assignments
+✅ **LeetCode Integration** - Import questions from LeetCode
+✅ **Multi-language Support** - C, C++, Java, and Python
 
-CCE e-Lab is a web-based platform for first-year Computer & Communication Engineering students to practice C programming through hands-on coding exercises. The system features automated code evaluation, progress tracking, and auto-generated certificates.
+## Quick Start Guide
+
+### Prerequisites
+
+| Software | Version | Purpose |
+|----------|---------|---------|
+| Docker | 24.0+ | Container runtime |
+| Docker Compose | 2.20+ | Multi-container orchestration |
+| Git | 2.30+ | Version control |
+
+### Installation
+
+1. Clone the repository:
+```bash
+ git clone https://github.com/your-repo/E-Lab.git
+ cd E-Lab
+```
+
+2. Set up environment variables:
+```bash
+ cp .env.example .env
+```
+
+3. Edit `.env` file with your settings:
+```ini
+# Required settings
+SECRET_KEY=your-secret-key-here
+DEBUG=False
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database settings
+DB_NAME=elab
+DB_USER=elab_user
+DB_PASSWORD=secure_password
+DB_HOST=postgres
+DB_PORT=5432
+
+# Email settings (for certificate emails)
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your@email.com
+EMAIL_HOST_PASSWORD=email_password
+EMAIL_USE_TLS=True
+```
+
+4. Build and start the containers:
+```bash
+ docker-compose up -d --build
+```
+
+5. Initialize the database:
+```bash
+ docker-compose exec web python manage.py migrate
+ docker-compose exec web python manage.py create_hod  # Creates HOD user
+```
+
+6. Import questions (optional):
+```bash
+ docker-compose exec web python manage.py import_questions
+```
+
+7. Access the application at `http://localhost`
+
+## Common Setup Issues & Fixes
+
+### 1. "Server Error" on localhost
+- **Solution**: Ensure your `.env` has:
+  ```ini
+  ALLOWED_HOSTS=localhost,127.0.0.1
+  DEBUG=False
+  ```
+- If using Docker, make sure ports are properly mapped in `docker-compose.yml`
+
+### 2. Database Connection Issues
+- **Solution**: Verify your `.env` database settings match your `docker-compose.yml`:
+  ```ini
+  DB_HOST=postgres  # Must match service name in docker-compose.yml
+  DB_PORT=5432
+  ```
+
+### 3. Static Files Not Loading
+- **Solution**: Run:
+  ```bash
+  docker-compose exec web python manage.py collectstatic
+  ```
+
+### 4. Missing Initial Data
+- **Solution**: Run these commands after setup:
+  ```bash
+  docker-compose exec web python manage.py create_hod  # Creates HOD user
+  docker-compose exec web python manage.py import_questions  # Imports sample questions
+  ```
+
+## Management Commands
+
+### Create HOD User
+```bash
+ docker-compose exec web python manage.py create_hod
+```
+
+### Import Questions
+```bash
+ # Import first year questions (default)
+ docker-compose exec web python manage.py import_questions
+ 
+ # Import second year questions
+ docker-compose exec web python manage.py import_questions --second-year
+```
+
+### Generate Certificates
+```bash
+ docker-compose exec web python manage.py generate_certificates
+```
+
+### Create Superuser
+```bash
+ docker-compose exec web python manage.py createsuperuser
+```
+
+### Reset Database (DANGER - Deletes all data)
+```bash
+ docker-compose down -v  # WARNING: This will delete all data
+ docker-compose up -d --build
+ docker-compose exec web python manage.py migrate
+ docker-compose exec web python manage.py create_hod
+ docker-compose exec web python manage.py import_questions
+```
+
+## Development
+
+### Running Tests
+```bash
+ docker-compose exec web python manage.py test
+```
+
+### Code Formatting
+```bash
+ docker-compose exec web black .
+ docker-compose exec web isort .
+```
+
+## 🛠️ Troubleshooting Guide
+
+### Common Issues & Solutions
+
+#### 1. "Server Error" when accessing localhost
+**Symptoms**: 500 error or "Server Error" message
+**Solutions**:
+- Ensure `ALLOWED_HOSTS` in `.env` includes `localhost,127.0.0.1`
+- Check container status: `docker-compose ps`
+- Verify port mapping in `docker-compose.yml` (should map 80:80)
+- Check logs: `docker-compose logs web`
+
+#### 2. Database connection errors
+**Symptoms**: "Could not connect to database" errors
+**Solutions**:
+- Verify `.env` database settings:
+  ```ini
+  DB_HOST=postgres  # Must match service name in docker-compose.yml
+  DB_PORT=5432
+  ```
+- Check database logs: `docker-compose logs postgres`
+- Ensure database container is running: `docker-compose ps`
+- Try restarting containers: `docker-compose restart postgres`
+
+#### 3. Static files not loading
+**Symptoms**: CSS/JS files 404 errors, unstyled pages
+**Solutions**:
+- Run: `docker-compose exec web python manage.py collectstatic`
+- Ensure `DEBUG=False` in production (static files served by Nginx)
+- Check Nginx logs: `docker-compose logs nginx`
+
+#### 4. Missing initial data
+**Symptoms**: No questions, no HOD user
+**Solutions**:
+- Run initialization commands:
+  ```bash
+  docker-compose exec web python manage.py create_hod
+  docker-compose exec web python manage.py import_questions
+  ```
+- Check for errors in the output
+
+#### 5. Email sending failures
+**Symptoms**: Certificate emails not sending, SMTP errors
+**Solutions**:
+- Test email configuration:
+  ```bash
+  docker-compose exec web python manage.py sendtestemail your@email.com
+  ```
+- Verify SMTP settings in `.env`:
+  ```ini
+  EMAIL_HOST=smtp.example.com
+  EMAIL_PORT=587
+  EMAIL_HOST_USER=your@email.com
+  EMAIL_HOST_PASSWORD=email_password
+  EMAIL_USE_TLS=True
+  ```
+
+#### 6. Code execution failures
+**Symptoms**: "Execution timed out" or "Compilation error" messages
+**Solutions**:
+- Check sandbox container logs: `docker-compose logs sandbox`
+- Verify Docker is running and has sufficient resources
+- Check `docker-compose.yml` for sandbox service configuration
+
+### Docker Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `docker-compose up -d` | Start all containers |
+| `docker-compose down` | Stop all containers |
+| `docker-compose down -v` | Stop and remove volumes (WARNING: deletes data) |
+| `docker-compose logs` | View all container logs |
+| `docker-compose logs web` | View web container logs |
+| `docker-compose ps` | Check container status |
+| `docker-compose exec web bash` | Open shell in web container |
+| `docker-compose restart` | Restart all containers |
+
+### Database Management
+
+#### Reset Database (DANGER - Deletes all data)
+```bash
+docker-compose down -v  # WARNING: This will delete all data
+docker-compose up -d --build
+docker-compose exec web python manage.py migrate
+docker-compose exec web python manage.py create_hod
+docker-compose exec web python manage.py import_questions
+```
+
+#### Backup Database
+```bash
+docker-compose exec postgres pg_dump -U elab_user elab > backup.sql
+```
+
+#### Restore Database
+```bash
+docker-compose exec -T postgres psql -U elab_user elab < backup.sql
+```
+
+### Performance Optimization
+
+#### Increase Docker Resources
+1. Open Docker Desktop settings
+2. Go to Resources → Advanced
+3. Increase CPU cores and Memory allocation
+4. Click "Apply & Restart"
+
+#### Optimize Database
+```bash
+docker-compose exec postgres vacuumdb -U elab_user -d elab --analyze
+```
 
 ## Features
 

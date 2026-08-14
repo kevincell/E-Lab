@@ -1,5 +1,7 @@
-import django
 import os
+
+import django
+
 from core.models import User, Question
 from core.services import choose_adaptive_questions
 from core.views import import_question_csv
