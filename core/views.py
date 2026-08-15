@@ -290,19 +290,23 @@ def dashboard(request):
     category = request.GET.get("category", "c_programming")
     progress_rows = student_progress(request.user)
     
-    # Filter modules by semester for students
+    # Filter modules by semester / year for students
     if not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
-        # Students can only see modules for their current semester and below
-        current_semester = request.user.semester if hasattr(request.user, 'semester') else 1
-        
-        if current_semester <= 2:  # First year (semesters 1-2)
-            modules = Module.objects.filter(is_active=True, category=category, semester__lte=2).prefetch_related("questions")
-        elif current_semester <= 4:  # Second year (semesters 3-4)
-            modules = Module.objects.filter(is_active=True, category=category, semester__lte=4).prefetch_related("questions")
-        elif current_semester <= 6:  # Third year (semesters 5-6)
-            modules = Module.objects.filter(is_active=True, category=category, semester__lte=6).prefetch_related("questions")
-        else:  # Fourth year (semesters 7-8)
-            modules = Module.objects.filter(is_active=True, category=category, semester__lte=8).prefetch_related("questions")
+        # Students can only see modules for their current semester/year and below
+        current_semester = getattr(request.user, "semester", 1) or 1
+        current_year = (current_semester + 1) // 2
+        modules = (
+            Module.objects.filter(
+                is_active=True,
+                category=category,
+            )
+            .filter(
+                Q(course__semester__lte=current_semester)
+                | Q(course__year__lte=current_year)
+                | Q(course__isnull=True)
+            )
+            .prefetch_related("questions")
+        )
     else:
         # Faculty and HOD can see all modules
         modules = Module.objects.filter(is_active=True, category=category).prefetch_related("questions")
@@ -514,16 +518,16 @@ def question_detail(request, question_id):
     
     # Check semester access for students
     if hasattr(request.user, 'semester') and not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
-        current_semester = request.user.semester
-        if current_semester <= 2 and question.module.semester > 2:
-            messages.error(request, "This question is not available for your semester.")
-            return redirect("student_dashboard")
-        elif current_semester <= 4 and question.module.semester > 4:
-            messages.error(request, "This question is not available for your semester.")
-            return redirect("student_dashboard")
-        elif current_semester <= 6 and question.module.semester > 6:
-            messages.error(request, "This question is not available for your semester.")
-            return redirect("student_dashboard")
+        current_semester = getattr(request.user, "semester", 1) or 1
+        current_year = (current_semester + 1) // 2
+        module_course = question.module.course
+        if module_course:
+            if module_course.semester and module_course.semester > current_semester:
+                messages.error(request, "This question is not available for your semester.")
+                return redirect("dashboard")
+            elif module_course.year and module_course.year > current_year:
+                messages.error(request, "This question is not available for your semester.")
+                return redirect("dashboard")
     
     if not request.user.is_faculty_like:
         assignment = get_or_create_module_assignment(request.user, question.module, question.difficulty)
@@ -756,7 +760,7 @@ def run_code_api(request):
     except (json.JSONDecodeError, TypeError):
         return JsonResponse({"error": "Invalid JSON request body"}, status=400)
 
-    question_id = data.get("question")
+    question_id = data.get("question") or data.get("question_id")
     code = data.get("code")
     language_id = data.get("language_id")
     custom_input = data.get("custom_input")

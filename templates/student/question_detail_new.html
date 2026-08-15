@@ -11,22 +11,18 @@
     <h1>{{ question.title }}</h1>
   </div>
   <div class="toolbar-actions" style="display: flex; align-items: center; gap: 12px;">
-    <!-- Semester Badge -->
+    <!-- Course / Semester Badge -->
+    {% if question.module.course %}
     <div class="semester-badge" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 50px; font-size: 13px; font-weight: 700; user-select: none;">
-      {% if question.module.semester <= 2 %}
-        <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></span>
-        <span>First Year - Semester {{ question.module.semester }}</span>
-      {% elif question.module.semester <= 4 %}
+      {% if question.module.course.semester %}
         <span style="display: inline-block; width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></span>
-        <span>Second Year - Semester {{ question.module.semester }}</span>
-      {% elif question.module.semester <= 6 %}
-        <span style="display: inline-block; width: 8px; height: 8px; background: #f59e0b; border-radius: 50%;"></span>
-        <span>Third Year - Semester {{ question.module.semester }}</span>
-      {% else %}
-        <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span>
-        <span>Fourth Year - Semester {{ question.module.semester }}</span>
+        <span>Semester {{ question.module.course.semester }}</span>
+      {% elif question.module.course.year %}
+        <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></span>
+        <span>Year {{ question.module.course.year }}</span>
       {% endif %}
     </div>
+    {% endif %}
     
     <!-- Proctoring Badge -->
     <div class="proctoring-badge" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50px; color: #ef4444; font-size: 13px; font-weight: 700; user-select: none;">
@@ -87,7 +83,11 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5>Problem Statement</h5>
-                    <span class="badge bg-info">Semester {{ question.module.semester }}</span>
+                    {% if question.module.course and question.module.course.semester %}
+                      <span class="badge bg-info">Semester {{ question.module.course.semester }}</span>
+                    {% elif question.module.course and question.module.course.year %}
+                      <span class="badge bg-info">Year {{ question.module.course.year }}</span>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     {{ question.description|safe }}

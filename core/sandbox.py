@@ -7,8 +7,9 @@ import subprocess
 import uuid
 
 
-SANDBOX_DIR = "/var/elab-sandbox"
-SANDBOX_IMAGE = "elab-sandbox"
+SANDBOX_DIR = os.environ.get("DOCKER_SANDBOX_DIR", "/var/elab-sandbox")
+SANDBOX_IMAGE = os.environ.get("DOCKER_SANDBOX_IMAGE", "elab-sandbox")
+HOST_SANDBOX_DIR = os.environ.get("HOST_SANDBOX_DIR", SANDBOX_DIR)
 
 # Marker emitted by the inner script when compilation fails. Picked to be
 # impossible to appear in normal program output.
@@ -138,6 +139,7 @@ def run_code(language, source_code, stdin="", expected_output="",
     memory_limit_mb = max(16, int(memory_limit_kb) // 1024)
     run_id = str(uuid.uuid4())
     tmpdir = os.path.join(SANDBOX_DIR, run_id)
+    host_tmpdir = os.path.join(HOST_SANDBOX_DIR, run_id)
     os.makedirs(tmpdir, exist_ok=True)
 
     class_name = ""
@@ -170,7 +172,7 @@ def run_code(language, source_code, stdin="", expected_output="",
             "--cap-drop", "ALL",
             "--security-opt", "no-new-privileges:true",
             "--tmpfs", "/tmp:rw,nosuid,exec,size=50m",
-            "-v", f"{tmpdir}:/box:rw",
+            "-v", f"{host_tmpdir}:/box:rw",
             SANDBOX_IMAGE,
             "sh", "-c", inner_script,
         ]
