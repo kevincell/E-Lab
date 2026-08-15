@@ -1,4 +1,5 @@
 import os
+import sys
 
 import django
 
@@ -17,8 +18,6 @@ faculty, _ = User.objects.get_or_create(username="admin_gen", defaults={"is_staf
 
 # Get or create dummy student for testing
 student, _ = User.objects.get_or_create(username="student_test", defaults={"role": User.Role.STUDENT, "email": "student@example.com", "usn": "1RN21CS999"})
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 # Path to CSV files
 CSV_DIR = os.path.join(PROJECT_ROOT, "generated_level_question_csvs")
@@ -81,29 +80,35 @@ def main():
     # Testing Adaptive Selection & Mandatory Guarantee
     print("\nTesting Adaptive Selection & Mandatory Guarantee...")
     try:
+        # Get or create a test student for the adaptive selection test
+        test_student, _ = User.objects.get_or_create(
+            username="student_test",
+            defaults={"role": User.Role.STUDENT, "email": "student_test@example.com", "usn": "1RN21CS999"}
+        )
         for module in imported_modules:
-            questions = choose_adaptive_questions(module, 10, None)
+            # Correct call: choose_adaptive_questions(student, module, difficulty, count)
+            questions = choose_adaptive_questions(test_student, module, Question.Difficulty.EASY, count=5)
             mandatory_questions = [q for q in questions if q.is_mandatory]
             print(f"Module: {module.name} - Selected {len(questions)} questions, {len(mandatory_questions)} mandatory")
     except Exception as e:
         print(f"Error during adaptive selection test: {str(e)}")
 
     print("\nQuestions import completed!")
-for module in imported_modules:  # test all modules
-    # Test Easy randomization
-    easy_1 = choose_adaptive_questions(student, module, Question.Difficulty.EASY, count=5)
-    easy_2 = choose_adaptive_questions(student, module, Question.Difficulty.EASY, count=5)
-    e_ids_1 = sorted([q.slug for q in easy_1])
-    e_ids_2 = sorted([q.slug for q in easy_2])
-    print(f"\n{module.name} - Easy Pick 1 count: {len(e_ids_1)}")
-    print(f"{module.name} - Easy Pick 2 count: {len(e_ids_2)}")
-    
-    # Test Hard Mandatory Guarantee
-    hard_qs = choose_adaptive_questions(student, module, Question.Difficulty.HARD, count=5)
-    hard_slugs = [q.slug for q in hard_qs]
-    mand_slugs = [q.slug for q in module.questions.filter(difficulty=Question.Difficulty.HARD, is_mandatory=True)]
-    
-    all_mand_included = all(s in hard_slugs for s in mand_slugs)
-    print(f"{module.name} - Hard Pick count: {len(hard_slugs)} | Mandatory count required: {len(mand_slugs)} | All Mandatory Included: {all_mand_included}")
+    for module in imported_modules:  # test all modules
+        # Test Easy randomization
+        easy_1 = choose_adaptive_questions(student, module, Question.Difficulty.EASY, count=5)
+        easy_2 = choose_adaptive_questions(student, module, Question.Difficulty.EASY, count=5)
+        e_ids_1 = sorted([q.slug for q in easy_1])
+        e_ids_2 = sorted([q.slug for q in easy_2])
+        print(f"\n{module.name} - Easy Pick 1 count: {len(e_ids_1)}")
+        print(f"{module.name} - Easy Pick 2 count: {len(e_ids_2)}")
+        
+        # Test Hard Mandatory Guarantee
+        hard_qs = choose_adaptive_questions(student, module, Question.Difficulty.HARD, count=5)
+        hard_slugs = [q.slug for q in hard_qs]
+        mand_slugs = [q.slug for q in module.questions.filter(difficulty=Question.Difficulty.HARD, is_mandatory=True)]
+        
+        all_mand_included = all(s in hard_slugs for s in mand_slugs)
+        print(f"{module.name} - Hard Pick count: {len(hard_slugs)} | Mandatory count required: {len(mand_slugs)} | All Mandatory Included: {all_mand_included}")
 
 print("\nVerification Complete!")

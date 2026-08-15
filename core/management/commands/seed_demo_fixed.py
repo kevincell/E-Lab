@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 """
 Django management command to seed demo data for E-Lab platform.
-
-This command creates:
-- Faculty users
-- Student users (first year and second year)
-- Sample submissions
-- Sample progress data
+This version handles cases where the semester field doesn't exist.
 """
 
 from django.core.management.base import BaseCommand
@@ -41,7 +36,6 @@ class Command(BaseCommand):
         self.stdout.write("   HOD: hod / hodpassword")
         self.stdout.write("   Faculty: faculty_cs / faculty123, faculty_it / faculty123")
         self.stdout.write("   Students: student_fy_01 / student123, student_sy_01 / student123 (and others)")
-        self.stdout.write("\n📝 Note: First year students see semester 1-2 content, second year see semester 1-4")
 
     def create_faculty_users(self):
         """Create faculty users with passwords"""
@@ -188,24 +182,32 @@ int main() {
         
         count = 0
         for student in students:
-            # Determine a module level cap based on the student's semester:
-            # semester 1-2 → levels 1-2, semester 3-4 → all levels
-            max_level = 2 if student.semester <= 2 else 999
-
             for module in modules:
-                # Module has no 'semester' field; use 'level' as a proxy
-                if module.level <= max_level:
-                    total = random.randint(5, 15)
-                    completed = random.randint(0, total)
-                    percentage = round((completed / total) * 100) if total else 0
-
+                # Get semester from module (handle case where semester field doesn't exist)
+                try:
+                    module_semester = module.semester
+                except AttributeError:
+                    # If semester field doesn't exist, assign based on module name
+                    module_name = module.name.lower()
+                    if any(word in module_name for word in ['basics', 'io', 'operators', 'expressions']):
+                        module_semester = 1
+                    elif any(word in module_name for word in ['conditionals', 'loops']):
+                        module_semester = 2
+                    elif any(word in module_name for word in ['arrays', 'strings', 'functions']):
+                        module_semester = 3
+                    else:
+                        module_semester = 4
+                
+                # Only create progress for modules in the student's semester range
+                if module_semester <= student.semester:
                     progress, created = Progress.objects.get_or_create(
                         student=student,
                         module=module,
                         defaults={
-                            "attempted": total,
-                            "completed": completed,
-                            "percentage": percentage,
+                            "completed_questions": random.randint(0, 10),
+                            "total_questions": random.randint(5, 15),
+                            "percentage": random.randint(0, 100),
+                            "last_attempted": timezone.now() - timezone.timedelta(days=random.randint(1, 30))
                         }
                     )
                     if created:

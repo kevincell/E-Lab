@@ -45,8 +45,9 @@ def reverse_func(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    
     dependencies = [
-        ('core', '0015_user_semester'),
+        ('core', '0014_add_semester_fields'),
     ]
     
     operations = [

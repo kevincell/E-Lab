@@ -293,7 +293,8 @@ def dashboard(request):
     # Filter modules by semester for students
     if not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
         # Students can only see modules for their current semester and below
-        current_semester = getattr(request.user, 'semester', 1)
+        current_semester = request.user.semester if hasattr(request.user, 'semester') else 1
+        
         if current_semester <= 2:  # First year (semesters 1-2)
             modules = Module.objects.filter(is_active=True, category=category, semester__lte=2).prefetch_related("questions")
         elif current_semester <= 4:  # Second year (semesters 3-4)
@@ -510,6 +511,20 @@ def module_level_detail(request, module_id, difficulty):
 @login_required
 def question_detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id, is_active=True)
+    
+    # Check semester access for students
+    if hasattr(request.user, 'semester') and not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
+        current_semester = request.user.semester
+        if current_semester <= 2 and question.module.semester > 2:
+            messages.error(request, "This question is not available for your semester.")
+            return redirect("student_dashboard")
+        elif current_semester <= 4 and question.module.semester > 4:
+            messages.error(request, "This question is not available for your semester.")
+            return redirect("student_dashboard")
+        elif current_semester <= 6 and question.module.semester > 6:
+            messages.error(request, "This question is not available for your semester.")
+            return redirect("student_dashboard")
+    
     if not request.user.is_faculty_like:
         assignment = get_or_create_module_assignment(request.user, question.module, question.difficulty)
         slot = assignment.assigned_questions.filter(question=question).first()
