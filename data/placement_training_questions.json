@@ -1,0 +1,3654 @@
+{
+  "1": [
+    {
+      "title": "Two Sum (W1)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n1 5 -3 3 7 -9\n2",
+          "out": "1 2",
+          "is_sample": true
+        },
+        {
+          "in": "7\n-8 4 8 7 -2 -10 2\n0",
+          "out": "0 2",
+          "is_sample": false
+        },
+        {
+          "in": "7\n-3 -4 -1 -10 -6 -2 -7\n-11",
+          "out": "1 6",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W1)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n-1 9 -2 -8 10 9 8 -6 -6",
+          "out": "27",
+          "is_sample": true
+        },
+        {
+          "in": "5\n-8 5 -1 -10 10",
+          "out": "10",
+          "is_sample": false
+        },
+        {
+          "in": "8\n-4 -1 -10 8 0 3 -2 -3",
+          "out": "11",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W1)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W1)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n89 68 69 66 61 25 75 10 55\n4 4",
+          "out": "89 68 69 66 61 25 75 10 55",
+          "is_sample": true
+        },
+        {
+          "in": "9\n23 40 33 98 87 69 27 61 30\n2 7",
+          "out": "23 40 61 27 69 87 98 33 30",
+          "is_sample": false
+        },
+        {
+          "in": "7\n45 25 42 90 48 10 60\n0 6",
+          "out": "60 10 48 90 42 25 45",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W1)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4\n6 10\n9 12\n1 5\n6 9",
+          "out": "1 5\n6 12",
+          "is_sample": true
+        },
+        {
+          "in": "3\n2 5\n1 3\n5 9",
+          "out": "1 9",
+          "is_sample": false
+        },
+        {
+          "in": "3\n2 4\n1 4\n6 10",
+          "out": "1 4\n6 10",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W1)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "befaafdedc",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "ddbbfbfbee",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "ddcadbdbfb",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W1)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n1 7 6 9 2 6 9",
+          "out": "35",
+          "is_sample": true
+        },
+        {
+          "in": "10\n7 7 2 7 10 9 4 8 7 5",
+          "out": "56",
+          "is_sample": false
+        },
+        {
+          "in": "6\n10 2 10 6 6 9",
+          "out": "45",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W1)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n13 16 17 19 20 8 10 10 12\n8",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "10\n8 9 12 12 14 14 17 18 20 6\n18",
+          "out": "7",
+          "is_sample": false
+        },
+        {
+          "in": "9\n5 5 8 8 11 12 1 2 4\n8",
+          "out": "2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W1)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8",
+          "out": "34",
+          "is_sample": true
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        },
+        {
+          "in": "3",
+          "out": "3",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W1)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n1 1 3 3 2 3 2 0 1",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "5\n3 1 3 0 0",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "9\n2 3 1 0 0 3 2 0 0",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W1)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n2 1 4 0 10 3 6 7 8 9",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "9\n9 0 4 5 3 6 2 7 8",
+          "out": "1",
+          "is_sample": false
+        },
+        {
+          "in": "5\n0 5 1 4 2",
+          "out": "3",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W1)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n5 2 11 12 15 5",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "7\n8 6 3 20 5 11 5",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "7\n17 15 19 13 11 16 6",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W1)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "15\n190 22 28 20 33 46 33 22 22 46 28 22 33 20 33",
+          "out": "190",
+          "is_sample": true
+        },
+        {
+          "in": "15\n27 187 25 10 49 10 42 45 45 25 27 20 49 20 42",
+          "out": "187",
+          "is_sample": false
+        },
+        {
+          "in": "9\n31 45 47 47 5 31 5 45 178",
+          "out": "178",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W1)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n1 5 3 3 0 0 2 5 3 3",
+          "out": "1 5 3 3 2 5 3 3 0 0",
+          "is_sample": true
+        },
+        {
+          "in": "6\n2 0 5 0 4 0",
+          "out": "2 5 4 0 0 0",
+          "is_sample": false
+        },
+        {
+          "in": "7\n1 0 1 4 0 1 2",
+          "out": "1 1 4 1 2 0 0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W1)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n17 4 16 4 13 4 19 4 4",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "8\n6 6 16 13 6 16 6 6",
+          "out": "6",
+          "is_sample": false
+        },
+        {
+          "in": "5\n6 20 6 6 18",
+          "out": "6",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "2": [
+    {
+      "title": "Two Sum (W2)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n-2 -4 -5 3 -5\n-6",
+          "out": "0 1",
+          "is_sample": true
+        },
+        {
+          "in": "5\n10 6 -8 -3 -7\n-10",
+          "out": "3 4",
+          "is_sample": false
+        },
+        {
+          "in": "10\n4 -8 1 6 7 3 2 -1 -6 8\n13",
+          "out": "3 4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W2)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n-2 5 -10 -7 -7",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "9\n-4 8 -3 -4 2 -9 -6 1 8",
+          "out": "9",
+          "is_sample": false
+        },
+        {
+          "in": "5\n-3 0 9 7 -5",
+          "out": "16",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W2)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W2)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n71 68 94 99 24 41 48 99 60 36\n0 6",
+          "out": "48 41 24 99 94 68 71 99 60 36",
+          "is_sample": true
+        },
+        {
+          "in": "8\n76 93 39 2 23 9 15 65\n4 5",
+          "out": "76 93 39 2 9 23 15 65",
+          "is_sample": false
+        },
+        {
+          "in": "5\n95 33 43 20 15\n2 2",
+          "out": "95 33 43 20 15",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W2)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "3\n7 8\n6 10\n9 13",
+          "out": "6 13",
+          "is_sample": true
+        },
+        {
+          "in": "5\n1 6\n7 8\n8 10\n8 13\n9 10",
+          "out": "1 6\n7 13",
+          "is_sample": false
+        },
+        {
+          "in": "4\n4 7\n7 8\n3 5\n3 4",
+          "out": "3 8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W2)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "eeefdacfce",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "eedbcbcdac",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "ebdcdfcbfb",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W2)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n3 9 2 7 2 3 4 9 9 10",
+          "out": "72",
+          "is_sample": true
+        },
+        {
+          "in": "9\n7 8 2 1 9 5 6 9 2",
+          "out": "49",
+          "is_sample": false
+        },
+        {
+          "in": "8\n1 8 4 8 5 6 10 4",
+          "out": "40",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W2)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n12 14 18 18 19 19 20 4\n18",
+          "out": "2",
+          "is_sample": true
+        },
+        {
+          "in": "8\n6 8 9 10 13 14 18 2\n13",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "9\n10 12 18 18 20 5 7 8 9\n18",
+          "out": "2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W2)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9",
+          "out": "55",
+          "is_sample": true
+        },
+        {
+          "in": "3",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W2)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n3 1 0 3 3 3",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "5\n2 3 0 1 1",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "6\n2 2 2 0 2 3",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W2)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n0 1 3 2 4 5 6",
+          "out": "7",
+          "is_sample": true
+        },
+        {
+          "in": "5\n2 3 1 5 4",
+          "out": "0",
+          "is_sample": false
+        },
+        {
+          "in": "8\n3 5 4 6 1 0 2 8",
+          "out": "7",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W2)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n6 19 1 17 17 6 16 15 4",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "6\n13 1 2 7 17 13",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "5\n15 20 8 9 15",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W2)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n16 31 28 34 31 16 183 28 34",
+          "out": "183",
+          "is_sample": true
+        },
+        {
+          "in": "9\n36 28 180 36 31 11 11 28 31",
+          "out": "180",
+          "is_sample": false
+        },
+        {
+          "in": "15\n41 41 19 31 46 101 20 31 31 31 12 46 20 12 19",
+          "out": "101",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W2)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n2 3 2 0 1 4 3",
+          "out": "2 3 2 1 4 3 0",
+          "is_sample": true
+        },
+        {
+          "in": "8\n1 5 5 1 5 5 2 2",
+          "out": "1 5 5 1 5 5 2 2",
+          "is_sample": false
+        },
+        {
+          "in": "5\n0 2 4 4 3",
+          "out": "2 4 4 3 0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W2)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n16 11 4 15 4 4 4 4 17",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "5\n6 15 6 19 6",
+          "out": "6",
+          "is_sample": false
+        },
+        {
+          "in": "9\n9 13 9 9 14 13 9 16 9",
+          "out": "9",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "3": [
+    {
+      "title": "Two Sum (W3)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n3 -9 0 7 -9 -8 -6\n-1",
+          "out": "3 5",
+          "is_sample": true
+        },
+        {
+          "in": "9\n6 6 -4 -1 5 -5 10 0 -4\n6",
+          "out": "0 7",
+          "is_sample": false
+        },
+        {
+          "in": "7\n-4 6 0 10 -10 8 7\n16",
+          "out": "1 3",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W3)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n-8 9 9 -8 5 0 2 -8",
+          "out": "18",
+          "is_sample": true
+        },
+        {
+          "in": "6\n-1 -5 -2 0 10 7",
+          "out": "17",
+          "is_sample": false
+        },
+        {
+          "in": "5\n-10 -8 -9 8 -10",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W3)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W3)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n100 100 65 22 65 12 7 5 64\n4 6",
+          "out": "100 100 65 22 7 12 65 5 64",
+          "is_sample": true
+        },
+        {
+          "in": "7\n82 67 16 94 93 64 30\n3 4",
+          "out": "82 67 16 93 94 64 30",
+          "is_sample": false
+        },
+        {
+          "in": "10\n78 38 30 83 41 83 72 34 55 62\n0 7",
+          "out": "34 72 83 41 83 30 38 78 55 62",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W3)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "3\n10 13\n8 10\n6 10",
+          "out": "6 13",
+          "is_sample": true
+        },
+        {
+          "in": "5\n9 12\n8 12\n3 7\n1 6\n6 11",
+          "out": "1 12",
+          "is_sample": false
+        },
+        {
+          "in": "5\n3 5\n7 12\n2 5\n7 12\n9 10",
+          "out": "2 5\n7 12",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W3)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "adccbbaedc",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "dfecbaebbf",
+          "out": "6",
+          "is_sample": false
+        },
+        {
+          "in": "bdedacaffc",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W3)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n3 8 1 4 6 9 3 3 3",
+          "out": "32",
+          "is_sample": true
+        },
+        {
+          "in": "5\n6 6 5 1 5",
+          "out": "20",
+          "is_sample": false
+        },
+        {
+          "in": "9\n7 7 8 4 8 9 6 7 4",
+          "out": "49",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W3)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n13 17 19 1 3 4 4 5 6 12\n4",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "5\n17 17 19 2 5\n17",
+          "out": "0",
+          "is_sample": false
+        },
+        {
+          "in": "5\n4 5 12 13 3\n4",
+          "out": "0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W3)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "8",
+          "out": "34",
+          "is_sample": false
+        },
+        {
+          "in": "3",
+          "out": "3",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W3)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n2 1 3 0 1 2",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "9\n3 2 1 3 1 0 1 2 3",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "8\n3 3 3 0 1 0 1 0",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W3)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n5 9 2 0 6 4 1 8 3",
+          "out": "7",
+          "is_sample": true
+        },
+        {
+          "in": "9\n5 2 6 3 9 7 4 1 0",
+          "out": "8",
+          "is_sample": false
+        },
+        {
+          "in": "6\n3 4 0 2 6 1",
+          "out": "5",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W3)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n5 15 16 19 5",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "10\n7 7 1 20 8 11 17 2 8 18",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "10\n18 6 5 3 17 18 9 10 7 15",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W3)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "15\n34 45 13 45 35 8 34 196 8 12 32 12 13 32 35",
+          "out": "196",
+          "is_sample": true
+        },
+        {
+          "in": "11\n14 50 164 34 31 9 50 14 9 31 34",
+          "out": "164",
+          "is_sample": false
+        },
+        {
+          "in": "9\n6 13 36 6 38 13 36 123 38",
+          "out": "123",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W3)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n1 0 1 4 4",
+          "out": "1 1 4 4 0",
+          "is_sample": true
+        },
+        {
+          "in": "7\n0 0 1 4 4 0 1",
+          "out": "1 4 4 1 0 0 0",
+          "is_sample": false
+        },
+        {
+          "in": "6\n0 3 0 4 5 3",
+          "out": "3 4 5 3 0 0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W3)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n13 8 19 8 15 8 16 8 8",
+          "out": "8",
+          "is_sample": true
+        },
+        {
+          "in": "6\n8 8 18 14 8 8",
+          "out": "8",
+          "is_sample": false
+        },
+        {
+          "in": "6\n19 8 8 8 12 8",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "4": [
+    {
+      "title": "Two Sum (W4)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n-5 -9 4 -4 -8\n-9",
+          "out": "0 3",
+          "is_sample": true
+        },
+        {
+          "in": "7\n10 -9 8 10 -3 4 4\n8",
+          "out": "5 6",
+          "is_sample": false
+        },
+        {
+          "in": "5\n7 7 -10 -4 -6\n-3",
+          "out": "0 2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W4)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n9 -1 -9 7 -10 4 -7 -3 6 3",
+          "out": "9",
+          "is_sample": true
+        },
+        {
+          "in": "5\n-10 1 8 8 -10",
+          "out": "17",
+          "is_sample": false
+        },
+        {
+          "in": "6\n-3 -1 6 3 -6 10",
+          "out": "13",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W4)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W4)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n99 83 12 26 25\n0 2",
+          "out": "12 83 99 26 25",
+          "is_sample": true
+        },
+        {
+          "in": "8\n16 89 19 74 90 41 39 75\n0 6",
+          "out": "39 41 90 74 19 89 16 75",
+          "is_sample": false
+        },
+        {
+          "in": "10\n50 2 98 54 9 42 99 46 7 6\n2 6",
+          "out": "50 2 99 42 9 54 98 46 7 6",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W4)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4\n10 15\n8 9\n7 10\n8 13",
+          "out": "7 15",
+          "is_sample": true
+        },
+        {
+          "in": "4\n5 6\n9 14\n3 8\n9 12",
+          "out": "3 8\n9 14",
+          "is_sample": false
+        },
+        {
+          "in": "4\n2 6\n9 13\n1 4\n8 12",
+          "out": "1 6\n8 13",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W4)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "bcabdeeead",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "cfadecbaac",
+          "out": "6",
+          "is_sample": false
+        },
+        {
+          "in": "cbbfdfcefc",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W4)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n10 4 10 4 2 7 1 9",
+          "out": "63",
+          "is_sample": true
+        },
+        {
+          "in": "5\n9 8 10 9 1",
+          "out": "27",
+          "is_sample": false
+        },
+        {
+          "in": "9\n4 4 5 3 8 6 5 5 9",
+          "out": "32",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W4)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n5 11 15 17 19 2 5\n15",
+          "out": "2",
+          "is_sample": true
+        },
+        {
+          "in": "10\n7 13 18 18 20 2 2 4 5 6\n18",
+          "out": "2",
+          "is_sample": false
+        },
+        {
+          "in": "7\n2 6 10 13 16 1 1\n16",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W4)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        },
+        {
+          "in": "9",
+          "out": "55",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W4)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n3 0 1 0 0",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "9\n2 1 1 3 2 3 0 3 0",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "9\n1 3 2 0 1 1 2 2 1",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W4)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n0 7 5 1 3 2 6",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "8\n6 8 5 7 1 0 3 4",
+          "out": "2",
+          "is_sample": false
+        },
+        {
+          "in": "10\n4 7 0 10 3 5 9 1 6 2",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W4)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n3 12 9 4 12 9 13 7 17",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "10\n5 4 9 19 9 13 9 9 15 2",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "7\n6 10 7 8 18 9 9",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W4)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "11\n154 4 18 38 9 38 18 27 4 9 27",
+          "out": "154",
+          "is_sample": true
+        },
+        {
+          "in": "13\n109 3 47 30 9 13 13 13 9 47 13 30 3",
+          "out": "109",
+          "is_sample": false
+        },
+        {
+          "in": "13\n6 1 5 46 46 5 14 6 12 175 14 12 1",
+          "out": "175",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W4)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n0 4 2 3 1",
+          "out": "4 2 3 1 0",
+          "is_sample": true
+        },
+        {
+          "in": "9\n3 1 0 3 4 3 0 1 2",
+          "out": "3 1 3 4 3 1 2 0 0",
+          "is_sample": false
+        },
+        {
+          "in": "9\n5 4 4 1 5 3 2 1 4",
+          "out": "5 4 4 1 5 3 2 1 4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W4)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n2 20 16 18 2 2 2 2",
+          "out": "2",
+          "is_sample": true
+        },
+        {
+          "in": "8\n8 8 8 17 8 8 15 17",
+          "out": "8",
+          "is_sample": false
+        },
+        {
+          "in": "7\n8 12 8 8 18 19 8",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "5": [
+    {
+      "title": "Two Sum (W5)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n2 10 -9 -1 5\n1",
+          "out": "0 3",
+          "is_sample": true
+        },
+        {
+          "in": "9\n7 8 -8 4 8 3 4 -4 1\n0",
+          "out": "1 2",
+          "is_sample": false
+        },
+        {
+          "in": "6\n-1 1 1 1 -1 -6\n-5",
+          "out": "1 5",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W5)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n-5 -2 -10 1 -4 -3 6 -4",
+          "out": "6",
+          "is_sample": true
+        },
+        {
+          "in": "7\n7 1 -2 2 7 2 3",
+          "out": "20",
+          "is_sample": false
+        },
+        {
+          "in": "10\n-3 3 5 -7 6 9 4 -5 3 9",
+          "out": "27",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W5)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W5)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n95 43 88 60 52\n0 3",
+          "out": "60 88 43 95 52",
+          "is_sample": true
+        },
+        {
+          "in": "6\n65 92 59 54 62 60\n1 5",
+          "out": "65 60 62 54 59 92",
+          "is_sample": false
+        },
+        {
+          "in": "8\n75 34 27 25 71 66 82 12\n4 6",
+          "out": "75 34 27 25 82 66 71 12",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W5)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "3\n5 8\n1 4\n8 9",
+          "out": "1 4\n5 9",
+          "is_sample": true
+        },
+        {
+          "in": "4\n1 2\n5 7\n10 14\n1 3",
+          "out": "1 3\n5 7\n10 14",
+          "is_sample": false
+        },
+        {
+          "in": "3\n6 10\n9 12\n5 6",
+          "out": "5 12",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W5)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "ceebabbdea",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "accdaeecbd",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "bbeabeffcf",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W5)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n2 8 7 1 3 1 9 5 5",
+          "out": "40",
+          "is_sample": true
+        },
+        {
+          "in": "5\n6 10 10 6 10",
+          "out": "30",
+          "is_sample": false
+        },
+        {
+          "in": "10\n5 10 9 5 3 2 2 10 3 9",
+          "out": "72",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W5)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n16 3 4 7 14\n7",
+          "out": "3",
+          "is_sample": true
+        },
+        {
+          "in": "7\n10 14 14 20 2 4 6\n20",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "6\n17 1 2 3 9 14\n9",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W5)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "3",
+          "out": "3",
+          "is_sample": true
+        },
+        {
+          "in": "6",
+          "out": "13",
+          "is_sample": false
+        },
+        {
+          "in": "10",
+          "out": "89",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W5)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n2 1 2 2 3 1",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "7\n2 0 1 0 3 2 2",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "7\n2 0 1 2 1 2 0",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W5)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n3 5 2 1 4",
+          "out": "0",
+          "is_sample": true
+        },
+        {
+          "in": "10\n9 6 7 8 4 0 5 1 10 3",
+          "out": "2",
+          "is_sample": false
+        },
+        {
+          "in": "6\n5 4 0 1 6 3",
+          "out": "2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W5)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n12 19 14 20 1 14 14 5 10",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "10\n10 4 7 2 20 11 17 17 7 10",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "8\n5 5 14 6 16 4 7 17",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W5)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n43 39 25 14 39 43 179 25 14",
+          "out": "179",
+          "is_sample": true
+        },
+        {
+          "in": "9\n25 32 25 16 16 47 197 32 47",
+          "out": "197",
+          "is_sample": false
+        },
+        {
+          "in": "9\n50 49 50 154 49 16 48 16 48",
+          "out": "154",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W5)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n1 3 5 3 4",
+          "out": "1 3 5 3 4",
+          "is_sample": true
+        },
+        {
+          "in": "10\n5 5 5 1 3 5 0 4 1 1",
+          "out": "5 5 5 1 3 5 4 1 1 0",
+          "is_sample": false
+        },
+        {
+          "in": "10\n3 1 1 5 5 1 5 1 3 1",
+          "out": "3 1 1 5 5 1 5 1 3 1",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W5)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n7 7 7 18 13 19 7 15 7",
+          "out": "7",
+          "is_sample": true
+        },
+        {
+          "in": "7\n13 3 16 13 3 3 3",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "5\n6 6 6 18 14",
+          "out": "6",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "6": [
+    {
+      "title": "Two Sum (W6)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n-8 -4 -7 7 -4 6 -1 1\n-8",
+          "out": "1 4",
+          "is_sample": true
+        },
+        {
+          "in": "5\n6 5 -5 -10 8\n-4",
+          "out": "0 3",
+          "is_sample": false
+        },
+        {
+          "in": "10\n9 8 4 4 1 5 6 -10 0 5\n12",
+          "out": "1 2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W6)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n9 -4 8 8 2 0 9 1",
+          "out": "33",
+          "is_sample": true
+        },
+        {
+          "in": "6\n-3 -7 -7 -4 9 -7",
+          "out": "9",
+          "is_sample": false
+        },
+        {
+          "in": "7\n5 -7 -2 8 -10 -10 4",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W6)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W6)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n93 44 9 63 61 14 73 84 45 29\n1 5",
+          "out": "93 14 61 63 9 44 73 84 45 29",
+          "is_sample": true
+        },
+        {
+          "in": "7\n87 40 47 75 4 28 52\n2 3",
+          "out": "87 40 75 47 4 28 52",
+          "is_sample": false
+        },
+        {
+          "in": "6\n28 76 8 86 41 95\n2 4",
+          "out": "28 76 41 86 8 95",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W6)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4\n6 10\n6 10\n2 3\n8 9",
+          "out": "2 3\n6 10",
+          "is_sample": true
+        },
+        {
+          "in": "5\n9 13\n2 4\n10 11\n3 6\n5 8",
+          "out": "2 8\n9 13",
+          "is_sample": false
+        },
+        {
+          "in": "3\n9 11\n8 10\n6 11",
+          "out": "6 11",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W6)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "caadcfeeaa",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "dcabddedcf",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "fefcffffdf",
+          "out": "3",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W6)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n8 6 5 9 8 1",
+          "out": "32",
+          "is_sample": true
+        },
+        {
+          "in": "9\n6 6 10 10 6 7 10 1 5",
+          "out": "40",
+          "is_sample": false
+        },
+        {
+          "in": "10\n6 4 7 3 2 7 1 7 7 2",
+          "out": "48",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W6)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n14 15 17 7 10\n10",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "10\n4 5 8 12 13 14 14 16 3 3\n14",
+          "out": "5",
+          "is_sample": false
+        },
+        {
+          "in": "5\n12 13 17 1 5\n13",
+          "out": "1",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W6)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7",
+          "out": "21",
+          "is_sample": true
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W6)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n2 3 0 2 2",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "6\n3 1 2 1 0 0",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "6\n1 3 3 3 3 2",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W6)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n4 3 2 6 1 5 7 0",
+          "out": "8",
+          "is_sample": true
+        },
+        {
+          "in": "8\n5 0 7 4 6 1 2 8",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "9\n4 2 8 1 3 7 6 9 5",
+          "out": "0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W6)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n1 11 4 17 9 2 2 6 15",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "10\n14 5 18 20 17 11 19 1 13 10",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "10\n4 3 17 6 17 11 6 9 14 4",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W6)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "11\n6 46 46 186 6 8 47 8 34 34 47",
+          "out": "186",
+          "is_sample": true
+        },
+        {
+          "in": "11\n46 50 123 16 28 46 50 28 16 40 40",
+          "out": "123",
+          "is_sample": false
+        },
+        {
+          "in": "11\n5 120 17 47 5 47 17 7 13 7 13",
+          "out": "120",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W6)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n3 0 3 0 2 0 1 3 4",
+          "out": "3 3 2 1 3 4 0 0 0",
+          "is_sample": true
+        },
+        {
+          "in": "5\n2 2 1 0 0",
+          "out": "2 2 1 0 0",
+          "is_sample": false
+        },
+        {
+          "in": "8\n5 5 3 2 4 4 5 1",
+          "out": "5 5 3 2 4 4 5 1",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W6)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n2 2 2 2 11 17 11 2",
+          "out": "2",
+          "is_sample": true
+        },
+        {
+          "in": "5\n20 3 3 3 13",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "9\n10 14 19 11 10 13 10 10 10",
+          "out": "10",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "7": [
+    {
+      "title": "Two Sum (W7)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n3 4 9 -10 -3 -9 -1\n-1",
+          "out": "2 3",
+          "is_sample": true
+        },
+        {
+          "in": "10\n7 6 7 -1 6 -2 -1 -4 -4 8\n14",
+          "out": "0 2",
+          "is_sample": false
+        },
+        {
+          "in": "5\n0 -7 9 4 -10\n-1",
+          "out": "2 4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W7)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n6 -8 10 -8 -9 -4 10 5 0 8",
+          "out": "23",
+          "is_sample": true
+        },
+        {
+          "in": "5\n10 9 7 -1 -4",
+          "out": "26",
+          "is_sample": false
+        },
+        {
+          "in": "8\n4 9 2 -6 1 -8 -7 4",
+          "out": "15",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W7)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W7)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n83 42 64 88 48\n2 4",
+          "out": "83 42 48 88 64",
+          "is_sample": true
+        },
+        {
+          "in": "5\n60 32 68 1 19\n2 2",
+          "out": "60 32 68 1 19",
+          "is_sample": false
+        },
+        {
+          "in": "10\n6 47 16 43 75 98 7 27 74 9\n2 9",
+          "out": "6 47 9 74 27 7 98 75 43 16",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W7)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n7 9\n5 7\n3 8\n5 9\n9 10",
+          "out": "3 10",
+          "is_sample": true
+        },
+        {
+          "in": "4\n5 9\n5 9\n7 12\n7 8",
+          "out": "5 12",
+          "is_sample": false
+        },
+        {
+          "in": "3\n4 9\n1 4\n4 6",
+          "out": "1 9",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W7)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "cfcfffbdfa",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "eafdeaccdc",
+          "out": "5",
+          "is_sample": false
+        },
+        {
+          "in": "dadafdadbb",
+          "out": "3",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W7)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n4 5 3 4 4 8 10 3 8 10",
+          "out": "40",
+          "is_sample": true
+        },
+        {
+          "in": "7\n9 10 4 2 5 10 3",
+          "out": "45",
+          "is_sample": false
+        },
+        {
+          "in": "5\n6 4 1 8 7",
+          "out": "24",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W7)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n20 2 6 10 12 12 14\n6",
+          "out": "2",
+          "is_sample": true
+        },
+        {
+          "in": "10\n12 13 13 14 15 16 1 2 6 7\n13",
+          "out": "1",
+          "is_sample": false
+        },
+        {
+          "in": "10\n5 6 9 13 17 20 1 1 1 5\n17",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W7)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7",
+          "out": "21",
+          "is_sample": true
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        },
+        {
+          "in": "9",
+          "out": "55",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W7)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n2 1 1 3 0 0",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "10\n2 2 0 1 1 0 0 3 2 3",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "6\n3 2 3 2 1 2",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W7)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n4 3 0 5 2",
+          "out": "1",
+          "is_sample": true
+        },
+        {
+          "in": "10\n10 1 2 7 9 0 5 8 6 4",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "5\n1 4 3 2 5",
+          "out": "0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W7)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n4 3 6 7 7 15 6 4",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "9\n14 11 16 2 2 3 17 18 1",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "6\n7 12 10 9 3 7",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W7)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "11\n47 29 47 28 28 5 29 32 5 32 119",
+          "out": "119",
+          "is_sample": true
+        },
+        {
+          "in": "13\n8 5 49 35 20 20 15 49 35 8 15 5 200",
+          "out": "200",
+          "is_sample": false
+        },
+        {
+          "in": "9\n23 24 24 159 21 46 46 23 21",
+          "out": "159",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W7)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n0 3 1 5 3 0 5 3",
+          "out": "3 1 5 3 5 3 0 0",
+          "is_sample": true
+        },
+        {
+          "in": "9\n4 1 3 4 4 1 5 5 5",
+          "out": "4 1 3 4 4 1 5 5 5",
+          "is_sample": false
+        },
+        {
+          "in": "10\n3 5 1 1 4 1 3 0 5 5",
+          "out": "3 5 1 1 4 1 3 5 5 0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W7)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n7 12 7 7 17 7 7 19",
+          "out": "7",
+          "is_sample": true
+        },
+        {
+          "in": "10\n11 15 10 16 10 10 10 14 10 10",
+          "out": "10",
+          "is_sample": false
+        },
+        {
+          "in": "8\n9 9 9 14 9 9 18 13",
+          "out": "9",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "8": [
+    {
+      "title": "Two Sum (W8)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n1 10 8 -10 2\n-2",
+          "out": "2 3",
+          "is_sample": true
+        },
+        {
+          "in": "10\n-10 7 8 8 8 7 3 -7 10 10\n18",
+          "out": "2 8",
+          "is_sample": false
+        },
+        {
+          "in": "5\n-4 10 -7 -4 -5\n-11",
+          "out": "0 2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W8)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n-6 10 -4 -3 -10 -6 -9",
+          "out": "10",
+          "is_sample": true
+        },
+        {
+          "in": "8\n-6 -8 2 2 8 0 -3 -7",
+          "out": "12",
+          "is_sample": false
+        },
+        {
+          "in": "9\n-4 -2 0 -2 -1 -5 4 3 5",
+          "out": "12",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W8)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W8)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n49 30 66 13 73 59 64 81 74\n4 7",
+          "out": "49 30 66 13 81 64 59 73 74",
+          "is_sample": true
+        },
+        {
+          "in": "7\n73 89 36 13 29 12 56\n2 6",
+          "out": "73 89 56 12 29 13 36",
+          "is_sample": false
+        },
+        {
+          "in": "8\n62 19 99 4 76 13 83 38\n2 6",
+          "out": "62 19 83 13 76 4 99 38",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W8)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4\n9 10\n7 12\n6 9\n5 7",
+          "out": "5 12",
+          "is_sample": true
+        },
+        {
+          "in": "3\n1 2\n6 7\n10 11",
+          "out": "1 2\n6 7\n10 11",
+          "is_sample": false
+        },
+        {
+          "in": "3\n4 5\n9 13\n9 12",
+          "out": "4 5\n9 13",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W8)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "baddaeeada",
+          "out": "3",
+          "is_sample": true
+        },
+        {
+          "in": "abbcfdedbf",
+          "out": "5",
+          "is_sample": false
+        },
+        {
+          "in": "bddedbeafd",
+          "out": "5",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W8)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n9 3 7 9 9 2",
+          "out": "36",
+          "is_sample": true
+        },
+        {
+          "in": "9\n10 9 4 4 1 6 3 8 5",
+          "out": "56",
+          "is_sample": false
+        },
+        {
+          "in": "10\n1 9 2 9 7 3 1 3 1 6",
+          "out": "48",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W8)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n14 17 18 19 1 6 7 9 14\n9",
+          "out": "7",
+          "is_sample": true
+        },
+        {
+          "in": "10\n8 13 14 16 17 19 20 2 3 8\n16",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "6\n19 1 3 10 13 13\n13",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W8)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": true
+        },
+        {
+          "in": "7",
+          "out": "21",
+          "is_sample": false
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W8)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n3 1 3 2 0 2 2 1 3",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "6\n2 2 2 3 0 3",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "6\n1 0 2 1 1 1",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W8)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n8 6 2 5 7 3 9 4 1 0",
+          "out": "10",
+          "is_sample": true
+        },
+        {
+          "in": "6\n1 4 5 0 6 2",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "6\n6 1 3 4 2 0",
+          "out": "5",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W8)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n20 11 2 14 19 1 13 1",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "5\n17 10 10 16 17",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "8\n20 14 8 7 13 7 4 20",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W8)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n28 26 118 2 28 26 46 2 46",
+          "out": "118",
+          "is_sample": true
+        },
+        {
+          "in": "9\n2 31 2 47 47 181 50 31 50",
+          "out": "181",
+          "is_sample": false
+        },
+        {
+          "in": "7\n35 6 6 41 41 193 35",
+          "out": "193",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W8)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n1 0 5 1 5 0",
+          "out": "1 5 1 5 0 0",
+          "is_sample": true
+        },
+        {
+          "in": "7\n3 5 4 2 0 2 4",
+          "out": "3 5 4 2 2 4 0",
+          "is_sample": false
+        },
+        {
+          "in": "6\n5 0 2 3 4 1",
+          "out": "5 2 3 4 1 0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W8)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n9 12 15 9 9 17 9 9",
+          "out": "9",
+          "is_sample": true
+        },
+        {
+          "in": "6\n17 10 10 17 10 10",
+          "out": "10",
+          "is_sample": false
+        },
+        {
+          "in": "7\n1 1 11 17 1 15 1",
+          "out": "1",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "9": [
+    {
+      "title": "Two Sum (W9)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n0 -9 5 7 3 2 3 -10\n-4",
+          "out": "1 2",
+          "is_sample": true
+        },
+        {
+          "in": "6\n-10 -10 0 -2 -5 -9\n-19",
+          "out": "0 5",
+          "is_sample": false
+        },
+        {
+          "in": "6\n4 -2 -8 3 9 -2\n12",
+          "out": "3 4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W9)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n-9 7 7 1 -8 6",
+          "out": "15",
+          "is_sample": true
+        },
+        {
+          "in": "5\n-4 -5 9 2 -1",
+          "out": "11",
+          "is_sample": false
+        },
+        {
+          "in": "6\n-3 -6 -10 8 3 -5",
+          "out": "11",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W9)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W9)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n23 45 94 96 99 67 15\n2 3",
+          "out": "23 45 96 94 99 67 15",
+          "is_sample": true
+        },
+        {
+          "in": "10\n43 98 1 22 1 91 23 2 92 39\n5 5",
+          "out": "43 98 1 22 1 91 23 2 92 39",
+          "is_sample": false
+        },
+        {
+          "in": "5\n89 8 28 67 63\n1 2",
+          "out": "89 28 8 67 63",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W9)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "3\n6 9\n1 3\n5 10",
+          "out": "1 3\n5 10",
+          "is_sample": true
+        },
+        {
+          "in": "5\n7 10\n10 11\n1 4\n8 13\n3 6",
+          "out": "1 6\n7 13",
+          "is_sample": false
+        },
+        {
+          "in": "4\n8 9\n1 2\n8 11\n8 12",
+          "out": "1 2\n8 12",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W9)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "bbbfbebacb",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "eeadabfcff",
+          "out": "5",
+          "is_sample": false
+        },
+        {
+          "in": "fbbadeefba",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W9)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n3 6 2 8 2 1 1 10 3 10",
+          "out": "48",
+          "is_sample": true
+        },
+        {
+          "in": "10\n3 3 9 3 6 1 8 6 1 5",
+          "out": "35",
+          "is_sample": false
+        },
+        {
+          "in": "5\n9 4 6 1 6",
+          "out": "24",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W9)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n14 1 4 8 11\n11",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "9\n18 19 6 7 10 14 15 16 17\n10",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "8\n7 10 11 13 16 17 1 6\n1",
+          "out": "6",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W9)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "7",
+          "out": "21",
+          "is_sample": false
+        },
+        {
+          "in": "5",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W9)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n1 3 1 0 0 1 0",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "7\n1 0 1 3 3 3 1",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "9\n3 0 3 1 3 1 1 1 2",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W9)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n4 2 1 5 0",
+          "out": "3",
+          "is_sample": true
+        },
+        {
+          "in": "8\n7 8 3 4 2 5 6 1",
+          "out": "0",
+          "is_sample": false
+        },
+        {
+          "in": "7\n5 3 2 6 4 1 7",
+          "out": "0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W9)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n12 7 6 5 20",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "6\n13 12 10 18 1 2",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "10\n4 3 3 5 20 3 6 13 9 4",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W9)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "15\n40 26 169 10 24 24 22 40 26 22 17 22 17 10 22",
+          "out": "169",
+          "is_sample": true
+        },
+        {
+          "in": "15\n37 7 113 2 32 32 46 30 47 46 30 37 7 2 47",
+          "out": "113",
+          "is_sample": false
+        },
+        {
+          "in": "11\n7 43 43 30 31 8 31 7 8 30 180",
+          "out": "180",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W9)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n3 1 4 5 5 1 0",
+          "out": "3 1 4 5 5 1 0",
+          "is_sample": true
+        },
+        {
+          "in": "9\n2 0 0 2 5 3 3 3 2",
+          "out": "2 2 5 3 3 3 2 0 0",
+          "is_sample": false
+        },
+        {
+          "in": "9\n5 0 5 1 3 2 4 4 1",
+          "out": "5 5 1 3 2 4 4 1 0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W9)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n11 8 17 8 8 16 19 8 8",
+          "out": "8",
+          "is_sample": true
+        },
+        {
+          "in": "8\n14 19 7 7 7 7 7 17",
+          "out": "7",
+          "is_sample": false
+        },
+        {
+          "in": "8\n8 17 8 8 8 11 8 15",
+          "out": "8",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "10": [
+    {
+      "title": "Two Sum (W10)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n4 -7 1 9 1 -9\n-6",
+          "out": "1 2",
+          "is_sample": true
+        },
+        {
+          "in": "6\n-1 9 8 2 -6 -7\n3",
+          "out": "1 4",
+          "is_sample": false
+        },
+        {
+          "in": "6\n7 7 -10 -6 0 4\n14",
+          "out": "0 1",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W10)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n-5 -1 1 -6 9 -3 7",
+          "out": "13",
+          "is_sample": true
+        },
+        {
+          "in": "6\n4 -1 -8 -8 3 -6",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "7\n-7 10 -5 -4 4 3 -8",
+          "out": "10",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W10)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W10)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n83 26 44 89 67 71\n0 3",
+          "out": "89 44 26 83 67 71",
+          "is_sample": true
+        },
+        {
+          "in": "6\n99 66 33 31 97 73\n3 4",
+          "out": "99 66 33 97 31 73",
+          "is_sample": false
+        },
+        {
+          "in": "7\n77 44 66 97 46 56 74\n0 6",
+          "out": "74 56 46 97 66 44 77",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W10)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "4\n8 13\n2 6\n4 9\n4 5",
+          "out": "2 13",
+          "is_sample": true
+        },
+        {
+          "in": "5\n8 13\n8 13\n6 10\n5 9\n7 8",
+          "out": "5 13",
+          "is_sample": false
+        },
+        {
+          "in": "5\n9 10\n2 3\n5 7\n1 6\n2 6",
+          "out": "1 7\n9 10",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W10)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "adeacdebeb",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "ebbddcbabe",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "dedbebbfcb",
+          "out": "3",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W10)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n6 6 2 2 3 9 8",
+          "out": "36",
+          "is_sample": true
+        },
+        {
+          "in": "7\n3 2 8 9 7 3 9",
+          "out": "32",
+          "is_sample": false
+        },
+        {
+          "in": "7\n8 8 4 2 5 6 8",
+          "out": "48",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W10)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n13 18 19 20 20 2 3 7 10 11\n19",
+          "out": "2",
+          "is_sample": true
+        },
+        {
+          "in": "10\n19 1 5 5 10 10 12 12 13 18\n5",
+          "out": "2",
+          "is_sample": false
+        },
+        {
+          "in": "8\n10 18 19 19 20 3 9 9\n20",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W10)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8",
+          "out": "34",
+          "is_sample": true
+        },
+        {
+          "in": "7",
+          "out": "21",
+          "is_sample": false
+        },
+        {
+          "in": "7",
+          "out": "21",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W10)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n2 3 0 2 2",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "5\n2 1 3 3 3",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "6\n3 2 1 2 2 2",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W10)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n2 0 6 3 4 1",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "6\n4 0 5 2 1 6",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "7\n4 3 6 2 0 5 1",
+          "out": "7",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W10)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "8\n1 19 17 3 18 8 3 1",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "6\n3 19 2 5 1 9",
+          "out": "false",
+          "is_sample": false
+        },
+        {
+          "in": "10\n7 12 14 13 8 4 10 18 8 7",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W10)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "15\n116 39 42 41 39 43 26 26 42 50 24 24 50 43 41",
+          "out": "116",
+          "is_sample": true
+        },
+        {
+          "in": "9\n10 10 195 5 38 38 28 28 5",
+          "out": "195",
+          "is_sample": false
+        },
+        {
+          "in": "15\n19 20 47 5 168 19 20 5 47 19 19 46 46 19 19",
+          "out": "168",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W10)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n5 0 0 3 0 4 1",
+          "out": "5 3 4 1 0 0 0",
+          "is_sample": true
+        },
+        {
+          "in": "10\n0 3 2 3 1 3 1 0 5 3",
+          "out": "3 2 3 1 3 1 5 3 0 0",
+          "is_sample": false
+        },
+        {
+          "in": "10\n4 4 1 4 3 1 1 5 3 2",
+          "out": "4 4 1 4 3 1 1 5 3 2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W10)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n5 12 5 14 5",
+          "out": "5",
+          "is_sample": true
+        },
+        {
+          "in": "9\n6 6 13 18 16 6 12 6 6",
+          "out": "6",
+          "is_sample": false
+        },
+        {
+          "in": "6\n9 16 15 9 9 9",
+          "out": "9",
+          "is_sample": false
+        }
+      ]
+    }
+  ],
+  "11": [
+    {
+      "title": "Two Sum (W11)",
+      "desc": "Given an array of integers and an integer target, return indices of the two numbers such that they add up to target.\n\n**Input Format**\nFirst line: integer N (array size)\nSecond line: N integers\nThird line: integer Target\n\n**Output Format**\nTwo space-separated integers representing the indices.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n-3 -3 8 1 -7\n5",
+          "out": "0 2",
+          "is_sample": true
+        },
+        {
+          "in": "7\n3 1 1 10 -10 -2 5\n3",
+          "out": "5 6",
+          "is_sample": false
+        },
+        {
+          "in": "5\n8 7 10 -5 3\n-2",
+          "out": "3 4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Maximum Subarray (W11)",
+      "desc": "Find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n**Input Format**\nFirst line: integer N\nSecond line: N integers\n\n**Output Format**\nSingle integer (the maximum sum).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n3 9 -3 -5 -1 -3 9 -9 5",
+          "out": "12",
+          "is_sample": true
+        },
+        {
+          "in": "9\n-1 -7 -9 2 1 8 -6 -8 7",
+          "out": "11",
+          "is_sample": false
+        },
+        {
+          "in": "8\n-10 -8 0 2 -5 -7 1 -4",
+          "out": "2",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Valid Parentheses (W11)",
+      "desc": "Given a string containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.\n\n**Input Format**\nString S on a single line.\n\n**Output Format**\nPrint 'true' if valid, 'false' otherwise.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": true
+        },
+        {
+          "in": "()[]{}",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "([)]",
+          "out": "false",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Reverse Array Segment (W11)",
+      "desc": "Reverse the elements of an array from position m to p (0-indexed, inclusive).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: m p\n\n**Output Format**\nSpace-separated integers of the modified array.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n12 18 44 77 27 58\n2 4",
+          "out": "12 18 27 77 44 58",
+          "is_sample": true
+        },
+        {
+          "in": "8\n92 44 48 85 84 81 51 69\n2 5",
+          "out": "92 44 81 84 85 48 51 69",
+          "is_sample": false
+        },
+        {
+          "in": "9\n87 37 28 57 6 54 38 23 86\n1 5",
+          "out": "87 54 6 57 28 37 38 23 86",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Merge Intervals (W11)",
+      "desc": "Merge all overlapping intervals.\n\n**Input Format**\nFirst line: N (number of intervals)\nNext N lines: Two integers representing start and end.\n\n**Output Format**\nMerged intervals, one per line (start end), sorted by start time.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n10 12\n10 15\n10 14\n9 13\n10 11",
+          "out": "9 15",
+          "is_sample": true
+        },
+        {
+          "in": "5\n4 5\n4 5\n2 5\n6 7\n1 2",
+          "out": "1 5\n6 7",
+          "is_sample": false
+        },
+        {
+          "in": "5\n10 12\n9 14\n2 5\n7 11\n5 6",
+          "out": "2 6\n7 14",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Longest Substring (W11)",
+      "desc": "Find the length of the longest substring without repeating characters.\n\n**Input Format**\nSingle string S.\n\n**Output Format**\nSingle integer representing the length.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "efaaeccebe",
+          "out": "3",
+          "is_sample": true
+        },
+        {
+          "in": "feaabdfaec",
+          "out": "6",
+          "is_sample": false
+        },
+        {
+          "in": "aeecebceab",
+          "out": "4",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Container With Most Water (W11)",
+      "desc": "Given N non-negative integers representing heights of vertical lines, find two lines that form a container that holds the most water.\n\n**Input Format**\nFirst line: N\nSecond line: N integers (heights)\n\n**Output Format**\nMaximum area.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n6 1 2 2 2",
+          "out": "8",
+          "is_sample": true
+        },
+        {
+          "in": "7\n10 4 4 10 6 1 10",
+          "out": "60",
+          "is_sample": false
+        },
+        {
+          "in": "6\n7 9 1 9 2 2",
+          "out": "21",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Search in Rotated Sorted Array (W11)",
+      "desc": "Search for a target in a rotated sorted array.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\nThird line: target\n\n**Output Format**\nIndex of target, or -1 if not found.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n8 11 16 20 5\n20",
+          "out": "3",
+          "is_sample": true
+        },
+        {
+          "in": "9\n17 19 20 2 12 12 13 16 16\n12",
+          "out": "4",
+          "is_sample": false
+        },
+        {
+          "in": "7\n3 3 6 15 19 19 3\n3",
+          "out": "0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Climbing Stairs (W11)",
+      "desc": "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?\n\n**Input Format**\nSingle integer N.\n\n**Output Format**\nSingle integer representing number of ways.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9",
+          "out": "55",
+          "is_sample": true
+        },
+        {
+          "in": "3",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "6",
+          "out": "13",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Jump Game (W11)",
+      "desc": "You are given an integer array. You are initially positioned at the array's first index, and each element represents your maximum jump length at that position. Return true if you can reach the last index.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "6\n2 0 3 0 2 3",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "5\n2 1 1 1 1",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "8\n3 1 3 3 1 2 3 3",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Missing Number (W11)",
+      "desc": "Given an array containing n distinct numbers taken from 0, 1, 2, ..., n, find the one that is missing from the array.\n\n**Input Format**\nFirst line: N (the max number)\nSecond line: N integers\n\n**Output Format**\nSingle integer (the missing number).",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n5 3 2 1 0",
+          "out": "4",
+          "is_sample": true
+        },
+        {
+          "in": "7\n5 0 3 6 1 4 2",
+          "out": "7",
+          "is_sample": false
+        },
+        {
+          "in": "8\n0 8 1 2 3 5 4 6",
+          "out": "7",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Contains Duplicate (W11)",
+      "desc": "Given an integer array, return true if any value appears at least twice in the array, and return false if every element is distinct.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\n'true' or 'false'.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "10\n9 13 6 4 6 3 15 8 3 9",
+          "out": "true",
+          "is_sample": true
+        },
+        {
+          "in": "5\n13 20 14 16 13",
+          "out": "true",
+          "is_sample": false
+        },
+        {
+          "in": "6\n4 13 4 19 4 4",
+          "out": "true",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Single Number (W11)",
+      "desc": "Given a non-empty array of integers, every element appears twice except for one. Find that single one.\n\n**Input Format**\nFirst line: N (odd)\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "9\n10 7 1 27 10 153 7 27 1",
+          "out": "153",
+          "is_sample": true
+        },
+        {
+          "in": "11\n41 11 23 23 125 41 29 11 19 19 29",
+          "out": "125",
+          "is_sample": false
+        },
+        {
+          "in": "7\n26 26 3 18 18 154 3",
+          "out": "154",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Move Zeroes (W11)",
+      "desc": "Given an integer array, move all 0's to the end of it while maintaining the relative order of the non-zero elements.\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSpace-separated integers.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "5\n4 2 5 5 5",
+          "out": "4 2 5 5 5",
+          "is_sample": true
+        },
+        {
+          "in": "6\n3 0 4 1 2 0",
+          "out": "3 4 1 2 0 0",
+          "is_sample": false
+        },
+        {
+          "in": "9\n1 5 5 5 3 0 1 1 3",
+          "out": "1 5 5 5 3 1 1 3 0",
+          "is_sample": false
+        }
+      ]
+    },
+    {
+      "title": "Majority Element (W11)",
+      "desc": "Given an array of size n, find the majority element (appears more than n/2 times).\n\n**Input Format**\nFirst line: N\nSecond line: N integers\n\n**Output Format**\nSingle integer.",
+      "diff": "medium",
+      "test_cases": [
+        {
+          "in": "7\n18 9 12 19 9 9 9",
+          "out": "9",
+          "is_sample": true
+        },
+        {
+          "in": "8\n3 18 3 3 17 13 3 3",
+          "out": "3",
+          "is_sample": false
+        },
+        {
+          "in": "7\n13 16 18 10 10 10 10",
+          "out": "10",
+          "is_sample": false
+        }
+      ]
+    }
+  ]
+}

@@ -128,7 +128,6 @@ Created automatically via `docker compose exec app python manage.py seed_demo`:
 | **Student (2nd Yr)** | `student_sy_03` | `student123` | Semester 4 student |
 
 ---
-
 ## 🛠️ Management Commands Reference
 
 All commands should be executed against the `app` container:
