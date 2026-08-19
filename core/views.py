@@ -1191,7 +1191,7 @@ def import_question_text(file_name, text, faculty):
     }
 
 
-def import_question_csv(file_obj, faculty, category="c_programming"):
+def import_question_json(file_obj, faculty, category="c_programming"):
     module_name, order = module_name_from_csv(file_obj.name)
     module, _ = Module.objects.update_or_create(
         name=module_name,
@@ -1218,12 +1218,14 @@ def import_question_csv(file_obj, faculty, category="c_programming"):
         module.course = course
         module.save(update_fields=["course"])
 
-    decoded = file_obj.read().decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(decoded))
+    import json
+    data = json.loads(file_obj.read().decode("utf-8-sig"))
     required = {"Question_ID", "Topic", "Level", "Difficulty"}
-    missing = required.difference(reader.fieldnames or [])
-    if missing:
-        raise ValueError(f"{file_obj.name}: missing columns {', '.join(sorted(missing))}")
+    
+    if data:
+        missing = required.difference(data[0].keys())
+        if missing:
+            raise ValueError(f"{file_obj.name}: missing keys {', '.join(sorted(missing))}")
 
     created = 0
     updated = 0
@@ -1231,7 +1233,7 @@ def import_question_csv(file_obj, faculty, category="c_programming"):
     test_cases = 0
     imported_slugs = []
     replace_bank = "_levels" in file_obj.name.lower()
-    for index, row in enumerate(reader, start=1):
+    for index, row in enumerate(data, start=1):
         question_id = (row.get("Question_ID") or f"Q{index:03d}").strip()
         topic = (row.get("Topic") or "Question").strip()
         level = (row.get("Level") or "1").strip()

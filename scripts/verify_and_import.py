@@ -5,7 +5,7 @@ import django
 
 from core.models import User, Question
 from core.services import choose_adaptive_questions
-from core.views import import_question_csv
+from core.views import import_question_json
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -19,29 +19,29 @@ faculty, _ = User.objects.get_or_create(username="admin_gen", defaults={"is_staf
 # Get or create dummy student for testing
 student, _ = User.objects.get_or_create(username="student_test", defaults={"role": User.Role.STUDENT, "email": "student@example.com", "usn": "1RN21CS999"})
 
-# Path to CSV files
-CSV_DIR = os.path.join(PROJECT_ROOT, "generated_level_question_csvs")
+# Path to JSON files
+JSON_DIR = os.path.join(PROJECT_ROOT, "generated_level_question_csvs")
 
-csv_files = [
-    "Module1_Basics_IO_Levels.csv",
-    "Module2_Operators_Expressions_Levels.csv",
-    "Module3_Conditionals_Loops_Levels.csv",
-    "Module4_Arrays_Levels.csv",
-    "Module5_Strings_Levels.csv",
-    "Module6_Functions_Levels.csv",
-    "Module7_Pointers_Levels.csv",
-    "Module8_Structures_Levels.csv",
-    "Module9_File_Handling_Levels.csv",
-    "Module10_Advanced_Concepts_Levels.csv"
+json_files = [
+    "Module1_Basics_IO_Levels.json",
+    "Module2_Operators_Expressions_Levels.json",
+    "Module3_Conditionals_Loops_Levels.json",
+    "Module4_Arrays_Levels.json",
+    "Module5_Strings_Levels.json",
+    "Module6_Functions_Levels.json",
+    "Module7_Pointers_Levels.json",
+    "Module8_Structures_Levels.json",
+    "Module9_File_Handling_Levels.json",
+    "Module10_Advanced_Concepts_Levels.json"
 ]
 
 def main():
-    print("Starting CSV import...")
-    print(f"Looking for CSV files in: {CSV_DIR}")
+    print("Starting JSON import...")
+    print(f"Looking for JSON files in: {JSON_DIR}")
 
     # Check if directory exists
-    if not os.path.exists(CSV_DIR):
-        print(f"ERROR: CSV directory not found at {CSV_DIR}")
+    if not os.path.exists(JSON_DIR):
+        print(f"ERROR: JSON directory not found at {JSON_DIR}")
         print("Please ensure the 'generated_level_question_csvs' directory exists in your project root")
         sys.exit(1)
 
@@ -58,8 +58,8 @@ def main():
     # Initialize imported modules list
     imported_modules = []
     
-    for filename in csv_files:
-        filepath = os.path.join(CSV_DIR, filename)
+    for filename in json_files:
+        filepath = os.path.join(JSON_DIR, filename)
         
         if not os.path.exists(filepath):
             print(f"WARNING: File not found: {filepath}")
@@ -67,7 +67,7 @@ def main():
             
         try:
             with open(filepath, "rb") as f:
-                res = import_question_csv(f, faculty)
+                res = import_question_json(f, faculty)
                 module = res["module"]
                 imported_modules.append(module)
                 total = module.questions.count()
