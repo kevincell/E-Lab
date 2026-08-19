@@ -11,9 +11,18 @@ class Command(BaseCommand):
             action='store_true',
             help='Import second year questions instead of first year'
         )
+        parser.add_argument(
+            '--third-year',
+            action='store_true',
+            help='Import third year questions'
+        )
 
     def handle(self, *args, **options):
-        if options['second_year']:
+        if options['third_year']:
+            self.stdout.write(self.style.SUCCESS('Importing third year questions...'))
+            from scripts.import_third_year import import_third_year_questions
+            import_third_year_questions()
+        elif options['second_year']:
             self.stdout.write(self.style.SUCCESS('Importing second year questions...'))
             # Call the second year import script
             from scripts.import_second_year import import_second_year_questions

@@ -3,6 +3,7 @@ Faculty AI Agent Floating Widget - E-Lab RAG Question Generator
 {% endcomment %}
 {% if user.is_authenticated and user.is_faculty_like %}
 <div id="faculty-agent-root" class="faculty-agent-container">
+  {% csrf_token %}
   <!-- Floating Agent Launcher Button -->
   <button id="faculty-agent-trigger" class="faculty-agent-btn" aria-label="Open Faculty AI Question Agent" title="Ask Faculty AI Agent to create questions">
     <div class="agent-btn-glow"></div>
@@ -17,7 +18,7 @@ Faculty AI Agent Floating Widget - E-Lab RAG Question Generator
   </button>
 
   <!-- Agent Popup Drawer Window -->
-  <div id="faculty-agent-modal" class="agent-drawer hidden" aria-hidden="true">
+  <div id="faculty-agent-modal" class="agent-drawer hidden" inert aria-hidden="true">
     <div class="agent-drawer-header">
       <div class="agent-title-group">
         <div class="agent-avatar">✨</div>
@@ -151,14 +152,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Toggle Modal Drawer
   trigger.addEventListener('click', () => {
-    modal.classList.toggle('hidden');
-    if (!modal.classList.contains('hidden')) {
+    const isHidden = modal.classList.toggle('hidden');
+    modal.setAttribute('aria-hidden', isHidden ? 'true' : 'false');
+    if (isHidden) {
+      modal.setAttribute('inert', '');
+    } else {
+      modal.removeAttribute('inert');
+      // Move focus to the modal when opened
+      modal.focus();
+    }
+    if (!isHidden) {
       loadTopicsAndModules();
     }
   });
 
   closeBtn.addEventListener('click', () => {
     modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('inert', '');
+    trigger.focus();
   });
 
   // Tab Switching inside preview card

@@ -13,7 +13,7 @@
   <div class="toolbar-actions" style="display: flex; align-items: center; gap: 12px;">
     <!-- Course / Semester Badge -->
     {% if question.module.course %}
-    <div class="semester-badge" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50px; color: #3b82f6; font-size: 13px; font-weight: 700; user-select: none;">
+    <div class="semester-badge badge-semester">
       {% if question.module.course.semester %}
         <span>Semester {{ question.module.course.semester }}</span>
       {% elif question.module.course.year %}
@@ -23,8 +23,8 @@
     {% endif %}
 
     <!-- Proctoring Badge -->
-    <div class="proctoring-badge" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50px; color: #ef4444; font-size: 13px; font-weight: 700; user-select: none;">
-      <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: pulseRed 1.5s infinite;"></span>
+    <div class="proctoring-badge badge-proctoring">
+      <span class="badge-dot"></span>
       Proctoring Active
     </div>
 
@@ -93,8 +93,8 @@
       <div style="display: flex; align-items: center; gap: 12px;">
         {% if question.allow_multiple_languages %}
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 13px; font-weight: 600; color: #94a3b8;">Language:</span>
-          <select name="language_id_selector" id="language-select" style="background: rgba(31, 41, 55, 0.85); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-sm); padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; z-index: 10;">
+          <span class="field-label">Language:</span>
+          <select name="language_id_selector" id="language-select" class="language-select" aria-label="Select programming language">
             <option value="50" {% if request.POST.language_id == "50" or not request.POST.language_id %}selected{% endif %}>C (GCC)</option>
             <option value="54" {% if request.POST.language_id == "54" %}selected{% endif %}>C++ (G++)</option>
             <option value="71" {% if request.POST.language_id == "71" %}selected{% endif %}>Python 3</option>
@@ -181,24 +181,24 @@
     </div>
     
     <!-- Custom Input Area -->
-    <div class="custom-input-section" id="custom-input-section" style="display: block; margin-top: 28px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px;">
+    <div class="custom-input-section" id="custom-input-section">
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
         <h3 class="results-title" style="margin: 0; font-size: 15px;">Custom Input / Test Execution</h3>
       </div>
-      <textarea id="custom-input-textarea" rows="3" style="width: 100%; background: rgba(15, 20, 35, 0.7); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 14px; font-family: 'JetBrains Mono', 'Fira Mono', monospace; font-size: 13px; resize: vertical; box-sizing: border-box; outline: none; transition: border-color 0.2s;" placeholder="Enter custom stdin here…" onfocus="this.style.borderColor='rgba(99,102,241,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"></textarea>
-      <button type="button" id="run-custom-btn" class="secondary" style="margin-top: 10px; font-size: 13px; height: 36px; min-height: 36px; display: inline-flex; align-items: center; gap: 8px;">
+          <textarea id="custom-input-textarea" rows="3" class="custom-textarea" placeholder="Enter custom stdin here…"></textarea>
+      <button type="button" id="run-custom-btn" class="secondary run-custom-btn">
         <svg id="run-custom-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         <span id="run-custom-label">Run with Custom Input</span>
       </button>
 
-      <!-- Output -->  
+      <!-- Output -->
       <div id="custom-output-section" style="margin-top: 14px; display: none;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-          <span style="font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em;">Output</span>
+          <span class="output-label">Output</span>
           <span id="custom-output-status" style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;"></span>
         </div>
-        <pre id="custom-output-pre" style="background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.08); padding: 14px 16px; border-radius: 10px; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; font-family: 'JetBrains Mono', 'Fira Mono', monospace; font-size: 13px; min-height: 48px; margin: 0;"></pre>
+        <pre id="custom-output-pre"></pre>
       </div>
     </div>
   </article>
@@ -815,7 +815,7 @@ public class Main {
             }, 4000);
           }
           setTimeout(function() {
-            if (editor) editor.layout();
+            if (typeof editor !== 'undefined' && editor) editor.layout();
           }, 50);
         }
       });
@@ -1272,17 +1272,21 @@ public class Main {
           document.body.classList.add("is-maximized-page");
           if (minBtn) minBtn.style.display = "inline-flex";
           if (toast) {
-            toast.setAttribute("aria-hidden", "false");
-            setTimeout(function() { toast.setAttribute("aria-hidden", "true"); }, 4000);
+            toast.textContent = "Proctored mode engaged. You cannot exit until you submit.";
+            toast.classList.add("show");
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(function() {
+              toast.classList.remove("show");
+            }, 4000);
           }
-          if (typeof editor !== 'undefined' && editor.layout) editor.layout();
+          if (typeof editor !== 'undefined' && editor) editor.layout();
         } else {
           document.body.classList.remove("is-maximized-page");
           if (minBtn) minBtn.style.display = "none";
           if (document.fullscreenElement) {
             document.exitFullscreen().catch(e => console.log(e));
           }
-          if (typeof editor !== 'undefined' && editor.layout) editor.layout();
+          if (typeof editor !== 'undefined' && editor) editor.layout();
         }
       }
 

@@ -1545,8 +1545,121 @@ body.dashboard-page .page {
 }
 
 /* =========================================================
-   Prose & Code
+   Badges & Indicators
    ========================================================= */
+.badge-semester {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50px;
+  color: #3b82f6;
+  font-size: 13px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.badge-proctoring {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 50px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.badge-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ef4444;
+  animation: pulseRed 1.5s infinite;
+}
+
+.language-select {
+  background: rgba(31, 41, 55, 0.85);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 10;
+}
+
+[data-theme="light"] .language-select {
+  background: #ffffff;
+  color: #24292e;
+  border-color: #d0d7de;
+}
+
+/* =========================================================
+   Custom Input Section
+   ========================================================= */
+.custom-input-section {
+  display: block;
+  margin-top: 28px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 24px;
+}
+
+[data-theme="light"] .custom-input-section {
+  border-top-color: #e1e4e8;
+}
+
+.custom-textarea:focus {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  outline: none;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.output-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+#custom-output-pre {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 14px 16px;
+  border-radius: 10px;
+  color: #e2e8f0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+  font-size: 13px;
+  min-height: 48px;
+  margin: 0;
+}
+
+/* Run custom button */
+.run-custom-btn {
+  margin-top: 10px;
+  font-size: 13px;
+  height: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .prose-dark {
   color: var(--text-primary);
   font-size: 16px;
@@ -1609,8 +1722,14 @@ body.dashboard-page .page {
 /* =========================================================
    Custom Input Section (light-mode overrides for inline-styled elements)
    ========================================================= */
-#custom-input-textarea {
+#custom-input-textarea,
+.custom-textarea {
   transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.custom-textarea:focus {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  outline: none;
 }
 
 [data-theme="light"] #custom-input-textarea {
@@ -1631,6 +1750,33 @@ body.dashboard-page .page {
 
 [data-theme="light"] .custom-input-section {
   border-top-color: #e1e4e8 !important;
+}
+
+.qbank-search-input {
+  padding: 10px 14px;
+  border: 1px solid rgba(209, 232, 226, 0.15);
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-primary);
+  font-size: 14px;
+  min-width: 280px;
+  transition: border-color 0.2s ease;
+}
+
+.qbank-search-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+[data-theme="light"] .qbank-search-input {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #24292e;
+}
+
+/* Back link animated hover effect */
+.back-link-animated:hover {
+  transform: translateX(-4px);
 }
 
 [data-theme="light"] #run-custom-btn {
@@ -1929,6 +2075,50 @@ body.dashboard-page .page {
   align-items: center;
   gap: 12px;
   min-height: 42px;
+  padding: 8px 0;
+}
+
+/* Question form checkbox styling */
+.checkbox-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent-primary, #6366f1);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.checkbox-row span {
+  font-size: 14px;
+  color: var(--text-secondary, #cbd5e1);
+  user-select: none;
+  cursor: pointer;
+}
+
+.checkbox-row:hover span {
+  color: var(--text-primary, #f8fafc);
+}
+
+/* Checkbox inline in form rows */
+.checkbox-inline {
+  display: flex;
+  align-items: flex-start;
+}
+
+.checkbox-inline label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-primary, #6366f1);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 input, select, textarea {
@@ -1947,6 +2137,35 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   border-color: rgba(255, 203, 154, 0.5);
   box-shadow: 0 0 0 4px rgba(255, 203, 154, 0.1);
+}
+
+/* =========================================================
+   LIGHT THEME BASE INPUT OVERRIDES
+   ========================================================= */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: var(--bg-secondary, #FFFFFF) !important;
+  border: 1px solid var(--line-strong, #E2E8F0) !important;
+  color: var(--text-primary, #0F172A) !important;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+  border-color: var(--accent-primary, #4F46E5) !important;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15) !important;
+  background: #FFFFFF !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--text-muted, #64748B) !important;
+}
+
+[data-theme="light"] select option {
+  background: #FFFFFF;
+  color: #0F172A;
 }
 
 .question-container {
@@ -2002,6 +2221,8 @@ pre {
     border-radius: 4px;
     border: 1px solid #eaeaea;
 }
+
+.editor-input-textarea {
     flex: 1;
     margin-bottom: 15px;
     border: 1px solid #ddd;
@@ -2416,15 +2637,7 @@ th {
 /* =========================================================
    Updated Primary Button Colors
    ========================================================= */
-.primary {
-  background: linear-gradient(135deg, var(--accent-primary), #d946ef);
-  color: white;
-  box-shadow: 0 4px 12px rgba(200, 111, 201, 0.3);
-}
-
-.primary:hover {
-  box-shadow: 0 8px 24px rgba(200, 111, 201, 0.4);
-}
+/* Primary button styles defined above at line ~411 */
 
 .eyebrow {
   color: var(--accent-primary);
@@ -2433,20 +2646,7 @@ th {
 /* =========================================================
    Responsive Design
    ========================================================= */
-@media (max-width: 1200px) {
-  .course-map-panel {
-    grid-template-columns: 1fr;
-  }
-  .module-wheel-v2 {
-    order: -1;
-  }
-  .insight-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .question-layout {
-    grid-template-columns: 1fr;
-  }
-}
+/* Responsive styles for 1200px breakpoint defined above at ~line 2359 */
 
 @media (max-width: 768px) {
   .topbar {
@@ -4267,6 +4467,19 @@ body.is-maximized-page .monaco-editor {
 .form-group input:focus, .form-group textarea:focus {
   outline: none;
   border-color: #6366f1;
+}
+
+[data-theme="light"] .form-group input,
+[data-theme="light"] .form-group textarea,
+[data-theme="light"] .form-group select {
+  background: var(--bg-secondary, #FFFFFF) !important;
+  border-color: var(--line-strong, #E2E8F0) !important;
+  color: var(--text-primary, #0F172A) !important;
+}
+
+[data-theme="light"] .form-group input:focus,
+[data-theme="light"] .form-group textarea:focus {
+  border-color: #6366f1 !important;
 }
 
 .field-error {

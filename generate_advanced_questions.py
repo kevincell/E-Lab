@@ -310,7 +310,93 @@ for week in week_numbers:
     weeks_data[str(week)] = week_qs
 
 os.makedirs("data", exist_ok=True)
+
+# Build canonical format
+canonical = {
+    "category": "advanced_placement_training",
+    "modules": []
+}
+
+# Weeks 1-9, and 10
+week_numbers = list(range(1, 11))
+
+for week in week_numbers:
+    week_qs = []
+    for gen in GENERATORS:
+        # We need 3 test cases with distinct (input, expected) pairs
+        test_cases = []
+        attempts = 0
+        while len(test_cases) < 3 and attempts < 20:
+            title, desc, inp, ans = gen()
+            if not inp.strip() and not ans.strip():
+                attempts += 1
+                continue
+            pair = (inp, ans)
+            if any(pair == (tc["input"], tc["expected_output"]) for tc in test_cases):
+                attempts += 1
+                continue
+            test_cases.append({
+                "input": inp,
+                "expected_output": ans,
+                "is_sample": len(test_cases) == 0
+            })
+            attempts += 1
+        # Fallback if we couldn't get 3 distinct (unlikely)
+        if len(test_cases) < 3:
+            while len(test_cases) < 3:
+                title, desc, inp, ans = gen()
+                test_cases.append({
+                    "input": inp,
+                    "expected_output": ans,
+                    "is_sample": len(test_cases) == 0
+                })
+            
+        week_qs.append({
+            "question_id": f"ADV-W{week:02d}-Q{len(week_qs)+1:02d}",
+            "title": f"Adv: {title} (W{week})",
+            "topic": (
+                "Revision of Programming Fundamentals, Complexity Analysis" if week == 1 else
+                "Sliding Window, Prefix Sum, String manipulation problems" if week == 2 else
+                "Sudoku, Maze, N-Queens, Divide & Conquer" if week == 3 else
+                "Reverse linked list, Stack using arrays, Queue implementation" if week == 4 else
+                "Tree traversals, BST operations" if week == 5 else
+                "DFS/BFS Traversals, Priority Queues" if week == 6 else
+                "Hash Maps, Frequency counting, Collision handling" if week == 7 else
+                "Merge Sort, Quick Sort, DP basics, Knapsack" if week == 8 else
+                "Classes, Objects, Inheritance, Polymorphism, LLD" if week == 9 else
+                "Process vs Thread, CPU Scheduling, Synchronization, Deadlocks"
+            ),
+            "level": week,
+            "level_range": "Easy" if week <= 3 else "Medium" if week <= 7 else "Hard",
+            "difficulty": "medium",
+            "description": desc,
+            "starter_code": "#include <stdio.h>\n\nint main(void)\n{\n    /* Read from stdin. Do not print prompts unless required. */\n    return 0;\n}",
+            "time_limit": 2.0,
+            "memory_limit_kb": 128000,
+            "max_score": 1,
+            "is_active": True,
+            "is_mandatory": True,
+            "allow_multiple_languages": True,
+            "test_cases": test_cases
+        })
+    canonical["modules"].append({
+        "module": (
+            "Week 1: Complexity Analysis" if week == 1 else
+            "Week 2: Arrays and Strings" if week == 2 else
+            "Week 3: Recursion & Backtracking" if week == 3 else
+            "Week 4: Linked Lists & Stacks" if week == 4 else
+            "Week 5: Trees and BST" if week == 5 else
+            "Week 6: Graphs and Heaps" if week == 6 else
+            "Week 7: Hashing and Searching" if week == 7 else
+            "Week 8: Sorting, Greedy & DP" if week == 8 else
+            "Week 9: OOP & Design Patterns" if week == 9 else
+            "Week 10: OS Fundamentals"
+        ),
+        "module_order": week,
+        "questions": week_qs
+    })
+
 with open("data/advanced_placement_training_questions.json", "w") as f:
-    json.dump(weeks_data, f, indent=2)
+    json.dump(canonical, f, indent=2)
 
 print("Generated Advanced Placement Training Data!")

@@ -68,8 +68,9 @@ def main():
         try:
             with open(filepath, "rb") as f:
                 res = import_question_json(f, faculty)
-                module = res["module"]
-                imported_modules.append(module)
+            modules = res.get("modules") or ([res["module"]] if res["module"] else [])
+            imported_modules.extend(modules)
+            for module in modules:
                 total = module.questions.count()
                 mand = module.questions.filter(is_mandatory=True).count()
                 print(f"[{module.name} (Order {module.order})] Created: {res['created']} | Updated: {res['updated']} | Total Qs: {total} | Mandatory Qs: {mand}")

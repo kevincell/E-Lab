@@ -157,19 +157,32 @@ Sample Solution:
 Your task: Given a topic and reference questions, generate a high quality ORIGINAL programming problem with test cases.
 
 STRICT JSON OUTPUT REQUIREMENT:
-Return ONLY valid JSON matching this schema:
+Return ONLY valid JSON matching the canonical E-Lab question schema:
 {
+  "question_id": "AG001",
   "title": "Short Descriptive Title",
+  "topic": "the requested topic",
+  "level": 3,
+  "level_range": "Easy|Medium|Hard",
   "difficulty": "easy|medium|hard",
   "description": "Comprehensive problem statement including input format, output format, and constraints.",
-  "starter_code": "// Write your code here\\n#include <stdio.h>\\n\\nint main() {\\n    return 0;\\n}",
-  "solution": "# Python or C reference solution\\ndef solve():\\n    pass",
+  "starter_code": "#include <stdio.h>\\n\\nint main() {\\n    // Write your solution here\\n    return 0;\\n}",
+  "solution": "# Reference solution (C or Python)",
+  "time_limit": 2,
+  "memory_limit_kb": 128000,
+  "max_score": 1,
+  "is_active": true,
+  "is_mandatory": false,
+  "allow_multiple_languages": false,
   "test_cases": [
-    {"input": "2 3\\n", "expected_output": "5\\n", "is_sample": true, "type": "standard"},
-    {"input": "0 0\\n", "expected_output": "0\\n", "is_sample": false, "type": "edge"}
+    {"input": "2 3\\n", "expected_output": "5\\n", "is_sample": true},
+    {"input": "0 0\\n", "expected_output": "0\\n", "is_sample": false}
   ]
 }
-Must provide exactly 5 to 10 test cases (including at least 2 sample test cases with is_sample=true)."""
+Rules:
+- Provide exactly 5 to 10 test cases; the first one must have is_sample=true (shown to students).
+- No duplicate (input, expected_output) pairs.
+- difficulty must match the requested difficulty; level ranges from 1 (easiest) to 10 (hardest)."""
 
         user_prompt = f"""Target Topic: "{topic}"
 Requested Difficulty: "{difficulty}"
@@ -199,19 +212,64 @@ Generate a brand new original problem. Return ONLY valid raw JSON."""
             if res.status_code == 200:
                 raw_json = res.json()["message"]["content"]
                 parsed = self._clean_and_parse_json(raw_json)
-                if parsed and "title" in parsed and "description" in parsed:
-                    return parsed, references
+                if parsed and parsed.get("title") and parsed.get("description"):
+                    return self._ensure_canonical(parsed, topic, difficulty), references
         except Exception:
             pass
 
         # 2. Try Gemini or OpenAI API if configured
         api_result = self._try_external_api(system_prompt, user_prompt)
-        if api_result:
-            return api_result, references
+        if api_result and api_result.get("title") and api_result.get("description"):
+            return self._ensure_canonical(api_result, topic, difficulty), references
 
         # 3. Fallback Smart Synthesis Engine
         fallback_data = self._generate_fallback(topic, difficulty, custom_prompt, references)
-        return fallback_data, references
+        return self._ensure_canonical(fallback_data, topic, difficulty), references
+
+    def _ensure_canonical(self, parsed: Dict[str, Any], topic: str, difficulty: str) -> Dict[str, Any]:
+        """Fill any missing canonical-schema keys so agent output always matches the
+        training-data format (docs/QUESTION_JSON_SCHEMA.md)."""
+        difficulty = str(difficulty or parsed.get("difficulty") or "medium").lower()
+        if difficulty not in {"easy", "medium", "hard"}:
+            difficulty = "medium"
+        try:
+            level = int(parsed.get("level"))
+        except (TypeError, ValueError):
+            level = {"easy": 1, "medium": 4, "hard": 7}[difficulty]
+
+        test_cases = []
+        for idx, tc in enumerate(parsed.get("test_cases") or []):
+            if not isinstance(tc, dict):
+                continue
+            expected = tc.get("expected_output", tc.get("expected", ""))
+            if str(expected) == "":
+                continue
+            test_cases.append({
+                "input": str(tc.get("input", "")),
+                "expected_output": str(expected),
+                "is_sample": bool(tc.get("is_sample", idx == 0)),
+            })
+        if test_cases and not any(tc["is_sample"] for tc in test_cases):
+            test_cases[0]["is_sample"] = True
+
+        return {
+            "question_id": str(parsed.get("question_id") or f"AG{random.randint(10000, 99999)}"),
+            "title": str(parsed.get("title", "")),
+            "topic": str(parsed.get("topic") or topic),
+            "level": level,
+            "level_range": str(parsed.get("level_range") or difficulty.capitalize()),
+            "difficulty": difficulty,
+            "description": str(parsed.get("description", "")),
+            "starter_code": str(parsed.get("starter_code", "")),
+            "solution": str(parsed.get("solution", "")),
+            "time_limit": parsed.get("time_limit", 2),
+            "memory_limit_kb": parsed.get("memory_limit_kb", 128000),
+            "max_score": parsed.get("max_score", 1),
+            "is_active": bool(parsed.get("is_active", True)),
+            "is_mandatory": bool(parsed.get("is_mandatory", False)),
+            "allow_multiple_languages": bool(parsed.get("allow_multiple_languages", False)),
+            "test_cases": test_cases,
+        }
 
     def _clean_and_parse_json(self, raw: str) -> Dict[str, Any]:
         try:
@@ -316,18 +374,28 @@ if __name__ == '__main__':
 """
 
         test_cases = [
-            {"input": "5\n1 2 3 4 5\n", "expected_output": "15\n", "is_sample": True, "type": "standard"},
-            {"input": "3\n10 -2 5\n", "expected_output": "13\n", "is_sample": True, "type": "standard"},
-            {"input": "1\n42\n", "expected_output": "42\n", "is_sample": False, "type": "edge"},
-            {"input": "4\n0 0 0 0\n", "expected_output": "0\n", "is_sample": False, "type": "edge"},
-            {"input": "6\n-1 -2 -3 -4 -5 -6\n", "expected_output": "-21\n", "is_sample": False, "type": "boundary"},
+            {"input": "5\n1 2 3 4 5\n", "expected_output": "15\n", "is_sample": True},
+            {"input": "3\n10 -2 5\n", "expected_output": "13\n", "is_sample": False},
+            {"input": "1\n42\n", "expected_output": "42\n", "is_sample": False},
+            {"input": "4\n0 0 0 0\n", "expected_output": "0\n", "is_sample": False},
+            {"input": "6\n-1 -2 -3 -4 -5 -6\n", "expected_output": "-21\n", "is_sample": False},
         ]
 
         return {
+            "question_id": f"AG{random.randint(10000, 99999)}",
             "title": title,
+            "topic": topic,
+            "level": {"easy": 1, "medium": 4, "hard": 7}[difficulty.lower()],
+            "level_range": difficulty.capitalize(),
             "difficulty": difficulty.lower(),
             "description": description,
             "starter_code": starter_code,
             "solution": solution,
-            "test_cases": test_cases
+            "time_limit": 2,
+            "memory_limit_kb": 128000,
+            "max_score": 1,
+            "is_active": True,
+            "is_mandatory": False,
+            "allow_multiple_languages": False,
+            "test_cases": test_cases,
         }
