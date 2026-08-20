@@ -126,6 +126,8 @@ Created automatically via `docker compose exec app python manage.py seed_demo`:
 | **Student (2nd Yr)** | `student_sy_01` | `student123` | Semester 3 student |
 | **Student (2nd Yr)** | `student_sy_02` | `student123` | Semester 3 student |
 | **Student (2nd Yr)** | `student_sy_03` | `student123` | Semester 4 student |
+| **Student (3rd Yr)** | `student_ty_01` | `student123` | Semester 5 student |
+| **Student (3rd Yr)** | `student_ty_02` | `student123` | Semester 6 student |
 
 ---
 ## 🛠️ Management Commands Reference
@@ -145,6 +147,9 @@ docker compose exec app python manage.py import_questions
 
 # Import second-year questions
 docker compose exec app python manage.py import_questions --second-year
+
+# Import third-year questions
+docker compose exec app python manage.py import_questions --third-year
 ```
 
 ### Generate Student Certificates
@@ -251,3 +256,10 @@ docker compose exec -T elab-db psql -U elab elab_db < backup.sql
 
 ## 📄 License
 Academic use — Department of Computer & Communication Engineering (CCE), NMAM Institute of Technology, Nitte.
+
+### Ingest Questions into RAG Database
+Builds vector embeddings for the AI question generator:
+```bash
+# Run once to ingest all DSA topics into ChromaDB
+docker compose exec app python manage.py rag_ingest
+```

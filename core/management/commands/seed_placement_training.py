@@ -6,18 +6,26 @@ from core.models import Course, Module, Question, TestCase, User
 from django.utils.text import slugify
 
 class Command(BaseCommand):
-    help = 'Seeds Placement Training curriculum data from JSON'
+    help = 'Seeds Placement Training curriculum data from the canonical question JSON (docs/QUESTION_JSON_SCHEMA.md)'
 
     def handle(self, *args, **options):
         self.stdout.write("Seeding Technical Placement Training curriculum...")
-        
+
         json_path = os.path.join(settings.BASE_DIR, "data", "placement_training_questions.json")
         if not os.path.exists(json_path):
             self.stdout.write(self.style.ERROR(f"JSON file not found at {json_path}"))
             return
 
         with open(json_path, "r") as f:
-            questions_data = json.load(f)
+            bank = json.load(f)
+
+        # Canonical schema: {"category", "modules": [{"module", "module_order", "questions": [...]}]}
+        questions_by_week = {}
+        for mod in bank.get("modules", []):
+            try:
+                questions_by_week[int(mod.get("module_order") or 0)] = mod.get("questions", [])
+            except (TypeError, ValueError):
+                continue
 
         # Clean up existing placement training modules to start fresh
         Module.objects.filter(category="placement_training").delete()
@@ -61,9 +69,9 @@ class Command(BaseCommand):
                     "is_active": True
                 }
             )
-            
+
             # Add Questions
-            week_questions = questions_data.get(str(week_num), [])
+            week_questions = questions_by_week.get(week_num, [])
             for q_data in week_questions:
                 slug = slugify(q_data["title"]) + f"-w{week_num}"
                 question, created = Question.objects.get_or_create(
@@ -71,23 +79,28 @@ class Command(BaseCommand):
                     slug=slug,
                     defaults={
                         "title": q_data["title"],
-                        "description": q_data["desc"],
-                        "difficulty": q_data["diff"],
-                        "allow_multiple_languages": True,
-                        "is_mandatory": True,
+                        "description": q_data.get("description") or q_data.get("desc", ""),
+                        "difficulty": q_data.get("difficulty") or q_data.get("diff") or "easy",
+                        "starter_code": q_data.get("starter_code", ""),
+                        "csv_level": q_data.get("level", week_num),
+                        "level_range": q_data.get("level_range", ""),
+                        "time_limit": q_data.get("time_limit", 2.0),
+                        "memory_limit_kb": q_data.get("memory_limit_kb", 128000),
+                        "allow_multiple_languages": q_data.get("allow_multiple_languages", True),
+                        "is_mandatory": q_data.get("is_mandatory", True),
                         "is_active": True,
                         "created_by": admin_user,
                     }
                 )
-                
+
                 if created:
                     for idx, tc in enumerate(q_data.get("test_cases", [])):
                         TestCase.objects.create(
                             question=question,
-                            stdin=tc["in"],
-                            expected_output=tc["out"],
-                            is_sample=tc["is_sample"],
+                            stdin=tc.get("input", tc.get("in", "")),
+                            expected_output=tc.get("expected_output", tc.get("out", "")),
+                            is_sample=tc.get("is_sample", idx == 0),
                             order=idx + 1
                         )
-        
+
         self.stdout.write(self.style.SUCCESS("✅ Placement Training JSON seeding completed!"))

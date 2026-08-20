@@ -176,14 +176,22 @@ def dashboard(request):
         )
         selected_category = request.GET.get("category") or "overall"
         selected_sort = request.GET.get("sort") or "rank"
+        selected_department = request.GET.get("department") or ""
         if selected_sort not in {"rank", "usn"}:
             selected_sort = "rank"
+
+        # Get all distinct departments for the filter dropdown
+        departments = User.objects.exclude(
+            department=""
+        ).values_list("department", flat=True).distinct().order_by("department")
 
         progress_modules = list(modules.order_by("order", "name"))
         progress_students_qs = (
             User.objects.filter(is_staff=False, is_superuser=False)
             .exclude(role__in=[User.Role.FACULTY, User.Role.ADMIN])
         )
+        if selected_department:
+            progress_students_qs = progress_students_qs.filter(department=selected_department)
         selected_module = None
         if selected_category != "overall":
             try:
@@ -286,6 +294,8 @@ def dashboard(request):
                 "selected_sort": selected_sort,
                 "courses": courses,
                 "selected_course": selected_course,
+                "departments": departments,
+                "selected_department": selected_department,
             },
         )
 
@@ -1191,8 +1201,10 @@ def import_question_text(file_name, text, faculty):
     }
 
 
-def import_question_json(file_obj, faculty, category="c_programming"):
-    module_name, order = module_name_from_csv(file_obj.name)
+def _module_for_import(filename, category="c_programming", module_name=None, order=None):
+    """Create/update the target Module for an imported bank file and link its Course."""
+    if module_name is None:
+        module_name, order = module_name_from_csv(filename)
     module, _ = Module.objects.update_or_create(
         name=module_name,
         defaults={
@@ -1217,27 +1229,46 @@ def import_question_json(file_obj, faculty, category="c_programming"):
     if module.course_id != course.pk:
         module.course = course
         module.save(update_fields=["course"])
+    return module
 
-    import json
-    data = json.loads(file_obj.read().decode("utf-8-sig"))
-    required = {"Question_ID", "Topic", "Level", "Difficulty"}
-    
-    if data:
-        missing = required.difference(data[0].keys())
-        if missing:
-            raise ValueError(f"{file_obj.name}: missing keys {', '.join(sorted(missing))}")
 
+def _canonical_question_to_row(question):
+    """Project a canonical-schema question (docs/QUESTION_JSON_SCHEMA.md) onto the
+    flat row shape shared by the CSV and JSON importers."""
+    row = {
+        "Question_ID": question["question_id"],
+        "Title": question["title"],
+        "Topic": question.get("topic", ""),
+        "Level": question.get("level", 1),
+        "Level_Range": question.get("level_range", ""),
+        "Difficulty": question.get("difficulty", "easy"),
+        "Problem_Statement": question.get("description", ""),
+        "Starter_Code": question.get("starter_code", ""),
+        "Time_Limit": question.get("time_limit", 2.0),
+        "Memory_Limit_KB": question.get("memory_limit_kb", 128000),
+        "Max_Score": question.get("max_score", 1),
+        "Is_Active": question.get("is_active", True),
+        "Is_Mandatory": question.get("is_mandatory", False),
+        "Allow_Multiple_Languages": question.get("allow_multiple_languages", False),
+    }
+    for index, case in enumerate(question.get("test_cases", []), start=1):
+        row[f"Test{index}_Input"] = case.get("input", "")
+        row[f"Test{index}_Output"] = case.get("expected_output", "")
+    return row
+
+
+def _import_rows_into_module(data, module, faculty, file_name):
     created = 0
     updated = 0
     active = 0
     test_cases = 0
     imported_slugs = []
-    replace_bank = "_levels" in file_obj.name.lower()
+    replace_bank = "_levels" in file_name.lower()
     for index, row in enumerate(data, start=1):
-        question_id = (row.get("Question_ID") or f"Q{index:03d}").strip()
-        topic = (row.get("Topic") or "Question").strip()
-        level = (row.get("Level") or "1").strip()
-        title = (row.get("Title") or f"{question_id} - {topic} (Level {level})").strip()
+        question_id = str(row.get("Question_ID") or f"Q{index:03d}").strip()
+        topic = str(row.get("Topic") or "Question").strip()
+        level = str(row.get("Level") or "1").strip()
+        title = str(row.get("Title") or f"{question_id} - {topic} (Level {level})").strip()
         slug = slugify(f"{question_id}-{topic}-level-{level}")[:180]
         imported_slugs.append(slug)
         tests = row_test_cases(row)
@@ -1255,6 +1286,7 @@ def import_question_json(file_obj, faculty, category="c_programming"):
                 "language_id": 50,
                 "time_limit": float(row.get("Time_Limit") or 2.0),
                 "memory_limit_kb": int(row.get("Memory_Limit_KB") or 128000),
+                "allow_multiple_languages": bool_from_csv(row.get("Allow_Multiple_Languages"), default=False),
                 "is_mandatory": bool_from_csv(row.get("Is_Mandatory"), default=False),
                 "is_active": bool_from_csv(row.get("Is_Active"), default=active_default),
                 "created_by": faculty,
@@ -1306,6 +1338,62 @@ def import_question_json(file_obj, faculty, category="c_programming"):
         "replaced_deleted": replaced_deleted,
         "assignments_reset": assignments_reset,
     }
+
+
+def import_question_json(file_obj, faculty, category="c_programming"):
+    """Import question banks from JSON.
+
+    Accepts both the canonical schema ({"category", "modules": [...]} — see
+    docs/QUESTION_JSON_SCHEMA.md) and the legacy flat CSV-row list format.
+    """
+    data = json.loads(file_obj.read().decode("utf-8-sig"))
+
+    if isinstance(data, dict) and "modules" in data:
+        category = data.get("category") or category
+        results = []
+        for mod in data.get("modules", []):
+            module = _module_for_import(
+                file_obj.name,
+                category=category,
+                module_name=str(mod.get("module") or module_name_from_csv(file_obj.name)[0]),
+                order=int(mod.get("module_order") or 1),
+            )
+            rows = [_canonical_question_to_row(q) for q in mod.get("questions", [])]
+            results.append(_import_rows_into_module(rows, module, faculty, file_obj.name))
+        return {
+            "module": results[0]["module"] if results else None,
+            "modules": [row["module"] for row in results],
+            "created": sum(row["created"] for row in results),
+            "updated": sum(row["updated"] for row in results),
+            "active": sum(row["active"] for row in results),
+            "test_cases": sum(row["test_cases"] for row in results),
+            "stale_deleted": sum(row["stale_deleted"] for row in results),
+            "replaced_deleted": sum(row["replaced_deleted"] for row in results),
+            "assignments_reset": sum(row["assignments_reset"] for row in results),
+        }
+
+    # Legacy format: flat list of CSV-style row dicts.
+    required = {"Question_ID", "Topic", "Level", "Difficulty"}
+    if data:
+        missing = required.difference(data[0].keys())
+        if missing:
+            raise ValueError(f"{file_obj.name}: missing keys {', '.join(sorted(missing))}")
+    module = _module_for_import(file_obj.name, category=category)
+    return _import_rows_into_module(data, module, faculty, file_obj.name)
+
+
+def import_question_csv(file_obj, faculty, category="c_programming"):
+    """Import question banks from a CSV file with the documented columns
+    (Question_ID, Topic, Level, Difficulty, ..., Test1_Input, Test1_Output, ...)."""
+    text = file_obj.read().decode("utf-8-sig")
+    data = list(csv.DictReader(io.StringIO(text)))
+    required = {"Question_ID", "Topic", "Level", "Difficulty"}
+    if data:
+        missing = required.difference(data[0].keys())
+        if missing:
+            raise ValueError(f"{file_obj.name}: missing keys {', '.join(sorted(missing))}")
+    module = _module_for_import(file_obj.name, category=category)
+    return _import_rows_into_module(data, module, faculty, file_obj.name)
 
 
 @login_required
@@ -1457,6 +1545,8 @@ def faculty_question_upload(request):
                 elif ext == ".txt":
                     text = file_obj.read().decode("utf-8-sig")
                     results.append(import_question_text(file_obj.name, text, request.user))
+                elif ext == ".json":
+                    results.append(import_question_json(file_obj, request.user))
                 else:
                     results.append(import_question_csv(file_obj, request.user))
             except Exception as exc:
@@ -2069,6 +2159,14 @@ def profile_view(request):
     user = request.user
     profile_form = ProfileForm(request.POST or None, instance=user)
     password_form = PasswordChangeForm(user, request.POST or None if "change_password" in request.POST else None)
+
+    # Set proper autocomplete attributes to prevent browser autofill conflicts
+    if password_form:
+        # Remove autofocus to prevent the old password field from auto-focusing on page load
+        for field_name, field in password_form.fields.items():
+            if 'password' in field_name:
+                field.widget.attrs['autocomplete'] = 'current-password' if 'old' in field_name else 'new-password'
+                field.widget.attrs.pop('autofocus', None)
 
     faculty_course_form = None
     if user.is_faculty_like:
