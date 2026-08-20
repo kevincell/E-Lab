@@ -145,11 +145,11 @@ docker compose exec app python manage.py seed_demo
 # Import first-year questions (default)
 docker compose exec app python manage.py import_questions
 
-# Import second-year questions
-docker compose exec app python manage.py import_questions --second-year
+# Import second-year questions (direct logic generation)
+docker compose exec app python manage.py seed_placement_training
 
-# Import third-year questions
-docker compose exec app python manage.py import_questions --third-year
+# Import third-year questions (direct logic generation)
+docker compose exec app python manage.py advanced_seed_placement_training
 ```
 
 ### Generate Student Certificates
@@ -262,4 +262,7 @@ Builds vector embeddings for the AI question generator:
 ```bash
 # Run once to ingest all DSA topics into ChromaDB
 docker compose exec app python manage.py rag_ingest
+
+#To unlock the one and only "Agent"
+hf download kevincell/e-lab-model qwen2.5-1.5b-question-generator.gguf --local-dir model/
 ```
