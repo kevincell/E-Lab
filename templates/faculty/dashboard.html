@@ -6,6 +6,7 @@
     <p class="muted">{{ students }} students · {{ questions }} questions</p>
   </div>
   <div class="actions">
+    <a class="secondary as-link" href="{% url 'onboarding_journey' %}" style="margin-right:auto;">← Back to Course Selection</a>
     <a class="primary as-link" href="{% url 'faculty_question_new' %}">New Question</a>
     <a class="secondary as-link" href="{% url 'faculty_question_bank' %}">Question Bank</a>
     <a class="secondary as-link" href="{% url 'faculty_open_ended_list' %}">Take-Home</a>
@@ -85,6 +86,31 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+</section>
+
+<section class="panel" style="margin-bottom: 1.5rem;">
+  <h2>Proctoring Settings</h2>
+  <p class="muted" style="margin-bottom: 1rem;">Toggle proctoring for each course. When enabled, students will be monitored for tab switching, copy/paste, and other violations.</p>
+  <div class="list">
+    {% for course in courses %}
+      <div class="row-card" style="display:flex; align-items:center; justify-content:space-between;">
+        <span>
+          <strong>{{ course.name }}</strong>
+          <small style="margin-left:0.5rem; color: var(--text-secondary);">{{ course.code }}</small>
+        </span>
+        <span style="display:flex; align-items:center; gap:0.75rem;">
+          <span class="badge {% if course.proctoring_enabled %}badge-success{% else %}badge-muted{% endif %}" style="font-size:0.8rem; padding:0.25rem 0.65rem; border-radius:1rem;">
+            {% if course.proctoring_enabled %}Proctoring ON{% else %}Proctoring OFF{% endif %}
+          </span>
+          <a class="secondary as-link" href="{% url 'toggle_course_proctoring' course.id %}" style="font-size:0.85rem;">
+            {% if course.proctoring_enabled %}Disable{% else %}Enable{% endif %}
+          </a>
+        </span>
+      </div>
+    {% empty %}
+      <p class="muted">No courses found. Please set your managed courses first.</p>
+    {% endfor %}
   </div>
 </section>
 

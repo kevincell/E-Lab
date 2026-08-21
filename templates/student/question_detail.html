@@ -23,10 +23,12 @@
     {% endif %}
 
     <!-- Proctoring Badge -->
+    {% if proctoring_active %}
     <div class="proctoring-badge badge-proctoring">
       <span class="badge-dot"></span>
       Proctoring Active
     </div>
+    {% endif %}
 
     <button type="button" class="secondary maximize-page-btn" id="editor-maximize-btn" title="Toggle Full Screen Editor" style="min-height: 42px; height: 42px; padding: 0 20px; font-size: 14px; gap: 8px; border-radius: var(--radius-full);">
       <svg class="icon-maximize" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
@@ -791,36 +793,6 @@ public class Main {
       runButton.addEventListener("click", runCode);
     }
 
-    const maxBtn = document.getElementById("editor-maximize-btn");
-    const toast = document.getElementById("fullscreen-toast");
-    if (maxBtn) {
-      maxBtn.addEventListener("click", function() {
-        if (!document.body.classList.contains("is-maximized-page")) {
-          document.body.classList.add("is-maximized-page");
-          const iconMax = maxBtn.querySelector(".icon-maximize");
-          const iconMin = maxBtn.querySelector(".icon-minimize");
-          const maxText = maxBtn.querySelector(".max-text");
-          if (iconMax) iconMax.style.display = "none";
-          if (iconMin) iconMin.style.display = "inline-block";
-          if (maxText) maxText.textContent = "Proctored Mode";
-          maxBtn.style.pointerEvents = "none"; // Disable clicking it again
-          maxBtn.style.opacity = "0.5";
-          
-          if (toast) {
-            toast.textContent = "Proctored mode engaged. You cannot exit until you submit.";
-            toast.classList.add("show");
-            clearTimeout(window._toastTimer);
-            window._toastTimer = setTimeout(function() {
-              toast.classList.remove("show");
-            }, 4000);
-          }
-          setTimeout(function() {
-            if (typeof editor !== 'undefined' && editor) editor.layout();
-          }, 50);
-        }
-      });
-    }
-
     window.addEventListener("pageshow", stopProgress);
   })();
 
@@ -877,6 +849,7 @@ public class Main {
   });
 </script>
 
+{% if proctoring_active %}
 <!-- PROCTORING SYSTEM -->
 <style>
   @keyframes pulseRed {
@@ -1258,30 +1231,43 @@ public class Main {
         }
       }, 1000);
     }
+  })();
+</script>
+{% endif %}
 
-    // 4. Auto-Fullscreen / Auto-Maximize on Interaction
-    // We attach it to the editor container so when they click to type, it maximizes.
+<!-- MAXIMIZE / FULLSCREEN (always available, independent of proctoring) -->
+<script>
+  (function initMaximize() {
     setTimeout(() => {
       const editorNode = document.getElementById("editor");
       const maxBtn = document.getElementById("editor-maximize-btn");
       const minBtn = document.getElementById("editor-minimize-btn");
       const toast = document.getElementById("fullscreen-toast");
-      
+      const iconMax = maxBtn ? maxBtn.querySelector('.icon-maximize') : null;
+      const iconMin = maxBtn ? maxBtn.querySelector('.icon-minimize') : null;
+      const maxText = maxBtn ? maxBtn.querySelector('.max-text') : null;
+
       function toggleMaximize() {
         if (!document.body.classList.contains("is-maximized-page")) {
           document.body.classList.add("is-maximized-page");
+          if (iconMax) iconMax.style.display = 'none';
+          if (iconMin) iconMin.style.display = 'inline';
+          if (maxText) maxText.textContent = 'Minimize';
           if (minBtn) minBtn.style.display = "inline-flex";
           if (toast) {
-            toast.textContent = "Proctored mode engaged. You cannot exit until you submit.";
+            toast.textContent = "Full screen mode activated.";
             toast.classList.add("show");
             clearTimeout(window._toastTimer);
             window._toastTimer = setTimeout(function() {
               toast.classList.remove("show");
-            }, 4000);
+            }, 3000);
           }
           if (typeof editor !== 'undefined' && editor) editor.layout();
         } else {
           document.body.classList.remove("is-maximized-page");
+          if (iconMax) iconMax.style.display = 'inline';
+          if (iconMin) iconMin.style.display = 'none';
+          if (maxText) maxText.textContent = 'Maximize';
           if (minBtn) minBtn.style.display = "none";
           if (document.fullscreenElement) {
             document.exitFullscreen().catch(e => console.log(e));
@@ -1291,33 +1277,26 @@ public class Main {
       }
 
       if (maxBtn) {
-        maxBtn.addEventListener("click", function() {
+        maxBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
           toggleMaximize();
         });
       }
       if (minBtn) {
-        minBtn.addEventListener("click", toggleMaximize);
+        minBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleMaximize();
+        });
       }
 
       document.addEventListener("fullscreenchange", function() {
         if (!document.fullscreenElement && document.body.classList.contains("is-maximized-page")) {
-          // They pressed Esc to exit native fullscreen
           toggleMaximize();
         }
       });
-      if (editorNode && maxBtn) {
-        editorNode.addEventListener('mousedown', () => {
-          if (!document.body.classList.contains("is-maximized-page")) {
-            maxBtn.click();
-            if (document.documentElement.requestFullscreen) {
-              document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error attempting to enable fullscreen: ${err.message}`);
-              });
-            }
-          }
-        });
-      }
-    }, 1000);
+    }, 500);
   })();
 </script>
 {% endblock %}

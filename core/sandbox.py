@@ -99,8 +99,10 @@ def _build_inner_script(lang_config, source_filename, class_name, time_limit):
     definitively instead of sniffing output for "error:".
     """
     parts = [
-        "cp -a /box/. /tmp/",
-        "cd /tmp"
+        "touch /tmp/input.txt",
+        "cp -a /box/. /tmp/ 2>/dev/null || true",
+        "cd /tmp",
+        "touch input.txt",
     ]
 
     compile_cmd = lang_config["compile"]
@@ -113,8 +115,8 @@ def _build_inner_script(lang_config, source_filename, class_name, time_limit):
         # Compile output goes to compile.out; on failure, emit the marker and
         # the real compiler message, then exit 3.
         parts.append(
-            f"{{ {quoted} >compile.out 2>&1; cp compile.out /box/ 2>/dev/null; }} || "
-            f"{{ echo {_COMPILE_ERROR_MARKER}; cat compile.out; cp compile.out /box/ 2>/dev/null; exit 3; }}"
+            f"{{ {quoted} >compile.out 2>&1; cp compile.out /box/ 2>/dev/null || true; }} || "
+            f"{{ echo {_COMPILE_ERROR_MARKER}; cat compile.out; cp compile.out /box/ 2>/dev/null || true; exit 3; }}"
         )
 
     run_cmd = list(lang_config["run"])
@@ -152,13 +154,26 @@ def run_code(language, source_code, stdin="", expected_output="",
     source_filename = str(source_filename)
 
     try:
+        try:
+            os.chmod(tmpdir, 0o777)
+        except OSError:
+            pass
+
         code_file = os.path.join(tmpdir, source_filename)
         with open(code_file, "w") as f:
             f.write(source_code)
+        try:
+            os.chmod(code_file, 0o666)
+        except OSError:
+            pass
 
         input_file = os.path.join(tmpdir, "input.txt")
         with open(input_file, "w") as f:
             f.write(stdin or "")
+        try:
+            os.chmod(input_file, 0o666)
+        except OSError:
+            pass
 
         inner_script = _build_inner_script(lang_key, source_filename, class_name, time_limit)
 

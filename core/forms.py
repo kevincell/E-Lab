@@ -112,6 +112,7 @@ class QuestionForm(forms.ModelForm):
             "time_limit",
             "memory_limit_kb",
             "is_mandatory",
+            "proctoring_enabled",
             "is_active",
         )
         widgets: ClassVar[dict] = {

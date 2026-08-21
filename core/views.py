@@ -126,7 +126,28 @@ def about(request):
 def onboarding_journey(request):
     if request.user.role == User.Role.ADMIN:
         return redirect("admin:index")
-    return render(request, "onboarding/course_selection.html")
+
+    is_faculty = request.user.is_faculty_like
+    if is_faculty:
+        # Faculty should only see courses they teach / opted for in preferences
+        courses = request.user.managed_courses.filter(is_active=True).distinct()
+        has_opted = courses.exists()
+        all_active_courses = Course.objects.filter(is_active=True)
+    else:
+        courses = Course.objects.filter(is_active=True)
+        has_opted = True
+        all_active_courses = courses
+
+    return render(
+        request,
+        "onboarding/course_selection.html",
+        {
+            "courses": courses,
+            "has_opted": has_opted,
+            "is_faculty": is_faculty,
+            "all_active_courses": all_active_courses,
+        },
+    )
 
 
 @login_required
@@ -152,7 +173,8 @@ def dashboard(request):
             return redirect("role_select")
 
     if request.user.is_faculty_like:
-        courses = request.user.managed_courses.filter(is_active=True)
+        courses = request.user.managed_courses.filter(is_active=True).distinct()
+        has_opted_courses = courses.exists()
         if not courses.exists():
             courses = Course.objects.filter(is_active=True)
         
@@ -294,6 +316,7 @@ def dashboard(request):
                 "selected_sort": selected_sort,
                 "courses": courses,
                 "selected_course": selected_course,
+                "has_opted_courses": has_opted_courses,
                 "departments": departments,
                 "selected_department": selected_department,
             },
@@ -602,6 +625,7 @@ def question_detail(request, question_id):
             "form": form,
             "latest_submission": latest,
             "question_language": language_for_id(question.language_id),
+            "proctoring_active": question.is_proctoring_active,
         },
     )
 
@@ -812,17 +836,17 @@ def run_code_api(request):
     if custom_input is not None:
         test_cases = [
             TestCase(
-                stdin=custom_input,
+                stdin=str(custom_input),
                 expected_output="",
             )
         ]
     else:
-        test_cases = question.test_cases.filter(is_sample=True).order_by("order")
+        test_cases = list(question.test_cases.filter(is_sample=True).order_by("order"))
         if not test_cases:
             test_cases = [
                 TestCase(
-                    stdin=question.sample_input,
-                    expected_output=question.sample_output,
+                    stdin=question.sample_input or "",
+                    expected_output=question.sample_output or "",
                 )
             ]
     
@@ -2528,8 +2552,56 @@ def faculty_agent_add_question_api(request):
         "message": f"Question '{question.title}' added successfully to {module.name}!",
         "question_id": question.pk,
         "question_url": url,
-        "edit_url": edit_url
+        "edit_url": edit_url,
     })
+
+
+@login_required
+def toggle_question_proctoring(request, question_id):
+    """Toggle proctoring on a specific question for Faculty, HoD, or Admin."""
+    faculty_required(request.user)
+    question = get_object_or_404(Question, pk=question_id)
+    question.proctoring_enabled = not question.proctoring_enabled
+    question.save(update_fields=["proctoring_enabled"])
+    status_str = "enabled" if question.proctoring_enabled else "disabled"
+    messages.success(request, f"Proctoring {status_str} for question '{question.title}'.")
+    
+    # Return JSON if requested via AJAX
+    if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", ""):
+        return JsonResponse({
+            "success": True,
+            "proctoring_enabled": question.proctoring_enabled,
+            "message": f"Proctoring {status_str}."
+        })
+    
+    referer = request.META.get("HTTP_REFERER")
+    if referer:
+        return redirect(referer)
+    return redirect("faculty_question_bank")
+
+
+@login_required
+def toggle_course_proctoring(request, course_id):
+    """Toggle proctoring for an entire course for Faculty, HoD, or Admin."""
+    faculty_required(request.user)
+    course = get_object_or_404(Course, pk=course_id)
+    course.proctoring_enabled = not course.proctoring_enabled
+    course.save(update_fields=["proctoring_enabled"])
+    status_str = "enabled" if course.proctoring_enabled else "disabled"
+    messages.success(request, f"Proctoring {status_str} for course '{course.name}'.")
+    
+    if request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", ""):
+        return JsonResponse({
+            "success": True,
+            "proctoring_enabled": course.proctoring_enabled,
+            "message": f"Course proctoring {status_str}."
+        })
+        
+    referer = request.META.get("HTTP_REFERER")
+    if referer:
+        return redirect(referer)
+    return redirect("dashboard")
+
 
 
 

@@ -41,8 +41,8 @@ class TestCaseInline(admin.TabularInline):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "year", "semester", "is_active")
-    list_filter = ("year", "is_active")
+    list_display = ("name", "slug", "year", "semester", "proctoring_enabled", "is_active")
+    list_filter = ("year", "proctoring_enabled", "is_active")
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "slug")
 
@@ -55,8 +55,8 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ("title", "module", "difficulty", "language_id", "is_mandatory", "is_active")
-    list_filter = ("module", "difficulty", "is_mandatory", "is_active")
+    list_display = ("title", "module", "difficulty", "language_id", "is_mandatory", "proctoring_enabled", "is_active")
+    list_filter = ("module", "difficulty", "is_mandatory", "proctoring_enabled", "is_active")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [TestCaseInline]
 

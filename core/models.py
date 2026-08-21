@@ -66,6 +66,10 @@ class Course(models.Model):
     year = models.PositiveSmallIntegerField(default=1, help_text="Target year (1st, 2nd, etc.)")
     semester = models.PositiveSmallIntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    proctoring_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable or disable proctoring monitoring for questions in this course.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -118,6 +122,10 @@ class Question(models.Model):
     starter_codes = models.JSONField(default=dict, blank=True)
     is_mandatory = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
+    proctoring_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable or disable proctoring monitoring for this question.",
+    )
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -130,6 +138,15 @@ class Question(models.Model):
 
     def get_absolute_url(self):
         return reverse("question_detail", args=[self.pk])
+
+    @property
+    def is_proctoring_active(self):
+        """Returns True if proctoring is enabled on this question and its course."""
+        if not self.proctoring_enabled:
+            return False
+        if self.module and self.module.course and not self.module.course.proctoring_enabled:
+            return False
+        return True
 
 
 class TestCase(models.Model):
