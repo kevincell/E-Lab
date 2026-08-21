@@ -115,8 +115,11 @@ def _build_inner_script(lang_config, source_filename, class_name, time_limit):
         # Compile output goes to compile.out; on failure, emit the marker and
         # the real compiler message, then exit 3.
         parts.append(
-            f"{{ {quoted} >compile.out 2>&1; cp compile.out /box/ 2>/dev/null || true; }} || "
-            f"{{ echo {_COMPILE_ERROR_MARKER}; cat compile.out; cp compile.out /box/ 2>/dev/null || true; exit 3; }}"
+            f"if {quoted} >compile.out 2>&1; then "
+            f"cp compile.out /box/ 2>/dev/null || true; "
+            f"else "
+            f"echo {_COMPILE_ERROR_MARKER}; cat compile.out; cp compile.out /box/ 2>/dev/null || true; exit 3; "
+            f"fi"
         )
 
     run_cmd = list(lang_config["run"])

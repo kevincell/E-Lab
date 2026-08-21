@@ -98,9 +98,9 @@ class Command(BaseCommand):
             {"username": "student_sy_03", "email": "sy03@example.com", "full_name": "Second Year Student 3", "base_usn": "1RN20CS003", "semester": 4, "password": "student123"},
         ]
         third_year_students = [
-            {"username": "student_ty_01", "email": "ty01@example.com", "full_name": "Second Year Student 1", "base_usn": "1RN19CS001", "semester": 5, "password": "student123"},
-            {"username": "student_ty_02", "email": "ty02@example.com", "full_name": "Second Year Student 2", "base_usn": "1RN19CS002", "semester": 5, "password": "student123"},
-            {"username": "student_ty_03", "email": "ty03@example.com", "full_name": "Second Year Student 3", "base_usn": "1RN19CS003", "semester": 6, "password": "student123"},
+            {"username": "student_ty_01", "email": "ty01@example.com", "full_name": "Third Year Student 1", "base_usn": "1RN19CS001", "semester": 5, "password": "student123"},
+            {"username": "student_ty_02", "email": "ty02@example.com", "full_name": "Third Year Student 2", "base_usn": "1RN19CS002", "semester": 5, "password": "student123"},
+            {"username": "student_ty_03", "email": "ty03@example.com", "full_name": "Third Year Student 3", "base_usn": "1RN19CS003", "semester": 6, "password": "student123"},
         ]
 
         

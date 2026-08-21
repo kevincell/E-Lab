@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+model/qwen2.5-1.5b-question-generator.gguf
 
 # Python
 __pycache__/

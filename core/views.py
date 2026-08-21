@@ -214,6 +214,11 @@ def dashboard(request):
         )
         if selected_department:
             progress_students_qs = progress_students_qs.filter(department=selected_department)
+            
+        if selected_course:
+            if selected_course.year:
+                target_semesters = [selected_course.year * 2 - 1, selected_course.year * 2]
+                progress_students_qs = progress_students_qs.filter(semester__in=target_semesters)
         selected_module = None
         if selected_category != "overall":
             try:
@@ -226,7 +231,10 @@ def dashboard(request):
                     selected_category = "overall"
 
         if selected_module:
-            progress_total = min(15, selected_module.question_count)
+            if selected_module.category in ["placement_training", "advanced_placement_training"]:
+                progress_total = min(7, selected_module.question_count)
+            else:
+                progress_total = min(15, selected_module.question_count)
             progress_students = progress_students_qs.annotate(
                 attempted_count=Count(
                     "submissions__question",
@@ -246,7 +254,7 @@ def dashboard(request):
             )
             selected_category_label = selected_module.name
         else:
-            progress_total = sum(min(15, module.question_count) for module in progress_modules)
+            progress_total = sum(min(7, module.question_count) if module.category in ["placement_training", "advanced_placement_training"] else min(15, module.question_count) for module in progress_modules)
             progress_students = progress_students_qs.annotate(
                 attempted_count=Count(
                     "submissions__question",
@@ -380,7 +388,7 @@ def dashboard(request):
             if module.category in ["placement_training", "advanced_placement_training"]:
                 module_total = min(7, module_questions.count())
             else:
-                module_total = min(5, module_questions.count())
+                module_total = min(15, module_questions.count())
             assigned_qs = AssignedQuestion.objects.filter(
                 assignment__student=request.user, assignment__module=module
             )

@@ -193,7 +193,9 @@ def evaluate_submission(submission_id):
     language = language_for_id(submission.language_id or question.language_id)
 
     try:
-        for test in tests:
+        from concurrent.futures import ThreadPoolExecutor
+
+        def evaluate_single_test(test):
             result = run_code(
                 language,
                 source_code=submission.code,
@@ -202,6 +204,20 @@ def evaluate_submission(submission_id):
                 time_limit=question.time_limit,
                 memory_limit_kb=question.memory_limit_kb,
             )
+            return test, result
+
+        results = []
+        if tests:
+            first_test, first_result = evaluate_single_test(tests[0])
+            results.append((first_test, first_result))
+            
+            # If the first test fails to compile, don't run the rest
+            if first_result.get("status_id") != 6 and len(tests) > 1:
+                with ThreadPoolExecutor(max_workers=4) as executor:
+                    rest_results = list(executor.map(evaluate_single_test, tests[1:]))
+                    results.extend(rest_results)
+
+        for test, result in results:
             status_id = result.get("status_id")
             status_mapping = {
                 3: Submission.Status.ACCEPTED,

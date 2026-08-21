@@ -342,6 +342,7 @@ body {
 .toolbar .actions {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* =========================================================
@@ -406,6 +407,8 @@ small {
   border: none;
   outline: none;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .primary {
@@ -1958,7 +1961,7 @@ body.dashboard-page .page {
   place-items: center;
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .progress-circle-label {
