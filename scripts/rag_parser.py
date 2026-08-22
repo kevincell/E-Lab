@@ -2,7 +2,7 @@ import re
 import json
 from pathlib import Path
 from db import init_db, get_conn
-from config import REPO_PATH
+from scripts.rag_config import REPO_PATH
 
 
 def clean_topic_name(dirname: str) -> str:

@@ -128,15 +128,21 @@ def onboarding_journey(request):
         return redirect("admin:index")
 
     is_faculty = request.user.is_faculty_like
+    current_semester = getattr(request.user, "semester", 1) or 1
+
     if is_faculty:
         # Faculty should only see courses they teach / opted for in preferences
         courses = request.user.managed_courses.filter(is_active=True).distinct()
         has_opted = courses.exists()
         all_active_courses = Course.objects.filter(is_active=True)
     else:
-        courses = Course.objects.filter(is_active=True)
+        # Students only see courses available for their semester
+        courses = Course.objects.filter(
+            is_active=True,
+            available_from_semester__lte=current_semester,
+        )
         has_opted = True
-        all_active_courses = courses
+        all_active_courses = Course.objects.filter(is_active=True)
 
     return render(
         request,
@@ -146,6 +152,7 @@ def onboarding_journey(request):
             "has_opted": has_opted,
             "is_faculty": is_faculty,
             "all_active_courses": all_active_courses,
+            "current_semester": current_semester,
         },
     )
 
@@ -154,8 +161,14 @@ def onboarding_journey(request):
 def placement_training_overview(request):
     if request.user.role == User.Role.ADMIN:
         return redirect("admin:index")
-    if not hasattr(request.user, "semester") or request.user.semester < 3:
-        raise PermissionDenied
+    current_sem = getattr(request.user, "semester", 1) or 1
+    # Check if any available course is accessible to this student
+    accessible = Course.objects.filter(
+        is_active=True,
+        available_from_semester__lte=current_sem,
+    ).exists()
+    if not accessible:
+        raise PermissionDenied("This course is not available for your semester yet.")
     return render(request, "placement_training/overview.html")
 
 
@@ -342,20 +355,17 @@ def dashboard(request):
         else:
             category = "c_programming"
     progress_rows = student_progress(request.user)
-    
-    # Filter modules by semester / year for students
+
+    # Filter modules by available_from_semester for students
     if not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
-        # Students can only see modules for their current semester/year and below
         current_semester = getattr(request.user, "semester", 1) or 1
-        current_year = (current_semester + 1) // 2
         modules = (
             Module.objects.filter(
                 is_active=True,
                 category=category,
             )
             .filter(
-                Q(course__semester__lte=current_semester)
-                | Q(course__year__lte=current_year)
+                Q(course__available_from_semester__lte=current_semester)
                 | Q(course__isnull=True)
             )
             .prefetch_related("questions")
@@ -449,11 +459,6 @@ def dashboard(request):
         completed_total = sum(card["module_completed"] for card in module_cards)
     eligible, _ = certificate_eligible(request.user)
     certificates = request.user.certificates.all()
-
-    # Hide certificates for 2nd years
-    if hasattr(request.user, "semester") and request.user.semester >= 3:
-        eligible = False
-        certificates = []
 
     # Enhanced data for Ecosystem UI
     leaderboard_qs = (
@@ -581,14 +586,10 @@ def question_detail(request, question_id):
     # Check semester access for students
     if hasattr(request.user, 'semester') and not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
         current_semester = getattr(request.user, "semester", 1) or 1
-        current_year = (current_semester + 1) // 2
         module_course = question.module.course
         if module_course:
-            if module_course.semester and module_course.semester > current_semester:
-                messages.error(request, "This question is not available for your semester.")
-                return redirect("dashboard")
-            elif module_course.year and module_course.year > current_year:
-                messages.error(request, "This question is not available for your semester.")
+            if module_course.available_from_semester and module_course.available_from_semester > current_semester:
+                messages.error(request, "This course is not available for your semester yet.")
                 return redirect("dashboard")
     
     if not request.user.is_faculty_like:
@@ -667,9 +668,6 @@ def manual_accept_submission(request, submission_id):
 
 @login_required
 def certificate_create(request):
-    if hasattr(request.user, "semester") and request.user.semester >= 3:
-        raise PermissionDenied("Certificates are not available for second year students.")
-        
     is_eligible, pct = certificate_eligible(request.user)
     if not is_eligible:
         messages.error(request, "You are not yet eligible for a certificate. Complete the required modules (60% threshold & mandatory questions) first.")
@@ -2609,6 +2607,150 @@ def toggle_course_proctoring(request, course_id):
     if referer:
         return redirect(referer)
     return redirect("dashboard")
+
+
+@login_required
+def faculty_generate_question(request):
+    """
+    Faculty UI for generating and saving questions on-demand.
+    Renders a form where faculty can:
+    - Select topic, difficulty, custom prompt
+    - Select target module
+    - Preview generated question
+    - Save to module
+    """
+    faculty_required(request.user)
+    
+    # Get modules the faculty manages
+    modules = get_faculty_modules(request.user).filter(is_active=True).order_by("order")
+    
+    # Get available topics from RAG agent
+    agent = RAGQuestionAgent.get_instance()
+    available_topics = agent.list_topics()
+    
+    context = {
+        "modules": modules,
+        "topics": available_topics,
+        "difficulties": Question.Difficulty.choices,
+    }
+    
+    if request.method == "POST":
+        action = request.POST.get("action")
+        
+        if action == "generate":
+            # Generate preview
+            topic = request.POST.get("topic", "").strip()
+            difficulty = request.POST.get("difficulty", "medium").strip()
+            custom_prompt = request.POST.get("custom_prompt", "").strip()
+            
+            if not topic:
+                messages.error(request, "Topic is required.")
+                return render(request, "faculty/generate_question.html", context)
+            
+            try:
+                agent = RAGQuestionAgent.get_instance()
+                result, references = agent.generate_question(topic, difficulty, custom_prompt)
+                
+                context.update({
+                    "preview_question": result,
+                    "references": references,
+                    "selected_topic": topic,
+                    "selected_difficulty": difficulty,
+                    "selected_custom_prompt": custom_prompt,
+                    "selected_module_id": request.POST.get("module_id"),
+                })
+                messages.success(request, "Question generated successfully. Review and save.")
+            except Exception as e:
+                messages.error(request, f"Generation failed: {e}")
+        
+        elif action == "save":
+            # Save to database
+            module_id = request.POST.get("module_id")
+            title = request.POST.get("title", "").strip()
+            description = request.POST.get("description", "").strip()
+            difficulty = request.POST.get("difficulty", "medium").strip()
+            starter_code = request.POST.get("starter_code", "").strip()
+            test_cases_json = request.POST.get("test_cases_json", "[]")
+            
+            if not module_id or not title or not description:
+                messages.error(request, "Module, title, and description are required.")
+                return render(request, "faculty/generate_question.html", context)
+            
+            try:
+                module = Module.objects.get(pk=int(module_id))
+                # Verify faculty has access to this module
+                if module not in modules:
+                    messages.error(request, "You don't have permission to add questions to this module.")
+                    return render(request, "faculty/generate_question.html", context)
+            except (Module.DoesNotExist, ValueError, TypeError):
+                messages.error(request, "Invalid module.")
+                return render(request, "faculty/generate_question.html", context)
+            
+            # Parse test cases
+            try:
+                test_cases_data = json.loads(test_cases_json)
+            except json.JSONDecodeError:
+                test_cases_data = []
+            
+            # Save question
+            from django.utils.text import slugify
+            base_slug = slugify(title) or "question"
+            slug = base_slug
+            counter = 1
+            while Question.objects.filter(module=module, slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            
+            valid_difficulty = difficulty if difficulty in dict(Question.Difficulty.choices) else Question.Difficulty.MEDIUM
+            
+            # Extract sample from first test case
+            sample_input = ""
+            sample_output = ""
+            if isinstance(test_cases_data, list):
+                for tc in test_cases_data:
+                    if isinstance(tc, dict) and tc.get("is_sample"):
+                        sample_input = str(tc.get("input", ""))
+                        sample_output = str(tc.get("expected_output", ""))
+                        break
+            
+            # Default starter code
+            if not starter_code:
+                starter_code = "#include <stdio.h>\n\nint main(void)\n{\n    /* Read from stdin. Do not print prompts unless required. */\n    return 0;\n}"
+            
+            question = Question.objects.create(
+                module=module,
+                title=title,
+                slug=slug,
+                description=description,
+                difficulty=difficulty,
+                sample_input=sample_input,
+                sample_output=sample_output,
+                starter_code=starter_code,
+                created_by=request.user,
+                is_mandatory=True,
+                is_active=True
+            )
+            
+            # Add Test Cases
+            for index, tc in enumerate(test_cases_data, 1):
+                if not isinstance(tc, dict):
+                    continue
+                stdin_val = str(tc.get("input", ""))
+                expected_val = str(tc.get("expected_output", ""))
+                is_samp = bool(tc.get("is_sample", index == 1))
+                
+                TestCase.objects.create(
+                    question=question,
+                    stdin=stdin_val,
+                    expected_output=expected_val,
+                    is_sample=is_samp,
+                    order=index
+                )
+            
+            messages.success(request, f"Question '{question.title}' saved to {module.name}!")
+            return redirect("faculty_generate_question")
+    
+    return render(request, "faculty/generate_question.html", context)
 
 
 

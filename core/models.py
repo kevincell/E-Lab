@@ -18,6 +18,10 @@ class User(AbstractUser):
     role = models.CharField(max_length=16, choices=Role.choices, default=Role.STUDENT)
     department = models.CharField(max_length=80, blank=True)
     semester = models.PositiveSmallIntegerField(default=1)
+    year = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Academic year (1-4). Auto-updated on semester transitions.",
+    )
     bio = models.TextField(blank=True, max_length=500)
     managed_modules = models.ManyToManyField(
         "Module",
@@ -65,6 +69,10 @@ class Course(models.Model):
     description = models.TextField(blank=True)
     year = models.PositiveSmallIntegerField(default=1, help_text="Target year (1st, 2nd, etc.)")
     semester = models.PositiveSmallIntegerField(null=True, blank=True)
+    available_from_semester = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Minimum semester a student must be in to access this course.",
+    )
     is_active = models.BooleanField(default=True)
     proctoring_enabled = models.BooleanField(
         default=True,
@@ -77,6 +85,10 @@ class Course(models.Model):
 
     def __str__(self):
         return self.name
+
+    def is_accessible_to(self, student_semester):
+        """Check if this course is accessible to a student in the given semester."""
+        return student_semester >= self.available_from_semester
 
 
 class Module(models.Model):
@@ -307,8 +319,14 @@ class Certificate(models.Model):
     @classmethod
     def current_semester_label(cls):
         now = timezone.localtime()
-        term = "Odd" if now.month >= 7 else "Even"
-        return f"{now.year}-{str(now.year + 1)[-2:]} {term}"
+        month = now.month
+        year = now.year
+        if month >= 7:
+            # July-December: Odd semester of current academic year
+            return f"{year}-{str(year + 1)[-2:]} Odd"
+        else:
+            # January-June: Even semester of previous academic year
+            return f"{year - 1}-{str(year)[-2:]} Even"
 
 
 class Notification(models.Model):

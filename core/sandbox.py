@@ -5,6 +5,7 @@ import shlex
 import shutil
 import subprocess
 import uuid
+import base64
 
 
 SANDBOX_DIR = os.environ.get("DOCKER_SANDBOX_DIR", "/var/elab-sandbox")
@@ -91,7 +92,7 @@ def _java_filename(source_code):
     return name + ".java", name
 
 
-def _build_inner_script(lang_config, source_filename, class_name, time_limit):
+def _build_inner_script(lang_config, source_filename, class_name, time_limit, source_code=None, stdin=""):
     """
     Build the sh -c script that runs inside the container. It compiles first
     (emitting our marker on failure), then runs the program under `timeout`.
@@ -100,10 +101,21 @@ def _build_inner_script(lang_config, source_filename, class_name, time_limit):
     """
     parts = [
         "touch /tmp/input.txt",
-        "cp -a /box/. /tmp/ 2>/dev/null || true",
         "cd /tmp",
         "touch input.txt",
     ]
+
+    # Write source code using base64 encoding to avoid heredoc/escaping issues
+    if source_code is not None:
+        import base64
+        encoded_source = base64.b64encode(source_code.encode('utf-8')).decode('ascii')
+        parts.append(f"echo '{encoded_source}' | base64 -d > {shlex.quote(source_filename)}")
+
+    # Write stdin to input.txt using base64 encoding if provided
+    if stdin:
+        import base64
+        encoded_stdin = base64.b64encode(stdin.encode('utf-8')).decode('ascii')
+        parts.append(f"echo '{encoded_stdin}' | base64 -d > input.txt")
 
     compile_cmd = lang_config["compile"]
     if compile_cmd is not None:
@@ -125,7 +137,8 @@ def _build_inner_script(lang_config, source_filename, class_name, time_limit):
     run_cmd = list(lang_config["run"])
     run_cmd = [t.replace("__CLASS__", class_name) for t in run_cmd]
     quoted_run = " ".join(shlex.quote(t) for t in run_cmd)
-    parts.append(f"timeout {time_limit}s {quoted_run} < input.txt")
+    # Force unbuffered output for C programs
+    parts.append(f"stdbuf -o0 timeout {time_limit}s {quoted_run} < input.txt")
 
     return "; ".join(parts)
 
@@ -162,24 +175,16 @@ def run_code(language, source_code, stdin="", expected_output="",
         except OSError:
             pass
 
-        code_file = os.path.join(tmpdir, source_filename)
-        with open(code_file, "w") as f:
-            f.write(source_code)
-        try:
-            os.chmod(code_file, 0o666)
-        except OSError:
-            pass
+        inner_script = _build_inner_script(lang_key, source_filename, class_name, time_limit, source_code, stdin)
 
-        input_file = os.path.join(tmpdir, "input.txt")
-        with open(input_file, "w") as f:
-            f.write(stdin or "")
-        try:
-            os.chmod(input_file, 0o666)
-        except OSError:
-            pass
+        # Write the inner script to a file in the host tmpdir
+        script_path = os.path.join(host_tmpdir, "run_script.sh")
+        with open(script_path, "w") as f:
+            f.write("#!/bin/sh\n")
+            f.write(inner_script)
+        os.chmod(script_path, 0o755)
 
-        inner_script = _build_inner_script(lang_key, source_filename, class_name, time_limit)
-
+        # The script will be accessible at /box/run_script.sh in the container
         cmd = [
             "docker", "run", "--rm",
             "--network", "none",
@@ -192,7 +197,7 @@ def run_code(language, source_code, stdin="", expected_output="",
             "--tmpfs", "/tmp:rw,nosuid,exec,size=50m",
             "-v", f"{host_tmpdir}:/box:rw",
             SANDBOX_IMAGE,
-            "sh", "-c", inner_script,
+            "/box/run_script.sh",
         ]
 
         try:

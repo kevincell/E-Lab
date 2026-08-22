@@ -48,6 +48,7 @@ urlpatterns = [
     path("faculty/modules/<int:module_id>/delete/", views.faculty_module_delete, name="faculty_module_delete"),
     path("faculty/question-bank/", views.faculty_question_bank, name="faculty_question_bank"),
     path("faculty/question-bank/<int:module_id>/", views.faculty_question_bank, name="faculty_question_bank_module"),
+    path("faculty/questions/generate/", views.faculty_generate_question, name="faculty_generate_question"),
     path("faculty/questions/upload/", views.faculty_question_upload, name="faculty_question_upload"),
     path("faculty/questions/upload/demo/<str:file_type>/", views.download_demo_file, name="download_demo_file"),
     path("faculty/questions/new/", views.faculty_question_form, name="faculty_question_new"),

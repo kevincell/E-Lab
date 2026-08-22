@@ -1,4 +1,5 @@
 import os
+from celery.schedules import crontab
 import warnings
 from pathlib import Path
 
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "core",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -176,6 +178,13 @@ if env("SECURE_COOKIES", str(not DEBUG)).lower() == "true":
 # ---------------------------------------------------------------------------
 # Celery
 # ---------------------------------------------------------------------------
+CELERY_BEAT_SCHEDULE = {
+    "auto-advance-semesters": {
+        "task": "core.tasks_semester.auto_advance_semesters_task",
+        "schedule": crontab(hour=2, minute=0),  # Daily at 2 AM
+    },
+}
+
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", env("REDIS_URL", "redis://elab-redis:6379/1"))
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://elab-redis:6379/2")
 CELERY_TASK_ALWAYS_EAGER = env("CELERY_TASK_ALWAYS_EAGER", "false").lower() == "true"

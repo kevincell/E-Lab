@@ -1161,6 +1161,9 @@ public class Main {
       if (proctoringMonitoringActive) return;
       proctoringMonitoringActive = true;
 
+      // Force fullscreen mode when proctoring is active
+      requestFullscreen();
+
       // 1. Tab switching / Window blur
       window.addEventListener('blur', () => triggerViolation("Window lost focus (Tab switch)"));
       document.addEventListener('visibilitychange', () => {
@@ -1221,7 +1224,7 @@ public class Main {
           try {
             console.clear();
           } catch(e) {}
-          
+
           const startTime = performance.now();
           debugger;
           const endTime = performance.now();
@@ -1230,6 +1233,17 @@ public class Main {
           }
         }
       }, 1000);
+    }
+
+    function requestFullscreen() {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(e => console.log('Fullscreen request blocked:', e));
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+      }
     }
   })();
 </script>
@@ -1269,8 +1283,10 @@ public class Main {
           if (iconMin) iconMin.style.display = 'none';
           if (maxText) maxText.textContent = 'Maximize';
           if (minBtn) minBtn.style.display = "none";
-          if (document.fullscreenElement) {
+          // If proctoring is active, exit fullscreen triggers violation
+          if (proctoringMonitoringActive && document.fullscreenElement) {
             document.exitFullscreen().catch(e => console.log(e));
+            triggerViolation("Minimized editor while proctoring active");
           }
           if (typeof editor !== 'undefined' && editor) editor.layout();
         }
@@ -1292,8 +1308,16 @@ public class Main {
       }
 
       document.addEventListener("fullscreenchange", function() {
-        if (!document.fullscreenElement && document.body.classList.contains("is-maximized-page")) {
-          toggleMaximize();
+        if (!document.fullscreenElement) {
+          // If proctoring is active and user exits fullscreen, trigger violation
+          if (proctoringMonitoringActive) {
+            triggerViolation("Exited fullscreen mode");
+            // Re-request fullscreen after a short delay
+            setTimeout(requestFullscreen, 500);
+          }
+          if (document.body.classList.contains("is-maximized-page")) {
+            toggleMaximize();
+          }
         }
       });
     }, 500);
