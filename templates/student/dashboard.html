@@ -17,7 +17,7 @@
   <div class="course-hero">
     <div>
       <p class="eyebrow">Welcome back, {{ user.display_name }}</p>
-      <h1>{% if category == 'advanced_placement_training' %}Advanced Placement Training E-Lab{% elif category == 'placement_training' %}Placement Training E-Lab{% else %}C Programming E-Lab{% endif %}</h1>
+      <h1>{% if course_name %}{{ course_name }} E-Lab{% elif category == 'advanced_placement_training' %}Advanced Placement Training E-Lab{% elif category == 'placement_training' %}Placement Training E-Lab{% else %}C Programming E-Lab{% endif %}</h1>
       <div class="semester-info">
         {% if request.user.semester <= 2 %}
           <span class="badge bg-success">First Year - Semester {{ request.user.semester }}</span>
@@ -64,7 +64,7 @@
     <div class="course-info">
       <div class="course-card">
         <p class="eyebrow">Course Information</p>
-        <h3>{% if category == 'advanced_placement_training' %}Advanced Placement Training{% elif category == 'placement_training' %}Placement Training{% else %}E-Lab: C Programming{% endif %}</h3>
+        <h3>{% if course_name %}{{ course_name }}{% elif category == 'advanced_placement_training' %}Advanced Placement Training{% elif category == 'placement_training' %}Placement Training{% else %}E-Lab: C Programming{% endif %}</h3>
         <span class="muted" style="display: block; margin-bottom: 8px;">{% if 'placement_training' in category %}Training Outcome{% else %}Course Outcome{% endif %}</span>
         <p style="font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--text-primary); margin-bottom: 24px;">
           {% if category == 'advanced_placement_training' %}
@@ -126,7 +126,7 @@
 
       <!-- Center core -->
       <div class="wheel-core">
-        <strong>{% if category == 'advanced_placement_training' %}APT{% elif category == 'placement_training' %}PT{% else %}C{% endif %}</strong>
+        <strong>{% if course_name %}{{ course_name|slice:":3"|upper }}{% elif category == 'advanced_placement_training' %}APT{% elif category == 'placement_training' %}PT{% else %}C{% endif %}</strong>
         <span>{{ overall_percentage|floatformat:0 }}%</span>
         <small>Complete</small>
       </div>

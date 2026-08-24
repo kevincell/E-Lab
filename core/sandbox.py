@@ -177,8 +177,8 @@ def run_code(language, source_code, stdin="", expected_output="",
 
         inner_script = _build_inner_script(lang_key, source_filename, class_name, time_limit, source_code, stdin)
 
-        # Write the inner script to a file in the host tmpdir
-        script_path = os.path.join(host_tmpdir, "run_script.sh")
+        # Write the inner script to a file in the container's tmpdir
+        script_path = os.path.join(tmpdir, "run_script.sh")
         with open(script_path, "w") as f:
             f.write("#!/bin/sh\n")
             f.write(inner_script)

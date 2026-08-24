@@ -5,7 +5,7 @@ psycopg[binary]==3.3.4
 redis==5.0.4
 celery==5.4.0
 django-celery-beat==2.7.0
-requests==32.3.2
+requests==2.32.3
 qrcode[pil]==7.4.2
 pydyf==0.11.0
 cairosvg==2.9.0

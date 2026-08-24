@@ -82,6 +82,17 @@ class AppLoginView(LoginView):
             return reverse_lazy("role_select")
         return super().get_success_url() or reverse_lazy("onboarding_overview")
 
+    def form_valid(self, form):
+        from django.utils import timezone
+        import datetime
+        user = form.get_user()
+        # Cutoff for locking existing accounts (before this deploy)
+        cutoff = timezone.make_aware(datetime.datetime(2026, 8, 24, 15, 0, 0))
+        if user.date_joined < cutoff and user.username != 'faculty':
+            form.add_error(None, "Don't try to act Smart lil bro/girl")
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
 
 class AppLogoutView(LogoutView):
     def dispatch(self, request, *args, **kwargs):
@@ -121,6 +132,13 @@ def about(request):
     return render(request, "onboarding/about.html")
 
 
+@login_required
+def first_year_instructions(request):
+    if request.user.role == User.Role.ADMIN:
+        return redirect("admin:index")
+    # You can add logic here if you want to redirect non-first years
+    return render(request, "onboarding/first_year_instructions.html")
+
 
 @login_required
 def onboarding_journey(request):
@@ -136,11 +154,11 @@ def onboarding_journey(request):
         has_opted = courses.exists()
         all_active_courses = Course.objects.filter(is_active=True)
     else:
-        # Students only see courses available for their semester
+        # Students see all courses available for their current semester and below
         courses = Course.objects.filter(
             is_active=True,
             available_from_semester__lte=current_semester,
-        )
+        ).order_by('available_from_semester', 'name')
         has_opted = True
         all_active_courses = Course.objects.filter(is_active=True)
 
@@ -344,12 +362,26 @@ def dashboard(request):
         )
 
     category = request.GET.get("category")
+    course_id = request.GET.get("course")
+    
+    if course_id and not category:
+        try:
+            course = Course.objects.get(id=int(course_id))
+            first_module = course.modules.first()
+            if first_module:
+                category = first_module.category
+        except (ValueError, Course.DoesNotExist):
+            pass
+
     if not category:
         if hasattr(request.user, "semester"):
-            if request.user.semester >= 5:
+            sem = request.user.semester
+            if sem in (5, 6):
                 category = "advanced_placement_training"
-            elif request.user.semester >= 3:
+            elif sem in (3, 4):
                 category = "placement_training"
+            elif sem == 2:
+                category = "python_programming"
             else:
                 category = "c_programming"
         else:
@@ -485,6 +517,7 @@ def dashboard(request):
         "student/dashboard.html",
         {
             "category": category,
+            "course_name": course.name if 'course' in locals() else None,
             "modules": modules,
             "module_cards": module_cards,
             "progress_rows": progress_rows,
@@ -1645,7 +1678,9 @@ def faculty_student_detail(request, student_id):
     student = get_object_or_404(User, pk=student_id)
     
     progress_rows = student_progress(student)
-    modules = Module.objects.filter(is_active=True).prefetch_related("questions")
+    from core.services import _student_primary_category
+    category = _student_primary_category(student)
+    modules = Module.objects.filter(is_active=True, category=category).prefetch_related("questions")
     progress_by_module = {row.module_id: row for row in progress_rows}
     user_submissions = Submission.objects.filter(student=student).values("question_id", "status")
     question_status_map = {}
@@ -1863,7 +1898,9 @@ def hod_review_request(request, request_id):
     student = cert_req.student
 
     # Get full student activity
-    modules = Module.objects.filter(is_active=True).prefetch_related("questions")
+    from core.services import _student_primary_category
+    category = _student_primary_category(student)
+    modules = Module.objects.filter(is_active=True, category=category).prefetch_related("questions")
     module_progress = []
     for module in modules:
         total_q = min(15, module.questions.filter(is_active=True).count())
@@ -1905,19 +1942,27 @@ def hod_approve_certificate(request, request_id):
     if request.user.role != User.Role.HOD or request.session.get("active_role") != "hod":
         raise PermissionDenied
 
-    cert_req = get_object_or_404(CertificateRequest, pk=request_id, status=CertificateRequest.Status.PENDING_HOD)
+    cert_req = get_object_or_404(CertificateRequest, pk=request_id)
+    if cert_req.status != CertificateRequest.Status.PENDING_HOD:
+        messages.info(request, "This certificate request has already been processed.")
+        return redirect("hod_dashboard")
     action = request.POST.get("action")
     notes = request.POST.get("notes", "").strip()
 
     if action == "approve":
-        cert_req.status = CertificateRequest.Status.APPROVED
-        cert_req.approved_by_hod = request.user
-        cert_req.hod_notes = notes
-        cert_req.save()
-        # Auto-generate the certificate
-        cert = generate_certificate(cert_req.student)
-        notify_student_of_cert_decision(cert_req)
-        messages.success(request, f"The certificate for {cert_req.student.display_name} has been approved!")
+        try:
+            cert_req.status = CertificateRequest.Status.APPROVED
+            cert_req.approved_by_hod = request.user
+            cert_req.hod_notes = notes
+            cert_req.save()
+            # Auto-generate the certificate
+            cert = generate_certificate(cert_req.student)
+            notify_student_of_cert_decision(cert_req)
+            messages.success(request, f"The certificate for {cert_req.student.display_name} has been approved!")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise e
     elif action == "reject":
         cert_req.status = CertificateRequest.Status.REJECTED
         cert_req.approved_by_hod = request.user
@@ -2053,7 +2098,7 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         
         submission = serializer.save(
             student=self.request.user,
-            language_id=question.language_id,
+            language_id=serializer.validated_data.get('language_id') or question.language_id,
             status=Submission.Status.PENDING,
             proctoring_violations=violations,
             proctoring_logs=logs,
@@ -2479,8 +2524,34 @@ def faculty_agent_add_question_api(request):
     module_id = data.get("module_id")
     title = str(data.get("title", "")).strip()
     description = str(data.get("description", "")).strip()
+    
+    # Remove markdown asterisks, hashes, and code block ticks from description for readability
+    import re
+    description = description.replace('**', '')
+    description = re.sub(r'^#+\s+', '', description, flags=re.MULTILINE)
+    description = description.replace('`', '')
+    
     difficulty = str(data.get("difficulty", Question.Difficulty.MEDIUM)).lower()
-    starter_code = str(data.get("starter_code", "")).strip()
+    import re
+    def clean_md(text):
+        if not text: return ""
+        text = re.sub(r'^```[a-zA-Z]*\n', '', str(text).strip())
+        text = re.sub(r'\n```$', '', text)
+        return text.replace('```', '').strip()
+
+    def clean_io(text):
+        if not text: return ""
+        text = clean_md(text)
+        # Remove Leetcode-style variable assignments like "nums = "
+        text = re.sub(r'[a-zA-Z_]\w*\s*=\s*', '', text)
+        # Remove arrays/brackets and commas
+        text = text.replace('[', '').replace(']', '').replace(',', ' ')
+        # Remove string quotes
+        text = text.replace('"', '').replace("'", "")
+        # Normalize spaces
+        return re.sub(r'\s+', ' ', text).strip()
+
+    starter_code = clean_md(data.get("starter_code", ""))
     test_cases_data = data.get("test_cases", [])
 
     if module_id is None or module_id == "" or not title or not description:
@@ -2510,13 +2581,13 @@ def faculty_agent_add_question_api(request):
     if isinstance(test_cases_data, list):
         for tc in test_cases_data:
             if isinstance(tc, dict) and tc.get("is_sample"):
-                sample_input = str(tc.get("input", ""))
-                sample_output = str(tc.get("expected_output", ""))
+                sample_input = clean_io(tc.get("input", ""))
+                sample_output = clean_io(tc.get("expected_output", ""))
                 break
 
     # Default starter code for C if blank
     if not starter_code:
-        starter_code = "#include <stdio.h>\n\nint main() {\n    // Write your solution here\n    return 0;\n}"
+        starter_code = "#include <stdio.h>\n\nint main() {\n    // Write your code here\n    return 0;\n}"
 
     question = Question.objects.create(
         module=module,
@@ -2528,7 +2599,7 @@ def faculty_agent_add_question_api(request):
         sample_output=sample_output,
         starter_code=starter_code,
         created_by=request.user,
-        is_mandatory=True,
+        is_mandatory=False,
         is_active=True
     )
 
@@ -2537,8 +2608,8 @@ def faculty_agent_add_question_api(request):
         for index, tc in enumerate(test_cases_data, 1):
             if not isinstance(tc, dict):
                 continue
-            stdin_val = str(tc.get("input", ""))
-            expected_val = str(tc.get("expected_output", ""))
+            stdin_val = clean_io(tc.get("input", ""))
+            expected_val = clean_io(tc.get("expected_output", ""))
             is_samp = bool(tc.get("is_sample", False))
             
             TestCase.objects.create(

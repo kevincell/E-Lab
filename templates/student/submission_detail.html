@@ -153,7 +153,7 @@
     {% endif %}
     {% if submission.error_output %}
       <h3 style="margin-top: 24px; color: #ef4444;">Error</h3>
-      <pre style="color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">${submission.error_output}</pre>
+      <pre style="color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">{{ submission.error_output }}</pre>
     {% endif %}
   </article>
 </section>

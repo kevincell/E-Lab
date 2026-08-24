@@ -17,7 +17,7 @@ def generate_certificate_pdf(student, percentage, semester, issued_date, verify_
     Returns the PDF bytes.
     """
     # Load the SVG template
-    svg_path = "/app/static/img/certificate.svg"
+    svg_path = str(settings.BASE_DIR / "templates" / "certificates" / "hi.svg")
     with open(svg_path, "r") as f:
         svg_content = f.read()
 
@@ -41,13 +41,13 @@ def generate_certificate_pdf(student, percentage, semester, issued_date, verify_
     principal_name = principal.display_name if principal else "Principal / Director"
 
     # Substitute placeholders
-    svg_content = svg_content.replace("{NAME}", student.display_name)
-    svg_content = svg_content.replace("{USN}", student.usn or student.username)
+    svg_content = svg_content.replace("{NAME}", student.display_name.upper())
+    svg_content = svg_content.replace("{USN}", (student.usn or student.username).upper())
     svg_content = svg_content.replace("{course name}", course_name)
     svg_content = svg_content.replace("{dd/mm/yyyy}", issued_date)
     svg_content = svg_content.replace("{FACULTY_NAME}",
-        faculty_coordinator.display_name if faculty_coordinator else "Faculty Coordinator")
-    svg_content = svg_content.replace("{fac_grade}", hod_name)
+        faculty_coordinator.display_name.upper() if faculty_coordinator else "FACULTY COORDINATOR")
+    svg_content = svg_content.replace("{fac_grade}", "Course Faculty")
 
     # Convert SVG to PNG (A4 landscape at ~150 DPI)
     png_data = cairosvg.svg2png(

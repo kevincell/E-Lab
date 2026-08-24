@@ -8,7 +8,7 @@
 <section class="toolbar">
   <div>
     <p class="eyebrow">{{ question.module.name }} · {{ question.get_difficulty_display }}</p>
-    <h1>{{ question.title }}</h1>
+    <h1>{{ question.title }}{% if question.is_mandatory %}<span style="color:#eab308; font-size: 16px; font-weight: bold; margin-left: 12px; vertical-align: middle;">⭐ Mandatory</span>{% endif %}</h1>
   </div>
   <div class="toolbar-actions" style="display: flex; align-items: center; gap: 12px;">
     <!-- Course / Semester Badge -->
@@ -102,6 +102,13 @@
             <option value="71" {% if request.POST.language_id == "71" %}selected{% endif %}>Python 3</option>
             <option value="62" {% if request.POST.language_id == "62" %}selected{% endif %}>Java 17</option>
           </select>
+        </div>
+        {% else %}
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="field-label">Language:</span>
+          <span style="font-size: 13px; font-weight: 600; padding: 4px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; text-transform: uppercase;">
+            {% if question_language == 'cpp' %}C++{% else %}{{ question_language }}{% endif %}
+          </span>
         </div>
         {% endif %}
         <button type="button" class="secondary" id="editor-minimize-btn" title="Exit Full Screen" style="display: none; height: 32px; min-height: 32px; padding: 0 14px; font-size: 12px; border-radius: var(--radius-sm);">
@@ -433,6 +440,17 @@ public class Main {
       });
       editor.onDidChangeModelContent(function() {
         textarea.value = editor.getValue();
+      });
+      editor.onDidFocusEditorWidget(function() {
+        if (!document.body.classList.contains("is-maximized-page") && typeof window.toggleMaximize === 'function') {
+          window.toggleMaximize();
+        }
+      });
+    } else {
+      textarea.addEventListener('focus', function() {
+        if (!document.body.classList.contains("is-maximized-page") && typeof window.toggleMaximize === 'function') {
+          window.toggleMaximize();
+        }
       });
     }
   });
@@ -1113,7 +1131,7 @@ public class Main {
     const csrfInput = document.querySelector("input[name='csrfmiddlewaretoken']");
     const csrfToken = csrfInput ? csrfInput.value : "";
     let violationReported = false;
-    let proctoringMonitoringActive = false;
+    window.proctoringMonitoringActive = false;
 
     // Show instructions if not already acknowledged for this question session
     if (!sessionStorage.getItem('proctoring_agreed_' + questionId)) {
@@ -1130,8 +1148,8 @@ public class Main {
       });
     }
 
-    function triggerViolation(reason = "Window blur/tab switch") {
-      if (!proctoringMonitoringActive) return;
+    window.triggerViolation = function(reason = "Window blur/tab switch") {
+      if (!window.proctoringMonitoringActive) return;
       overlay.classList.add('active');
       
       if (!violationReported) {
@@ -1158,44 +1176,44 @@ public class Main {
     }
 
     function startProctoringMonitoring() {
-      if (proctoringMonitoringActive) return;
-      proctoringMonitoringActive = true;
+      if (window.proctoringMonitoringActive) return;
+      window.proctoringMonitoringActive = true;
 
       // Force fullscreen mode when proctoring is active
       requestFullscreen();
 
       // 1. Tab switching / Window blur
-      window.addEventListener('blur', () => triggerViolation("Window lost focus (Tab switch)"));
+      window.addEventListener('blur', () => window.triggerViolation("Window lost focus (Tab switch)"));
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
-          triggerViolation("Tab hidden");
+          window.triggerViolation("Tab hidden");
         }
       });
 
       // 2. Prevent Copy/Cut/Paste/Drag/Drop
-      document.addEventListener('copy', (e) => { if (proctoringMonitoringActive) { e.preventDefault(); triggerViolation("Attempted Copy"); } });
-      document.addEventListener('cut', (e) => { if (proctoringMonitoringActive) { e.preventDefault(); triggerViolation("Attempted Cut"); } });
-      document.addEventListener('paste', (e) => { if (proctoringMonitoringActive) { e.preventDefault(); triggerViolation("Attempted Paste"); } });
-      document.addEventListener('drag', (e) => { if (proctoringMonitoringActive) e.preventDefault(); });
-      document.addEventListener('dragstart', (e) => { if (proctoringMonitoringActive) e.preventDefault(); });
-      document.addEventListener('drop', (e) => { if (proctoringMonitoringActive) { e.preventDefault(); triggerViolation("Attempted Drag & Drop"); } });
+      document.addEventListener('copy', (e) => { if (window.proctoringMonitoringActive) { e.preventDefault(); window.triggerViolation("Attempted Copy"); } });
+      document.addEventListener('cut', (e) => { if (window.proctoringMonitoringActive) { e.preventDefault(); window.triggerViolation("Attempted Cut"); } });
+      document.addEventListener('paste', (e) => { if (window.proctoringMonitoringActive) { e.preventDefault(); window.triggerViolation("Attempted Paste"); } });
+      document.addEventListener('drag', (e) => { if (window.proctoringMonitoringActive) e.preventDefault(); });
+      document.addEventListener('dragstart', (e) => { if (window.proctoringMonitoringActive) e.preventDefault(); });
+      document.addEventListener('drop', (e) => { if (window.proctoringMonitoringActive) { e.preventDefault(); window.triggerViolation("Attempted Drag & Drop"); } });
 
       // 3. Prevent Right-Click / Context Menu & Selection
-      document.addEventListener('contextmenu', (e) => { if (proctoringMonitoringActive) { e.preventDefault(); triggerViolation("Right-Click / Context Menu Opened"); } });
+      document.addEventListener('contextmenu', (e) => { if (window.proctoringMonitoringActive) { e.preventDefault(); window.triggerViolation("Right-Click / Context Menu Opened"); } });
       document.addEventListener('selectstart', (e) => { 
-        if (proctoringMonitoringActive && !e.target.closest('#editor')) {
+        if (window.proctoringMonitoringActive && !e.target.closest('#editor')) {
           e.preventDefault();
         }
       });
 
       // Prevent shortcuts: F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S, Ctrl+P, Ctrl+C/V/X
       window.addEventListener('keydown', (e) => {
-        if (!proctoringMonitoringActive) return;
+        if (!window.proctoringMonitoringActive) return;
 
         // F12 key
         if (e.keyCode === 123) {
           e.preventDefault();
-          triggerViolation("Developer Tools Shortcut (F12)");
+          window.triggerViolation("Developer Tools Shortcut (F12)");
           return false;
         }
 
@@ -1205,14 +1223,14 @@ public class Main {
           ['u', 's', 'p'].includes(e.key.toLowerCase())
         )) {
           e.preventDefault();
-          triggerViolation(`Attempted Keyboard Shortcut (Ctrl+${e.shiftKey ? 'Shift+' : ''}${e.key.toUpperCase()})`);
+          window.triggerViolation(`Attempted Keyboard Shortcut (Ctrl+${e.shiftKey ? 'Shift+' : ''}${e.key.toUpperCase()})`);
           return false;
         }
 
         // Ctrl+C, Ctrl+V, Ctrl+X
         if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(e.key.toLowerCase())) {
           e.preventDefault();
-          triggerViolation(`Attempted Keyboard Shortcut (Ctrl+${e.key.toUpperCase()})`);
+          window.triggerViolation(`Attempted Keyboard Shortcut (Ctrl+${e.key.toUpperCase()})`);
           return false;
         }
       });
@@ -1220,7 +1238,7 @@ public class Main {
       // 4. Console/Anti-Debugging Script Protection
       // Clears console and pauses script debugger if DevTools is open.
       setInterval(function() {
-        if (proctoringMonitoringActive) {
+        if (window.proctoringMonitoringActive) {
           try {
             console.clear();
           } catch(e) {}
@@ -1229,21 +1247,10 @@ public class Main {
           debugger;
           const endTime = performance.now();
           if (endTime - startTime > 100) {
-            triggerViolation("Developer Tools Console Open");
+            window.triggerViolation("Developer Tools Console Open");
           }
         }
       }, 1000);
-    }
-
-    function requestFullscreen() {
-      const el = document.documentElement;
-      if (el.requestFullscreen) {
-        el.requestFullscreen().catch(e => console.log('Fullscreen request blocked:', e));
-      } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-      } else if (el.msRequestFullscreen) {
-        el.msRequestFullscreen();
-      }
     }
   })();
 </script>
@@ -1251,6 +1258,17 @@ public class Main {
 
 <!-- MAXIMIZE / FULLSCREEN (always available, independent of proctoring) -->
 <script>
+  window.requestFullscreen = function() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(e => console.log('Fullscreen request blocked:', e));
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    } else if (el.msRequestFullscreen) {
+      el.msRequestFullscreen();
+    }
+  };
+
   (function initMaximize() {
     setTimeout(() => {
       const editorNode = document.getElementById("editor");
@@ -1261,9 +1279,10 @@ public class Main {
       const iconMin = maxBtn ? maxBtn.querySelector('.icon-minimize') : null;
       const maxText = maxBtn ? maxBtn.querySelector('.max-text') : null;
 
-      function toggleMaximize() {
+      window.toggleMaximize = function() {
         if (!document.body.classList.contains("is-maximized-page")) {
           document.body.classList.add("is-maximized-page");
+          window.requestFullscreen();
           if (iconMax) iconMax.style.display = 'none';
           if (iconMin) iconMin.style.display = 'inline';
           if (maxText) maxText.textContent = 'Minimize';
@@ -1279,14 +1298,17 @@ public class Main {
           if (typeof editor !== 'undefined' && editor) editor.layout();
         } else {
           document.body.classList.remove("is-maximized-page");
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(e => console.log(e));
+          }
           if (iconMax) iconMax.style.display = 'inline';
           if (iconMin) iconMin.style.display = 'none';
           if (maxText) maxText.textContent = 'Maximize';
           if (minBtn) minBtn.style.display = "none";
           // If proctoring is active, exit fullscreen triggers violation
-          if (proctoringMonitoringActive && document.fullscreenElement) {
+          if (window.proctoringMonitoringActive && document.fullscreenElement) {
             document.exitFullscreen().catch(e => console.log(e));
-            triggerViolation("Minimized editor while proctoring active");
+            if (typeof window.triggerViolation === 'function') window.triggerViolation("Minimized editor while proctoring active");
           }
           if (typeof editor !== 'undefined' && editor) editor.layout();
         }
@@ -1296,27 +1318,27 @@ public class Main {
         maxBtn.addEventListener("click", function(e) {
           e.preventDefault();
           e.stopPropagation();
-          toggleMaximize();
+          window.toggleMaximize();
         });
       }
       if (minBtn) {
         minBtn.addEventListener("click", function(e) {
           e.preventDefault();
           e.stopPropagation();
-          toggleMaximize();
+          window.toggleMaximize();
         });
       }
 
       document.addEventListener("fullscreenchange", function() {
         if (!document.fullscreenElement) {
           // If proctoring is active and user exits fullscreen, trigger violation
-          if (proctoringMonitoringActive) {
-            triggerViolation("Exited fullscreen mode");
+          if (window.proctoringMonitoringActive) {
+            if (typeof window.triggerViolation === 'function') window.triggerViolation("Exited fullscreen mode");
             // Re-request fullscreen after a short delay
-            setTimeout(requestFullscreen, 500);
+            if (typeof window.requestFullscreen === 'function') setTimeout(window.requestFullscreen, 500);
           }
           if (document.body.classList.contains("is-maximized-page")) {
-            toggleMaximize();
+            window.toggleMaximize();
           }
         }
       });

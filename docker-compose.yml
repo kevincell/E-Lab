@@ -5,8 +5,6 @@ services:
     restart: unless-stopped
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 12 --threads 4 --worker-class gthread --max-requests 1000 --max-requests-jitter 100 --timeout 60 --keep-alive 5 --log-level info --preload
     env_file: .env
-    environment:
-      - HOST_SANDBOX_DIR=/home/kevin/Projects/E-Lab/sandbox_data
     volumes:
       - .:/app
       - media:/app/media

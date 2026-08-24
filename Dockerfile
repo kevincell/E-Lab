@@ -39,7 +39,7 @@ RUN pip install --no-cache-dir --timeout=300 \
     redis==5.0.4 \
     celery==5.4.0 \
     django-celery-beat==2.7.0 \
-    requests==32.3.2 \
+    requests==2.32.3 \
     qrcode[pil]==7.4.2 \
     pydyf==0.11.0 \
     cairosvg==2.9.0 \
@@ -52,7 +52,7 @@ RUN pip install --no-cache-dir --timeout=300 \
 RUN pip install --no-cache-dir --timeout=600 --index-url https://download.pytorch.org/whl/cpu torch==2.4.1
 
 # Install remaining ML dependencies
-RUN pip install --no-cache-dir --timeout=300 \
+RUN pip install --no-cache-dir --timeout=1000 \
     chromadb==0.5.20 \
     sentence-transformers==3.3.1
 

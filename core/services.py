@@ -7,6 +7,7 @@ import qrcode
 # Django
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.core.mail import send_mail
 from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -305,20 +306,35 @@ def student_progress(student):
     return rows
 
 
+def _student_primary_category(student):
+    if hasattr(student, "semester"):
+        sem = student.semester
+        if sem in (5, 6):
+            return "advanced_placement_training"
+        elif sem in (3, 4):
+            return "placement_training"
+        elif sem == 2:
+            return "python_programming"
+    return "c_programming"
+
+
 def overall_percentage(student):
-    active_modules = Module.objects.filter(is_active=True).count()
+    category = _student_primary_category(student)
+    target_modules = Module.objects.filter(is_active=True, category=category)
+    active_modules = target_modules.count()
+    
     total = active_modules * 15
     if total == 0:
         return 0
 
-    assigned_qs = AssignedQuestion.objects.filter(assignment__student=student, assignment__module__is_active=True)
+    assigned_qs = AssignedQuestion.objects.filter(assignment__student=student, assignment__module__in=target_modules)
     if assigned_qs.exists():
-        for assignment in ModuleQuestionAssignment.objects.filter(student=student, module__is_active=True):
+        for assignment in ModuleQuestionAssignment.objects.filter(student=student, module__in=target_modules):
             sync_assignment_completion(assignment)
         completed = assigned_qs.filter(completed_at__isnull=False).count()
     else:
         completed = (
-            Submission.objects.filter(student=student, question__module__is_active=True, question__is_active=True, status=Submission.Status.ACCEPTED)
+            Submission.objects.filter(student=student, question__module__in=target_modules, question__is_active=True, status=Submission.Status.ACCEPTED)
             .values_list("question_id", flat=True)
             .distinct()
             .count()
@@ -326,9 +342,13 @@ def overall_percentage(student):
 
     return min(100.0, (completed / total * 100))
 
+
 def certificate_eligible(student):
     pct = overall_percentage(student)
-    mandatory_questions = Question.objects.filter(module__is_active=True, is_active=True, is_mandatory=True)
+    category = _student_primary_category(student)
+    target_modules = Module.objects.filter(is_active=True, category=category)
+    
+    mandatory_questions = Question.objects.filter(module__in=target_modules, is_active=True, is_mandatory=True)
     mandatory_total = mandatory_questions.count()
     mandatory_done = mandatory_questions.filter(
         submissions__student=student,
