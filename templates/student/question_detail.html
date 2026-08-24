@@ -442,8 +442,13 @@ public class Main {
         textarea.value = editor.getValue();
       });
       editor.onDidFocusEditorWidget(function() {
-        if (!document.body.classList.contains("is-maximized-page") && typeof window.toggleMaximize === 'function') {
-          window.toggleMaximize();
+        // Don't force fullscreen when clicking editor during proctoring —
+        // fullscreen was already requested at proctoring start. This prevents
+        // the question content from being hidden and causing violations.
+        if (!window.proctoringMonitoringActive) {
+          if (!document.body.classList.contains("is-maximized-page") && typeof window.toggleMaximize === 'function') {
+            window.toggleMaximize();
+          }
         }
       });
     } else {
@@ -1122,6 +1127,18 @@ public class Main {
 </div>
 
 <script>
+  // Define fullscreen utility BEFORE proctoring script so it's available when needed
+  window.requestFullscreen = function() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(function(e) { console.log('Fullscreen blocked:', e); });
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    } else if (el.msRequestFullscreen) {
+      el.msRequestFullscreen();
+    }
+  };
+
   (function initProctoring() {
     const overlay = document.getElementById('proctor-overlay');
     const ackBtn = document.getElementById('proctor-acknowledge-btn');
@@ -1132,6 +1149,7 @@ public class Main {
     const csrfToken = csrfInput ? csrfInput.value : "";
     let violationReported = false;
     window.proctoringMonitoringActive = false;
+    let _intentionalFullscreenExit = false;
 
     // Show instructions if not already acknowledged for this question session
     if (!sessionStorage.getItem('proctoring_agreed_' + questionId)) {
@@ -1176,11 +1194,13 @@ public class Main {
     }
 
     function startProctoringMonitoring() {
-      if (window.proctoringMonitoringActive) return;
-      window.proctoringMonitoringActive = true;
+      if (proctoringMonitoringActive) return;
+      proctoringMonitoringActive = true;
 
-      // Force fullscreen mode when proctoring is active
-      requestFullscreen();
+      // Defer fullscreen request until editor is ready and visible
+      if (typeof window.requestFullscreen === 'function') {
+        setTimeout(window.requestFullscreen, 800);
+      }
 
       // 1. Tab switching / Window blur
       window.addEventListener('blur', () => window.triggerViolation("Window lost focus (Tab switch)"));
@@ -1258,17 +1278,6 @@ public class Main {
 
 <!-- MAXIMIZE / FULLSCREEN (always available, independent of proctoring) -->
 <script>
-  window.requestFullscreen = function() {
-    const el = document.documentElement;
-    if (el.requestFullscreen) {
-      el.requestFullscreen().catch(e => console.log('Fullscreen request blocked:', e));
-    } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen();
-    } else if (el.msRequestFullscreen) {
-      el.msRequestFullscreen();
-    }
-  };
-
   (function initMaximize() {
     setTimeout(() => {
       const editorNode = document.getElementById("editor");
@@ -1306,7 +1315,8 @@ public class Main {
           if (maxText) maxText.textContent = 'Maximize';
           if (minBtn) minBtn.style.display = "none";
           // If proctoring is active, exit fullscreen triggers violation
-          if (window.proctoringMonitoringActive && document.fullscreenElement) {
+          // UNLESS the user intentionally exited via the "Exit Fullscreen" button
+          if (window.proctoringMonitoringActive && document.fullscreenElement && !_intentionalFullscreenExit) {
             document.exitFullscreen().catch(e => console.log(e));
             if (typeof window.triggerViolation === 'function') window.triggerViolation("Minimized editor while proctoring active");
           }
@@ -1325,20 +1335,21 @@ public class Main {
         minBtn.addEventListener("click", function(e) {
           e.preventDefault();
           e.stopPropagation();
+          _intentionalFullscreenExit = true;
           window.toggleMaximize();
+          setTimeout(function() { _intentionalFullscreenExit = false; }, 1000);
         });
       }
 
       document.addEventListener("fullscreenchange", function() {
         if (!document.fullscreenElement) {
-          // If proctoring is active and user exits fullscreen, trigger violation
-          if (window.proctoringMonitoringActive) {
-            if (typeof window.triggerViolation === 'function') window.triggerViolation("Exited fullscreen mode");
-            // Re-request fullscreen after a short delay
-            if (typeof window.requestFullscreen === 'function') setTimeout(window.requestFullscreen, 500);
-          }
           if (document.body.classList.contains("is-maximized-page")) {
-            window.toggleMaximize();
+            toggleMaximize();
+          }
+          // Only trigger violation if proctoring is active AND the exit was not intentional (minimize button)
+          if (proctoringMonitoringActive && !document.body.classList.contains("is-maximized-page") && !_intentionalFullscreenExit) {
+            triggerViolation("Exited fullscreen mode");
+            setTimeout(requestFullscreen, 500);
           }
         }
       });

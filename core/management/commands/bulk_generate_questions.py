@@ -116,6 +116,17 @@ class Command(BaseCommand):
                         counter += 1
                         slug = f"{base_slug}-{counter}"
 
+                    # Determine language based on module category
+                    lang_id = 50  # C default
+                    if module.category == "python_programming":
+                        lang_id = 71
+                    elif module.category in ("placement_training", "advanced_placement_training"):
+                        lang_id = 71
+                    elif module.category == "cpp_programming":
+                        lang_id = 54
+                    elif module.category == "java_programming":
+                        lang_id = 62
+
                     question = Question.objects.create(
                         module=module,
                         title=result["title"],
@@ -130,7 +141,7 @@ class Command(BaseCommand):
                         allow_multiple_languages=result.get("allow_multiple_languages", False),
                         is_mandatory=result.get("is_mandatory", False),
                         is_active=result.get("is_active", True),
-                        language_id=50,  # C (GCC)
+                        language_id=lang_id,
                     )
 
                     # Create test cases

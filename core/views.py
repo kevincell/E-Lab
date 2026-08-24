@@ -2542,14 +2542,10 @@ def faculty_agent_add_question_api(request):
     def clean_io(text):
         if not text: return ""
         text = clean_md(text)
-        # Remove Leetcode-style variable assignments like "nums = "
-        text = re.sub(r'[a-zA-Z_]\w*\s*=\s*', '', text)
-        # Remove arrays/brackets and commas
-        text = text.replace('[', '').replace(']', '').replace(',', ' ')
-        # Remove string quotes
-        text = text.replace('"', '').replace("'", "")
-        # Normalize spaces
-        return re.sub(r'\s+', ' ', text).strip()
+        # Strip markdown bold markers
+        text = re.sub(r'\*+\s*', '', text)
+        text = re.sub(r'\s*\*+', '', text)
+        return text.strip()
 
     starter_code = clean_md(data.get("starter_code", ""))
     test_cases_data = data.get("test_cases", [])
@@ -2589,6 +2585,17 @@ def faculty_agent_add_question_api(request):
     if not starter_code:
         starter_code = "#include <stdio.h>\n\nint main() {\n    // Write your code here\n    return 0;\n}"
 
+    # Determine language from module category
+    lang_id = 50  # C default
+    if module.category == "python_programming":
+        lang_id = 71
+    elif module.category in ("placement_training", "advanced_placement_training"):
+        lang_id = 71
+    elif module.category == "cpp_programming":
+        lang_id = 54
+    elif module.category == "java_programming":
+        lang_id = 62
+
     question = Question.objects.create(
         module=module,
         title=title,
@@ -2598,6 +2605,7 @@ def faculty_agent_add_question_api(request):
         sample_input=sample_input,
         sample_output=sample_output,
         starter_code=starter_code,
+        language_id=lang_id,
         created_by=request.user,
         is_mandatory=False,
         is_active=True
@@ -2787,7 +2795,18 @@ def faculty_generate_question(request):
             # Default starter code
             if not starter_code:
                 starter_code = "#include <stdio.h>\n\nint main(void)\n{\n    /* Read from stdin. Do not print prompts unless required. */\n    return 0;\n}"
-            
+
+            # Determine language from module category
+            lang_id = 50
+            if module.category == "python_programming":
+                lang_id = 71
+            elif module.category in ("placement_training", "advanced_placement_training"):
+                lang_id = 71
+            elif module.category == "cpp_programming":
+                lang_id = 54
+            elif module.category == "java_programming":
+                lang_id = 62
+
             question = Question.objects.create(
                 module=module,
                 title=title,
@@ -2797,6 +2816,7 @@ def faculty_generate_question(request):
                 sample_input=sample_input,
                 sample_output=sample_output,
                 starter_code=starter_code,
+                language_id=lang_id,
                 created_by=request.user,
                 is_mandatory=True,
                 is_active=True

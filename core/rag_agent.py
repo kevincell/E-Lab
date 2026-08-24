@@ -38,13 +38,24 @@ class RAGQuestionAgent:
         name = re.sub(r'^\d+_', '', dirname)
         return name.replace('_', ' ').lower()
 
+    def _clean_tc_value(text):
+        """Strip markdown artifacts from test case input/output values."""
+        if not text:
+            return ''
+        text = text.strip()
+        text = re.sub(r'```(?:python|c|cpp|java|text)?\s*', '', text)
+        text = re.sub(r'```', '', text)
+        text = re.sub(r'\*+\s*', '', text)
+        text = re.sub(r'\s*\*+', '', text)
+        return text.strip()
+
     def _parse_markdown_file(self, filepath: Path, topic: str) -> Dict[str, Any]:
         content = filepath.read_text(encoding="utf-8", errors="ignore")
-        
+
         # Extract title
         title_match = re.search(r'^#\s+(.*)', content, re.MULTILINE)
         title = title_match.group(1).strip() if title_match else filepath.stem.replace('_', ' ').title()
-        
+
         # Extract description
         desc_match = re.search(r'^#\s+.*?\n(.*?)(?=\n##|\n```)', content, re.DOTALL | re.MULTILINE)
         problem_desc = desc_match.group(1).strip() if desc_match else content[:600]
@@ -53,14 +64,27 @@ class RAGQuestionAgent:
         code_blocks = re.findall(r'```(?:python|c|cpp|java)?\s*\n(.*?)```', content, re.DOTALL)
         solution_code = "\n\n".join(code_blocks).strip() if code_blocks else ""
 
-        # Extract test cases/examples
+        # Extract test cases/examples — try both markdown formats
         test_cases = []
-        tc_matches = re.findall(r'Input:\s*(.*?)\s*Output:\s*(.*?)(?=\n\n|\nInput:|\n##|\Z)', content, re.DOTALL)
+        # Format 1: **Input:** / **Output:** with code blocks (DSA_Topics style)
+        tc_matches = re.findall(
+            r'\*\*Input:\s*\*\*\s*\n```(?:\w+)?\s*\n(.*?)\n```\s*\n\*\*Output:\s*\*\*\s*\n```(?:\w+)?\s*\n(.*?)\n```',
+            content, re.DOTALL
+        )
+        # Format 2: Input: / Output: plain or with code blocks (LeetCode style fallback)
+        if not tc_matches:
+            tc_matches = re.findall(
+                r'Input:\s*(.*?)\s*Output:\s*(.*?)(?=\n\n|\nInput:|\n##|\Z)',
+                content, re.DOTALL
+            )
         for inp, out in tc_matches:
-            test_cases.append({
-                "input": inp.strip().replace('*', ''),
-                "expected": out.strip().replace('*', '')
-            })
+            clean_inp = self._clean_tc_value(inp)
+            clean_out = self._clean_tc_value(out)
+            if clean_inp and clean_out:
+                test_cases.append({
+                    "input": clean_inp,
+                    "expected": clean_out,
+                })
 
         difficulty = "medium"
         content_lower = content.lower()
@@ -178,6 +202,7 @@ class RAGQuestionAgent:
             "description": self._adapt_description(ref, target_difficulty, custom_prompt),
             "starter_code": self._adapt_starter_code(ref.get('solution_code', ''), target_difficulty),
             "solution": self._adapt_solution(ref.get('solution_code', ''), target_difficulty),
+            "language_id": 71,  # Python 3 — RAG questions target Python for DSA modules
             "time_limit": 2.0,
             "memory_limit_kb": 128000,
             "max_score": 1,
@@ -435,6 +460,7 @@ int main(void) {
             "is_active": True,
             "is_mandatory": False,
             "allow_multiple_languages": True,
+            "language_id": 71,  # Python 3
             "test_cases": [
                 {"input": "5\n1 2 3 4 5\n", "expected_output": "15\n", "is_sample": True},
                 {"input": "3\n10 -2 5\n", "expected_output": "13\n", "is_sample": False},
@@ -483,5 +509,6 @@ int main(void) {
             "is_active": bool(parsed.get("is_active", True)),
             "is_mandatory": bool(parsed.get("is_mandatory", False)),
             "allow_multiple_languages": bool(parsed.get("allow_multiple_languages", True)),
+            "language_id": int(parsed.get("language_id") or 71),
             "test_cases": test_cases,
         }
