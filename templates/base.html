@@ -18,7 +18,8 @@
   <header class="topbar">
     <a class="brand" href="{% url 'dashboard' %}" style="display: flex; align-items: center; gap: 14px; text-decoration: none;">
       <img src="{% static 'img/nitte_logo.png' %}" alt="NITTE NMAMIT Logo" class="brand-logo" style="height: 38px; width: auto; object-fit: contain;">
-      <span class="header-dept-text">Dept. of Computer and Communication Engineering</span>
+      <img src="{% static 'img/CCE_logo.png' %}" alt="CCE Logo" class="cce-logo" style="height: 38px; width: auto; object-fit: contain; border-radius: 50%;">
+      <span class="header-dept-text">Department of Computer and Communication Engineering</span>
     </a>
     <nav class="nav">
       {% block theme_toggle %}
