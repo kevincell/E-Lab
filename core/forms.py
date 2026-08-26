@@ -23,6 +23,7 @@ class MultipleFileField(forms.FileField):
 
 class StudentSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
+    department = forms.ChoiceField(choices=[('CCE', 'CCE')], initial='CCE')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

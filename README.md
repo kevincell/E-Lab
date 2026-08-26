@@ -179,6 +179,9 @@ docker compose exec app python manage.py seed_placement_training
 
 # Import third-year questions (direct logic generation)
 docker compose exec app python manage.py advanced_seed_placement_training
+
+# Seed Java Programming course (Lab manual & RAG generated pool)
+docker compose exec -T app python manage.py shell < scripts/reseed_java.py
 ```
 
 ### Generate Student Certificates

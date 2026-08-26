@@ -82,17 +82,6 @@ class AppLoginView(LoginView):
             return reverse_lazy("role_select")
         return super().get_success_url() or reverse_lazy("onboarding_overview")
 
-    def form_valid(self, form):
-        from django.utils import timezone
-        import datetime
-        user = form.get_user()
-        # Cutoff for locking existing accounts (before this deploy)
-        cutoff = timezone.make_aware(datetime.datetime(2026, 8, 24, 15, 0, 0))
-        if user.date_joined < cutoff and user.username != 'faculty':
-            form.add_error(None, "Don't try to act Smart lil bro/girl")
-            return self.form_invalid(form)
-        return super().form_valid(form)
-
 
 class AppLogoutView(LogoutView):
     def dispatch(self, request, *args, **kwargs):
@@ -210,6 +199,11 @@ def dashboard(request):
             courses = Course.objects.filter(is_active=True)
         
         course_id = request.GET.get("course")
+        if course_id is None:
+            course_id = request.session.get("faculty_last_course")
+        else:
+            request.session["faculty_last_course"] = course_id
+
         if course_id:
             try:
                 selected_course = courses.get(id=int(course_id))
@@ -247,9 +241,9 @@ def dashboard(request):
             progress_students_qs = progress_students_qs.filter(department=selected_department)
             
         if selected_course:
-            if selected_course.year:
-                target_semesters = [selected_course.year * 2 - 1, selected_course.year * 2]
-                progress_students_qs = progress_students_qs.filter(semester__in=target_semesters)
+            target_year = (selected_course.available_from_semester + 1) // 2
+            target_semesters = [target_year * 2 - 1, target_year * 2]
+            progress_students_qs = progress_students_qs.filter(semester__in=target_semesters)
         selected_module = None
         if selected_category != "overall":
             try:
@@ -364,9 +358,21 @@ def dashboard(request):
     category = request.GET.get("category")
     course_id = request.GET.get("course")
     
+    if course_id is None and category is None:
+        category = request.session.get("student_last_category")
+        course_id = request.session.get("student_last_course")
+    else:
+        request.session["student_last_category"] = category
+        request.session["student_last_course"] = course_id
+    
     if course_id and not category:
         try:
             course = Course.objects.get(id=int(course_id))
+            if not request.user.is_faculty_like and not request.user.role == User.Role.HOD:
+                current_semester = getattr(request.user, "semester", 1) or 1
+                if course.available_from_semester > current_semester:
+                    raise PermissionDenied("This course is not yet available for your semester.")
+            
             first_module = course.modules.first()
             if first_module:
                 category = first_module.category
@@ -2056,6 +2062,8 @@ def notification_mark_read(request, notification_id):
     if not notif.is_read:
         notif.is_read = True
         notif.save(update_fields=["is_read"])
+        from django.core.cache import cache
+        cache.delete(f"unread_notif_{request.user.id}")
     if request.method == "GET" or request.POST.get("redirect") == "true" or request.GET.get("redirect") == "true":
         return redirect(notif.get_redirect_url)
     return redirect("notifications_list")
@@ -2065,6 +2073,8 @@ def notification_mark_read(request, notification_id):
 @require_POST
 def notifications_mark_all_read(request):
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    from django.core.cache import cache
+    cache.delete(f"unread_notif_{request.user.id}")
     return redirect("notifications_list")
 
 
@@ -2200,11 +2210,22 @@ def student_lab_record(request):
     if request.user.role != User.Role.STUDENT:
         raise PermissionDenied
         
-    modules = Module.objects.filter(is_active=True).order_by("order").prefetch_related("questions")
-    all_subs = Submission.objects.filter(
-        student=request.user, 
-        status=Submission.Status.ACCEPTED
-    ).order_by("submitted_at").select_related("question")
+    current_semester = getattr(request.user, "semester", 1) or 1
+    modules = (
+        Module.objects.filter(is_active=True)
+        .filter(
+            Q(course__available_from_semester__lte=current_semester)
+            | Q(course__isnull=True)
+        )
+        .order_by("order")
+        .prefetch_related("questions")
+    )
+    
+    all_subs = (
+        Submission.objects.filter(student=request.user, status=Submission.Status.ACCEPTED)
+        .order_by("question_id", "-submitted_at")
+        .select_related("question")
+    )
     
     # Get the latest accepted submission per question
     latest_subs = {}

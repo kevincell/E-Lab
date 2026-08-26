@@ -299,7 +299,13 @@ def update_progress(student, module):
 
 
 def student_progress(student):
-    modules = Module.objects.filter(is_active=True).annotate(total=Count("questions", filter=Q(questions__is_active=True)))
+    modules = Module.objects.filter(is_active=True)
+    if not getattr(student, "is_faculty_like", False) and student.role != "hod":
+        current_semester = getattr(student, "semester", 1) or 1
+        modules = modules.filter(
+            Q(course__available_from_semester__lte=current_semester) | Q(course__isnull=True)
+        )
+    modules = modules.annotate(total=Count("questions", filter=Q(questions__is_active=True)))
     rows = []
     for module in modules:
         rows.append(update_progress(student, module))
