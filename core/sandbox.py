@@ -319,3 +319,21 @@ def run_c_code(source_code, stdin="", expected_output="",
         time_limit=time_limit,
         memory_limit_kb=memory_limit_kb,
     )
+
+
+def inject_headers(source_code, starter_code):
+    """Prepend #include and import statements from starter_code if missing in source_code."""
+    if not starter_code or not source_code:
+        return source_code
+        
+    injected_lines = []
+    
+    for line in starter_code.splitlines():
+        line_stripped = line.strip()
+        if line_stripped.startswith("#include") or line_stripped.startswith("import "):
+            if line_stripped not in source_code:
+                injected_lines.append(line_stripped)
+                
+    if injected_lines:
+        return "\n".join(injected_lines) + "\n\n" + source_code
+    return source_code

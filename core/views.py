@@ -39,7 +39,7 @@ from .forms import (
     TestCaseForm,
 )
 from .models import AssignedQuestion, Certificate, CertificateRequest, Course, LabSession, Module, ModuleQuestionAssignment, Notification, OpenEndedQuestion, Progress, Question, Quiz, QuizAttempt, QuizQuestion, Submission, TestCase, User
-from .sandbox import run_code as sandbox_run_code, language_for_id
+from .sandbox import run_code as sandbox_run_code, language_for_id, inject_headers
 from .serializers import ProgressSerializer, QuestionSerializer, SubmissionSerializer
 from .services import (
     certificate_eligible,
@@ -660,7 +660,7 @@ def question_detail(request, question_id):
     form = SubmissionForm(request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
         if not can_submit(request.user, question):
-            messages.error(request, "Please wait 30 seconds before submitting again.")
+            messages.error(request, "Please wait 10 seconds before submitting again.")
             return redirect("question_detail", question.pk)
         submission = form.save(commit=False)
         submission.student = request.user
@@ -842,9 +842,9 @@ def can_submit(student, question):
     key = f"submit:{student.id}:{question.id}"
     last = cache.get(key)
     now = timezone.now()
-    if last and (now - last).total_seconds() < 30:
+    if last and (now - last).total_seconds() < 10:
         return False
-    cache.set(key, now, 30)
+    cache.set(key, now, 10)
     return True
 
 
@@ -904,6 +904,9 @@ def run_code_api(request):
     
     question = get_object_or_404(Question, id=question_id, is_active=True)
     
+    # Inject missing headers based on starter code
+    code = inject_headers(code, question.starter_code)
+
     # Determine the execution language (use provided or fallback to question's default)
     exec_language_id = int(language_id) if language_id else question.language_id
     language = language_for_id(exec_language_id)
@@ -2127,7 +2130,7 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         print("DEBUG: Validated data:", serializer.validated_data)
         question = serializer.validated_data["question"]
         if not can_submit(self.request.user, question):
-            raise PermissionDenied("Please wait 30 seconds before submitting again.")
+            raise PermissionDenied("Please wait 10 seconds before submitting again.")
             
         session_key = f"violations_{self.request.user.id}_{question.id}"
         violations = self.request.session.get(session_key, 0)

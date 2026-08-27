@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 # Local imports
 from .models import AssignedQuestion, Attendance, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, User
-from .sandbox import run_code, language_for_id
+from .sandbox import run_code, language_for_id, inject_headers
 from .certificate_generator import generate_certificate_pdf
 
 
@@ -197,10 +197,12 @@ def evaluate_submission(submission_id):
     try:
         from concurrent.futures import ThreadPoolExecutor
 
+        evaluated_code = inject_headers(submission.code, question.starter_code)
+
         def evaluate_single_test(test):
             result = run_code(
                 language,
-                source_code=submission.code,
+                source_code=evaluated_code,
                 stdin=test.stdin,
                 expected_output=test.expected_output,
                 time_limit=question.time_limit,
