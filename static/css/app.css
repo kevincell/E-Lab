@@ -4986,5 +4986,361 @@ body.is-maximized-page .monaco-editor {
   text-decoration: underline;
 }
 
+/* =========================================================
+   Enhanced Animations & Micro-interactions
+   ========================================================= */
+
+/* Global animation utilities */
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.5s ease-out forwards;
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.5s ease-out forwards;
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.animate-zoom-in {
+  animation: zoomIn 0.4s ease-out forwards;
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Staggered animations for lists and grids */
+.staggered-animate > * {
+  opacity: 0;
+  transform: translateY(15px);
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.staggered-animate > *:nth-child(1) { animation-delay: 0.05s; }
+.staggered-animate > *:nth-child(2) { animation-delay: 0.1s; }
+.staggered-animate > *:nth-child(3) { animation-delay: 0.15s; }
+.staggered-animate > *:nth-child(4) { animation-delay: 0.2s; }
+.staggered-animate > *:nth-child(5) { animation-delay: 0.25s; }
+.staggered-animate > *:nth-child(6) { animation-delay: 0.3s; }
+.staggered-animate > *:nth-child(7) { animation-delay: 0.35s; }
+.staggered-animate > *:nth-child(8) { animation-delay: 0.4s; }
+.staggered-animate > *:nth-child(9) { animation-delay: 0.45s; }
+.staggered-animate > *:nth-child(10) { animation-delay: 0.5s; }
+
+/* Enhanced hover effects */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-scale-large {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale-large:hover {
+  transform: scale(1.05);
+}
+
+/* Button enhancements */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+}
+
+.btn-ripple:active::after {
+  width: 200px;
+  height: 200px;
+}
+
+/* Floating animation for icons/elements */
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Pulse for important indicators */
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+/* Shine effect for buttons and cards */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: rotate(30deg);
+  transition: transform 0.6s ease;
+}
+
+.shine:hover::after {
+  transform: translateX(20%) rotate(30deg);
+}
+
+/* Text reveal animations */
+.text-reveal {
+  display: inline-block;
+  overflow: hidden;
+}
+
+.text-reveal span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.text-reveal span:nth-child(1) { animation-delay: 0.05s; }
+.text-reveal span:nth-child(2) { animation-delay: 0.1s; }
+.text-reveal span:nth-child(3) { animation-delay: 0.15s; }
+.text-reveal span:nth-child(4) { animation-delay: 0.2s; }
+.text-reveal span:nth-child(5) { animation-delay: 0.25s; }
+.text-reveal span:nth-child(6) { animation-delay: 0.3s; }
+.text-reveal span:nth-child(7) { animation-delay: 0.35s; }
+.text-reveal span:nth-child(8) { animation-delay: 0.4s; }
+.text-reveal span:nth-child(9) { animation-delay: 0.45s; }
+.text-reveal span:nth-child(10) { animation-delay: 0.5s; }
+
+/* Loading skeleton animations */
+@keyframes pulse-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: pulse-loading 1.5s ease-in-out infinite;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideInLeft {
+  from { 
+    opacity: 0; 
+    transform: translateX(-30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes slideInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes zoomIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apply animations to key elements */
+body {
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Enhanced card hover effects */
+.course-card, .module-path, .panel, .auth-panel, .question-card-top {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 1px solid transparent;
+}
+
+.course-card:hover, .module-path:hover, .panel:hover, .auth-panel:hover, .question-card-top:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -4px rgba(0, 0, 0, 0.15),
+              0 4px 8px -4px rgba(0, 0, 0, 0.08);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Enhanced button interactions */
+.primary, .secondary, .danger-button, .back-button, .link-button,
+.submit-button, .agent-success-btn, .agent-secondary-btn {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.primary:active, .secondary:active, .danger-button:active, 
+.back-button:active, .link-button:active,
+.submit-button:active, .agent-success-btn:active, .agent-secondary-btn:active {
+  transform: translateY(1px);
+}
+
+/* Progress bar animations */
+.progress-track span, .judge-progress span {
+  transition: width 0.8s ease;
+}
+
+/* Tab transitions */
+.qbank-tab, .level-choice, .path-step {
+  transition: all 0.3s ease;
+}
+
+.qbank-tab:hover, .level-choice:hover, .path-step:hover {
+  transform: translateY(-2px);
+}
+
+/* Notification and message animations */
+.messages, .message {
+  animation: slideInUp 0.4s ease-out;
+}
+
+/* Dashboard enhancements */
+.dashboard-full > * {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.dashboard-full > *:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-full > *:nth-child(2) { animation-delay: 0.2s; }
+.dashboard-full > *:nth-child(3) { animation-delay: 0.3s; }
+.dashboard-full > *:nth-child(4) { animation-delay: 0.4s; }
+.dashboard-full > *:nth-child(5) { animation-delay: 0.5s; }
+.dashboard-full > *:nth-child(6) { animation-delay: 0.6s; }
+
+/* Module wheel enhancements */
+.wheel-module-label {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.wheel-module-label:hover {
+  transform: translate(-50%, -50%) rotate(var(--wedge-angle)) 
+             translate(var(--wedge-radius, 175px)) 
+             rotate(calc(-1 * var(--wedge-angle))) scale(1.15);
+  box-shadow: 0 0 24px var(--mod-color), inset 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+/* Form element focus enhancements */
+input:focus, select:focus, textarea:focus {
+  animation: pulse 0.6s ease-out;
+}
+
+/* Success/error state animations */
+.status-accepted, .status-pending, .status-wrong_answer,
+.status-tle, .status-compile_error, .status-runtime_error,
+.status-internal_error, .status-running {
+  animation: pulse 1.5s ease-in-out;
+}
+
 
 
