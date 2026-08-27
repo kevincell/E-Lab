@@ -3,7 +3,7 @@ services:
     build: .
     container_name: elab-app
     restart: unless-stopped
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 12 --threads 4 --worker-class gthread --max-requests 1000 --max-requests-jitter 100 --timeout 60 --keep-alive 5 --log-level info --preload
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 16 --threads 4 --worker-class gthread --max-requests 2000 --max-requests-jitter 200 --timeout 120 --keep-alive 5 --log-level info --preload
     env_file: .env
     volumes:
       - .:/app
@@ -16,18 +16,18 @@ services:
       - elab-redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 30s
     deploy:
       resources:
         limits:
-          cpus: "6"
-          memory: 4G
+          cpus: "8"
+          memory: 6G
         reservations:
-          cpus: "3"
-          memory: 2G
+          cpus: "4"
+          memory: 4G
     networks:
       - elab-network
 
@@ -35,7 +35,7 @@ services:
     build: .
     container_name: elab-worker
     restart: unless-stopped
-    command: celery -A config worker -l info --concurrency 4
+    command: celery -A config worker -l info --concurrency 16 --pool=prefork --max-tasks-per-child 200 --max-memory-per-child 512000
     env_file: .env
     volumes:
       - .:/app
@@ -48,8 +48,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2"
-          memory: 1G
+          cpus: "4"
+          memory: 2G
     networks:
       - elab-network
 
@@ -77,17 +77,36 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_MAX_CONNECTIONS: "500"
+      POSTGRES_SHARED_BUFFERS: "256MB"
+      POSTGRES_WORK_MEM: "4MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "64MB"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - elab-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elab -d elab_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   elab-redis:
     image: redis:7-alpine
     container_name: elab-redis
     restart: unless-stopped
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --timeout 300 --tcp-keepalive 60
+    volumes:
+      - redis_data:/data
     networks:
       - elab-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   nginx:
     image: nginx:1.27-alpine
@@ -101,6 +120,11 @@ services:
       - media:/var/www/media
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 512M
     networks:
       - elab-network
 
@@ -108,6 +132,7 @@ volumes:
   postgres_data:
   media:
   staticfiles:
+  redis_data:
 
 networks:
   elab-network:

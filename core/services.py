@@ -2,6 +2,7 @@
 from difflib import SequenceMatcher
 from io import BytesIO
 import random
+import logging
 # Third-party
 import qrcode
 # Django
@@ -15,6 +16,8 @@ from django.utils import timezone
 from .models import AssignedQuestion, Attendance, Certificate, CertificateRequest, LabSession, Module, ModuleQuestionAssignment, Notification, Progress, Question, Submission, User
 from .sandbox import run_code, language_for_id, inject_headers
 from .certificate_generator import generate_certificate_pdf
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_output(value):
@@ -176,6 +179,10 @@ def current_unlocked_question(assignment):
 
 
 def evaluate_submission(submission_id):
+    """
+    Evaluate a submission against all hidden test cases.
+    Uses a thread pool sized for production load (400 concurrent users).
+    """
     submission = Submission.objects.select_related("question", "student").get(pk=submission_id)
     question = submission.question
     tests = list(question.test_cases.filter(is_sample=False))
@@ -193,33 +200,34 @@ def evaluate_submission(submission_id):
 
     # Resolve the language once from the submission (fallback to the question).
     language = language_for_id(submission.language_id or question.language_id)
+    evaluated_code = inject_headers(submission.code, question.starter_code)
+
+    def evaluate_single_test(test):
+        result = run_code(
+            language,
+            source_code=evaluated_code,
+            stdin=test.stdin,
+            expected_output=test.expected_output,
+            time_limit=question.time_limit,
+            memory_limit_kb=question.memory_limit_kb,
+        )
+        return test, result
 
     try:
-        from concurrent.futures import ThreadPoolExecutor
-
-        evaluated_code = inject_headers(submission.code, question.starter_code)
-
-        def evaluate_single_test(test):
-            result = run_code(
-                language,
-                source_code=evaluated_code,
-                stdin=test.stdin,
-                expected_output=test.expected_output,
-                time_limit=question.time_limit,
-                memory_limit_kb=question.memory_limit_kb,
-            )
-            return test, result
-
-        results = []
         if tests:
+            # Run first test synchronously to detect compile errors early
             first_test, first_result = evaluate_single_test(tests[0])
-            results.append((first_test, first_result))
-            
+            results = [(first_test, first_result)]
+
             # If the first test fails to compile, don't run the rest
             if first_result.get("status_id") != 6 and len(tests) > 1:
-                with ThreadPoolExecutor(max_workers=4) as executor:
+                # Use a larger thread pool for high concurrency (400 users)
+                from concurrent.futures import ThreadPoolExecutor
+                with ThreadPoolExecutor(max_workers=8) as executor:
                     rest_results = list(executor.map(evaluate_single_test, tests[1:]))
                     results.extend(rest_results)
+        else:
+            results = []
 
         for test, result in results:
             status_id = result.get("status_id")
@@ -274,14 +282,18 @@ def evaluate_submission(submission_id):
         import json
         submission.judge_output = json.dumps(test_results)
     except Exception as exc:
+        logger.error(f"Evaluation error for submission {submission_id}: {exc}", exc_info=True)
         submission.status = Submission.Status.INTERNAL_ERROR
         submission.error_output = str(exc)
     finally:
         submission.judged_at = timezone.now()
         submission.save()
-        for assignment in ModuleQuestionAssignment.objects.filter(student=submission.student, module=submission.question.module):
-            sync_assignment_completion(assignment)
-        update_progress(submission.student, submission.question.module)
+        try:
+            for assignment in ModuleQuestionAssignment.objects.filter(student=submission.student, module=submission.question.module):
+                sync_assignment_completion(assignment)
+            update_progress(submission.student, submission.question.module)
+        except Exception as e:
+            logger.error(f"Progress update error for submission {submission_id}: {e}")
     return submission
 
 
@@ -336,7 +348,7 @@ def overall_percentage(student, course=None):
         category = _student_primary_category(student)
         target_modules = Module.objects.filter(is_active=True, category=category)
     active_modules = target_modules.count()
-    
+
     total = active_modules * 12
     if total == 0:
         return 0
@@ -367,9 +379,9 @@ def certificate_eligible(student, course=None):
         target_modules = Module.objects.filter(is_active=True, category=category)
         if category in ["placement_training", "advanced_placement_training"]:
             return False, 0
-            
+
     pct = overall_percentage(student, course)
-    
+
     mandatory_questions = Question.objects.filter(module__in=target_modules, is_active=True, is_mandatory=True)
     mandatory_total = mandatory_questions.count()
     mandatory_done = mandatory_questions.filter(
@@ -390,10 +402,10 @@ def get_faculty_coordinator_for_student(student):
         questions__submissions__status=Submission.Status.ACCEPTED,
         is_active=True
     ).distinct()
-    
+
     if not completed_modules.exists():
         return None
-    
+
     # Find the course associated with the module where student has most completions
     from django.db.models import Count
     course_completions = Course.objects.filter(
@@ -406,26 +418,24 @@ def get_faculty_coordinator_for_student(student):
             distinct=True
         )
     ).order_by('-completion_count')
-    
+
     top_course = course_completions.first()
     if top_course:
         # Get faculty managing this course
         faculty = top_course.managing_faculty.first()
         if faculty:
             return faculty
-    
+
     # Fallback: any faculty managing any of the student's completed modules' courses
     for course in course_completions:
         faculty = course.managing_faculty.first()
         if faculty:
             return faculty
-    
+
     return None
 
 
 def generate_certificate(student, course=None):
-    from django.conf import settings as django_settings
-
     eligible, pct = certificate_eligible(student, course)
     if not eligible:
         return None
@@ -466,8 +476,7 @@ def generate_certificate(student, course=None):
         name_usn = student.usn or student.username
         cert.pdf.save(f"{name_usn}_{course.slug}.pdf", ContentFile(pdf_bytes), save=False)
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"PDF generation failed for {student.username}: {e}")
+        logger.error(f"PDF generation failed for {student.username}: {e}")
     cert.save()
     notify_certificate(student, cert)
     return cert

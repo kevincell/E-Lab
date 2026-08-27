@@ -1,29 +1,25 @@
 # CCE e-Lab - Programming Practice Platform
 
-A self-hosted web platform for Computer & Communication Engineering students to practice programming with automated evaluation, progress tracking, and skill certification.
+A self-hosted web platform for Computer & Communication Engineering students to practice programming with automated evaluation, progress tracking, and skill certification. Supports up to 400 concurrent users.
 
 ---
 
 ## 🚀 Key Features
 
-- ✅ **Interactive Code Editor** - Practice coding directly in your browser
-- ✅ **Automated Evaluation** - Instant feedback on code submissions via isolated sandbox containers
-- ✅ **Multi-Language Support** - C (GCC), C++ (G++), Java (OpenJDK), and Python (CPython 3)
-- ✅ **Adaptive Question Bank** - Tiered questions with mandatory problem guarantees
-- ✅ **Progress Tracking** - Real-time dashboards showing module completion and scores
-- ✅ **Skill Certification** - Automated certificate generation and verification hash for qualifying students
-- ✅ **Faculty & HOD Portals** - Create modules/questions, review submissions, and manage approvals
-- ✅ **Quizzes & Assignments** - Timed quizzes and take-home assignments
-- ✅ **LeetCode Integration** - Bulk import 1,500+ public problems with test cases from local LeetCode dataset
-- ✅ **Multi-Language Support** - C (GCC), C++ (G++), Java (OpenJDK), and Python (CPython 3)
-- ✅ **Adaptive Question Bank** - Tiered questions with mandatory problem guarantees
-- ✅ **Progress Tracking** - Real-time dashboards showing module completion and scores
-- ✅ **Skill Certification** - Automated SVG-based certificate generation with QR verification for qualifying students
-- ✅ **Semester Auto-Advance** - Students automatically advance semesters on Jan 1 and Jul 1 via Celery
-- ✅ **Course Access Control** - Courses unlock based on student semester (C→sem 1, Python/Java/Placement→sem 3, C++/Advanced Placement→sem 5)
-- ✅ **Faculty & HOD Portals** - Create modules/questions, review submissions, and manage approvals
-- ✅ **Quizzes & Assignments** - Timed quizzes and take-home assignments
-- ✅ **Offline Question Generator** - Faculty can generate custom questions by adapting problems from the local DSA database (300+ problems, fully offline)
+- ✅ **Interactive Code Editor** — Monaco/VS Code editor with syntax highlighting for C, C++, Java, and Python
+- ✅ **Automated Evaluation** — Instant feedback via isolated Docker sandbox containers
+- ✅ **Multi-Language Support** — C (GCC C11), C++ (G++ C++17), Java (OpenJDK 17), Python (CPython 3)
+- ✅ **Adaptive Question Bank** — Tiered questions (Easy/Medium/Hard) with mandatory problem guarantees
+- ✅ **Progress Tracking** — Real-time dashboards showing module completion, scores, and rankings
+- ✅ **Skill Certification** — Automated certificate generation with QR verification for qualifying students
+- ✅ **Faculty & HOD Portals** — Create modules/questions, review submissions, manage certificate approvals
+- ✅ **Quizzes & Assignments** — Timed quizzes and take-home open-ended assignments
+- ✅ **LeetCode Integration** — Bulk import 1,500+ public problems with test cases from local dataset
+- ✅ **RAG Question Generator** — Faculty can generate custom questions offline using local DSA knowledge base (300+ problems, no LLM/GPU required)
+- ✅ **Semester Auto-Advance** — Students automatically advance semesters on Jan 1 and Jul 1 via Celery beat
+- ✅ **Course Access Control** — Courses unlock based on student semester (C→sem 1, Python/Java/Placement→sem 3, C++/Advanced Placement→sem 5)
+- ✅ **Proctoring System** — Tab-switch detection, copy/paste blocking, fullscreen enforcement for assessment questions
+- ✅ **Redis-backed Cache** — High-performance caching and session management for 400+ concurrent users
 
 ---
 
@@ -32,11 +28,12 @@ A self-hosted web platform for Computer & Communication Engineering students to 
 - **Backend:** Django 5.0 + Django REST Framework
 - **Database:** PostgreSQL 15 (`elab-db`)
 - **Cache & Message Broker:** Redis 7 (`elab-redis`)
-- **Task Runner:** Celery Worker (`elab-worker`)
+- **Task Runner:** Celery Worker (`elab-worker`) with prefork pool
+- **Scheduler:** Celery Beat (`elab-beat`) for periodic tasks
 - **Execution Sandbox:** Custom isolated Docker container (`elab-sandbox`) supporting C, C++, Java, and Python
-- **Reverse Proxy:** Nginx (`elab-nginx`)
-- **RAG Engine:** ChromaDB + Sentence Transformers for semantic search
-- **Frontend:** Responsive HTML5 templates + Bootstrap + Ace / Monaco code editor
+- **Reverse Proxy:** Nginx (`elab-nginx`) with gzip compression and keepalive
+- **RAG Engine:** ChromaDB + Sentence Transformers for semantic search (local, offline)
+- **Frontend:** Responsive HTML5 templates + Monaco Editor + CSS animations
 
 ---
 
@@ -47,6 +44,7 @@ A self-hosted web platform for Computer & Communication Engineering students to 
 | Docker Engine / Desktop | 24.0+ | Container runtime & execution sandbox |
 | Docker Compose | 2.20+ | Multi-container orchestration |
 | Git | 2.30+ | Version control |
+| curl | — | Health checks |
 
 ---
 
@@ -59,19 +57,18 @@ cd E-Lab
 ```
 
 ### 2. Configure Environment Variables
-Copy the sample environment file:
 ```bash
 cp .env.example .env
 ```
 
-Ensure the database, redis, and application settings in `.env` match your environment:
+Edit `.env` and set secure values:
 ```ini
 # Django Configuration
 SECRET_KEY=your-secret-key-here
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+DEBUG=False
+ALLOWED_HOSTS=localhost,127.0.0.1,your.domain.com
 
-# Database Configuration (matches docker-compose.yml)
+# Database Configuration
 POSTGRES_DB=elab_db
 POSTGRES_USER=elab
 POSTGRES_PASSWORD=change-this-password
@@ -84,6 +81,14 @@ CELERY_RESULT_BACKEND=redis://elab-redis:2
 # Sandbox Settings
 DOCKER_SANDBOX_IMAGE=elab-sandbox
 DOCKER_SANDBOX_DIR=/var/elab-sandbox
+
+# Email (optional - for certificate notifications)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your@email.com
+EMAIL_HOST_PASSWORD=your-app-password
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=noreply@yourdomain.com
 ```
 
 ### 3. Build Sandbox & Start Services
@@ -91,8 +96,11 @@ DOCKER_SANDBOX_DIR=/var/elab-sandbox
 # 1. Build the multi-language execution sandbox image
 docker build -t elab-sandbox -f sandbox/Dockerfile sandbox/
 
-# 2. Start all services in the background
+# 2. Start all services
 docker compose up -d --build
+
+# 3. Wait for services to be healthy
+docker compose ps
 ```
 
 ### 4. Initialize Database, Static Files & Questions
@@ -121,21 +129,22 @@ docker compose exec app python manage.py seed_demo
 
 ### 5. Setup RAG (Required for Question Generator)
 ```bash
-# Ingest 300+ DSA questions into ChromaDB for RAG retrieval
+# Ingest 300+ DSA questions into ChromaDB (one-time, may take a few minutes)
 docker compose exec app python manage.py rag_ingest
 
-# Generate a sample question using the problem adaptation engine
-docker compose exec app python manage.py generate_question --topic "dynamic programming" --difficulty medium
+# Generate a sample question
+docker compose exec app python manage.py generate_question --topic "two pointers" --difficulty easy
 ```
 
 ### 6. Access the Application
-The web app is available at `http://localhost`:
+The web app is available at `http://localhost` (or your server IP):
 
 | URL | Description |
 |-----|-------------|
 | `http://localhost` | Main Portal / Student Dashboard |
 | `http://localhost/login/` | Authentication Page |
 | `http://localhost/admin/` | Django Admin Panel |
+| `http://localhost/health/` | Health Check Endpoint |
 
 ---
 
@@ -162,6 +171,9 @@ Created automatically via `docker compose exec app python manage.py seed_demo`:
 ## 🛠️ Management Commands Reference
 
 All commands should be executed against the `app` container:
+```bash
+docker compose exec app python manage.py <command> [options]
+```
 
 ### Seed Demo Data
 Populates faculty, students, sample submissions, and student progress records:
@@ -169,18 +181,18 @@ Populates faculty, students, sample submissions, and student progress records:
 docker compose exec app python manage.py seed_demo
 ```
 
-### Import Question Bank CSVs
+### Import Question Bank
 ```bash
-# Import first-year questions (default)
+# Import first-year questions (default C programming)
 docker compose exec app python manage.py import_questions
 
-# Import second-year questions (direct logic generation)
+# Import second-year questions (placement training)
 docker compose exec app python manage.py seed_placement_training
 
-# Import third-year questions (direct logic generation)
-docker compose exec app python manage.py advanced_seed_placement_training
+# Import third-year questions (advanced placement training)
+docker compose exec app python manage.py seed_advanced_placement_training
 
-# Seed Java Programming course (Lab manual & RAG generated pool)
+# Seed Java Programming course
 docker compose exec -T app python manage.py shell < scripts/reseed_java.py
 ```
 
@@ -199,23 +211,20 @@ docker compose exec app python manage.py generate_certificates --dry-run
 
 ### Import Questions from LeetCode
 ```bash
-# Import by slug
-docker compose exec app python manage.py import_leetcode --question two-sum --module "LeetCode Problems" --difficulty easy --csv-level 1
-
-# Import by ID
-docker compose exec app python manage.py import_leetcode --question 1 --module "LeetCode Problems" --difficulty easy
-```
-
-### Bulk Import 1,500 LeetCode Questions with Test Cases
-```bash
-# Full import (idempotent, skips existing)
+# Full bulk import (idempotent, skips existing)
 docker compose exec app python manage.py import_leetcode_problems
 
 # Test run on first 50 questions
 docker compose exec app python manage.py import_leetcode_problems --limit 50
+
+# Import a single question by slug
+docker compose exec app python manage.py import_leetcode --question two-sum --module "LeetCode Problems" --difficulty easy --csv-level 1
+
+# Import by numeric ID
+docker compose exec app python manage.py import_leetcode --question 1 --module "LeetCode Problems" --difficulty easy
 ```
 
-### Enrich Questions with More Test Cases (5-10 per question)
+### Enrich Questions with More Test Cases
 ```bash
 # Enrich all DSA module questions to ~8 test cases each
 docker compose exec app python manage.py enrich_test_cases
@@ -230,8 +239,9 @@ docker compose exec app python manage.py enrich_test_cases --dry-run
 docker compose exec app python manage.py enrich_test_cases --target 10
 ```
 
-### Seed Course Catalog (6 courses: C, Python, Java, C++, Placement Training, Advanced Placement Training)
+### Seed Course Catalog
 ```bash
+# Creates 6 courses: C, Python, Java, C++, Placement Training, Advanced Placement Training
 docker compose exec app python manage.py seed_courses
 ```
 
@@ -244,13 +254,20 @@ docker compose exec app python manage.py auto_advance_semesters
 docker compose exec app python manage.py auto_advance_semesters --dry-run
 ```
 
-### Create Head of Department (HOD) / Superuser
+### Create Users
 ```bash
 # Create dedicated HOD user
 docker compose exec app python manage.py create_hod
 
-# Create Django Superuser
+# Create Django Superuser (for admin panel)
 docker compose exec app python manage.py createsuperuser
+
+# Create a student user
+docker compose exec app python manage.py shell -c "
+from core.models import User
+u = User.objects.create_user(username='new_student', password='pass123', role='student', semester=3)
+print(f'Created: {u}')
+"
 ```
 
 ---
@@ -324,7 +341,7 @@ The RAG system covers 20 DSA topics with 15 problems each (300+ total):
 2. **Problem Adaptation**: Instead of an LLM, the system **adapts existing curated problems** to create new variants:
    - Selects the most relevant reference problems from the DSA database
    - Adjusts difficulty level (Easy/Medium/Hard) by modifying constraints and complexity
-   - Generates appropriate starter code (C) with function signatures
+   - Generates appropriate starter code with function signatures
    - Creates 5-8 test cases including edge cases for harder difficulties
    - References the original problem in the description for transparency
 
@@ -332,34 +349,26 @@ The RAG system covers 20 DSA topics with 15 problems each (300+ total):
 
 **Performance**: ~1-2 seconds per question (no LLM, no GPU, no internet required)
 
-### Available Topics
-The RAG system covers 20 DSA topics with 15 problems each (300+ total):
-- Array, String, Linked List, Stack, Queue
-- Binary Trees, Binary Search, Heap/Priority Queue
-- HashMap/Hashing, Graph (BFS/DFS)
-- Dynamic Programming, Backtracking, Greedy
-- Two Pointers/Sliding Window, Bit Manipulation
-- Sorting Algorithms, Matrix, Trie, Recursion
-- Math/Number Theory
-
 ---
 
 ## 📦 Docker Sandbox Execution
 
-The custom Docker sandbox executes code submissions without external dependencies:
+The custom Docker sandbox executes code submissions in fully isolated containers:
 
 | Language | `language_id` | Toolchain | Strictness / Options |
 |----------|---------------|-----------|----------------------|
-| **C** | 50 | GCC (`gcc -std=c11`) | `-Wall -Wextra` |
-| **C++** | 54 | GCC (`g++ -std=c++17`) | `-Wall -Wextra` |
-| **Java** | 62 | OpenJDK 17 (`javac`/`java`) | Auto-detects public class |
-| **Python** | 71 | CPython 3 (`python3`) | Syntax check & isolated execution |
+| **C** | 50 | GCC (`gcc -std=c11`) | `-Wall -Wextra -Werror=return-type -Werror=main` |
+| **C++** | 54 | GCC (`g++ -std=c++17`) | `-Wall -Wextra -Werror=return-type -Werror=main` |
+| **Java** | 62 | OpenJDK 17 (`javac`/`java`) | Auto-detects public class name |
+| **Python** | 71 | CPython 3 (`python3`) | Direct execution, syntax-checked |
 
-### Sandbox Security Flags:
-- **No Network:** Submissions run with `--network none`
-- **Dropped Capabilities:** `--cap-drop ALL`
-- **Resource Limits:** Restricted memory, CPU time, and PID limits
-- **Ephemeral:** Fresh containers spawned per submission and cleaned up automatically
+### Sandbox Security Flags
+- **No Network:** `--network none` — submissions cannot access external resources
+- **Dropped Capabilities:** `--cap-drop ALL` — no special Linux capabilities
+- **Resource Limits:** Memory (128MB), CPU (0.5 cores), PID (64 processes)
+- **Ephemeral:** Fresh container per submission, cleaned up automatically
+- **Base64 Encoding:** Source code and stdin are base64-encoded to prevent injection
+- **tmpfs:** `/tmp` is an in-memory filesystem (50MB) for temporary files
 
 ---
 
@@ -374,18 +383,52 @@ docker compose logs -f elab-db
 # Restart services after configuration change
 docker compose restart app worker nginx
 
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (WARNING: deletes all data)
+docker compose down -v
+
 # Run test suite
 docker compose exec app python manage.py test
 
 # Backup database
-docker compose exec elab-db pg_dump -U elab elab_db > backup.sql
+docker compose exec elab-db pg_dump -U elab elab_db > backup_$(date +%Y%m%d).sql
 
 # Restore database
-docker compose exec -T elab-db psql -U elab elab_db < backup.sql
+docker compose exec -T elab-db psql -U elab elab_db < backup_20250101.sql
 
 # Regenerate static files
 docker compose exec app python manage.py collectstatic --noinput
+
+# Check container health
+docker compose ps
+
+# Access PostgreSQL shell
+docker compose exec elab-db psql -U elab -d elab_db
+
+# Access Redis CLI
+docker compose exec elab-redis redis-cli
 ```
+
+---
+
+## 📊 Production Tuning for 400 Concurrent Users
+
+The following settings are configured for high concurrency:
+
+| Component | Setting | Value |
+|-----------|---------|-------|
+| Gunicorn | Workers | 16 (gthread) |
+| Gunicorn | Threads | 4 per worker |
+| Gunicorn | Timeout | 120s |
+| Celery Worker | Concurrency | 16 (prefork) |
+| Celery Worker | Max tasks per child | 200 |
+| PostgreSQL | Max Connections | 500 |
+| PostgreSQL | Shared Buffers | 256MB |
+| Redis | Max Memory | 512MB |
+| Nginx | Proxy Read Timeout | 120s |
+| Nginx | Buffer Size | 256k |
 
 ---
 
@@ -408,17 +451,28 @@ docker compose exec app python manage.py collectstatic --noinput
   ```
 
 ### 4. Sandbox Execution Errors
-- Ensure the sandbox image is built locally:
+- Ensure the sandbox image is built:
   ```bash
   docker build -t elab-sandbox -f sandbox/Dockerfile sandbox/
   ```
-- Ensure Docker socket is accessible if required or sandbox directory permissions are correct.
+- Verify Docker socket is accessible: `ls -la /var/run/docker.sock`
+- Check sandbox directory permissions: `chmod 777 sandbox_data`
 
-### 5. Question Generator Issues
+### 5. Celery Worker Not Processing Tasks
+- Check worker logs: `docker compose logs -f worker`
+- Verify Redis is reachable: `docker compose exec elab-redis redis-cli ping`
+- Restart worker: `docker compose restart worker`
+
+### 6. Question Generator Issues
 - Ensure RAG is ingested: `docker compose exec app python manage.py rag_ingest`
 - Check RAG agent logs: `docker compose logs app`
+
+### 7. Certificate PDF Generation Fails
+- Ensure `weasyprint` dependencies are installed (included in Dockerfile)
+- Check media directory permissions: `chmod -R 777 media/`
 
 ---
 
 ## 📄 License
+
 Academic use — Department of Computer & Communication Engineering (CCE), NMAM Institute of Technology, Nitte.

@@ -901,14 +901,21 @@ def run_code_api(request):
 
     if not question_id or not code:
         return JsonResponse({"error": "Missing question or code parameter"}, status=400)
-    
-    question = get_object_or_404(Question, id=question_id, is_active=True)
-    
+
+    try:
+        question = get_object_or_404(Question, id=question_id, is_active=True)
+    except Exception:
+        return JsonResponse({"error": "Question not found"}, status=404)
+
     # Inject missing headers based on starter code
-    code = inject_headers(code, question.starter_code)
+    from .sandbox import inject_headers as _inject_headers
+    code = _inject_headers(code, question.starter_code)
 
     # Determine the execution language (use provided or fallback to question's default)
-    exec_language_id = int(language_id) if language_id else question.language_id
+    try:
+        exec_language_id = int(language_id) if language_id else question.language_id
+    except (ValueError, TypeError):
+        exec_language_id = question.language_id
     language = language_for_id(exec_language_id)
 
     # If custom input is provided, run only against that
@@ -928,21 +935,31 @@ def run_code_api(request):
                     expected_output=question.sample_output or "",
                 )
             ]
-    
+
     results = []
     for test in test_cases:
-        run_result = sandbox_run_code(
-            language,
-            source_code=code,
-            stdin=test.stdin or "",
-            expected_output=test.expected_output or "",
-            time_limit=question.time_limit,
-            memory_limit_kb=question.memory_limit_kb,
-        )
-        # Custom input doesn't check against expected output for 'passed' status, 
-        # it just runs. But sandbox_run_code might evaluate it anyway. 
-        # If expected is empty, any output will fail if the sandbox strictly diffs it.
-        # But for custom input, the frontend only cares about seeing the output.
+        try:
+            run_result = sandbox_run_code(
+                language,
+                source_code=code,
+                stdin=test.stdin or "",
+                expected_output=test.expected_output or "",
+                time_limit=question.time_limit,
+                memory_limit_kb=question.memory_limit_kb,
+            )
+        except Exception as exc:
+            results.append({
+                "stdin": test.stdin or "",
+                "expected": test.expected_output or "",
+                "actual": "",
+                "passed": False,
+                "status": "Internal Error",
+                "error": f"Sandbox execution failed: {exc}",
+            })
+            continue
+
+        # Custom input doesn't check against expected output for 'passed' status,
+        # it just runs. But sandbox_run_code might evaluate it anyway.
         passed = run_result.get("status_id") == 3 if custom_input is None else True
         error_message = (
             run_result.get("compile_output")
@@ -2123,23 +2140,21 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         return qs.filter(student=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        print("DEBUG: Request data:", request.data)
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        print("DEBUG: Validated data:", serializer.validated_data)
         question = serializer.validated_data["question"]
         if not can_submit(self.request.user, question):
             raise PermissionDenied("Please wait 10 seconds before submitting again.")
-            
+
         session_key = f"violations_{self.request.user.id}_{question.id}"
         violations = self.request.session.get(session_key, 0)
         self.request.session[session_key] = 0
-        
+
         session_key_logs = f"violations_logs_{self.request.user.id}_{question.id}"
         logs = self.request.session.get(session_key_logs, [])
         self.request.session[session_key_logs] = []
-        
+
         submission = serializer.save(
             student=self.request.user,
             language_id=serializer.validated_data.get('language_id') or question.language_id,
