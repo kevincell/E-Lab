@@ -468,17 +468,27 @@
           <div class="course-icon-wrap icon-locked">
             {% if course.slug == "c-programming" %}C{% elif course.slug == "python-programming" %}Py{% elif course.slug == "java-programming" %}Java{% elif course.slug == "c-programming-advanced" %}C++{% elif course.slug == "technical-placement-training" %}PT{% elif course.slug == "advanced-technical-placement-training" %}APT{% else %}{{ course.name|slice:":1" }}{% endif %}
           </div>
+          {% if user.is_faculty_like %}
+          <span class="status-pill status-locked">🔒 Not Managed</span>
+          {% else %}
           <span class="status-pill status-locked">🔒 Locked · Sem {{ course.available_from_semester }}+</span>
+          {% endif %}
         </div>
         <h2 class="course-title">{{ course.name }}</h2>
         <p class="course-desc">{{ course.description }}</p>
+        {% if not user.is_faculty_like %}
         <div class="progress-note">
           <strong>🔒 Locked:</strong> Available from semester {{ course.available_from_semester }}.
         </div>
+        {% endif %}
       </div>
       <div>
         <button disabled class="action-btn btn-locked">
+          {% if user.is_faculty_like %}
+          <span>🔒 Not Opted In Preferences</span>
+          {% else %}
           <span>🔒 Not Yet Available</span>
+          {% endif %}
         </button>
       </div>
     </div>
