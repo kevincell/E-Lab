@@ -21,7 +21,7 @@
   <section class="panel module-path">
     <div class="section-heading">
       <h2>{% if module.category == "advanced_placement_training" %}Advanced Placement Training{% elif module.category == "placement_training" %}Placement Training{% else %}{{ difficulty_label }}{% endif %} Questions</h2>
-      <p class="muted">Solve the current unlocked question to reveal the next one.</p>
+      <p class="muted">Solve these questions in any order to complete the set.</p>
     </div>
     <div class="path-steps">
       {% for slot in assigned_slots %}

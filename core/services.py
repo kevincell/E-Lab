@@ -120,7 +120,7 @@ def sync_assignment_completion(assignment):
     changed = False
 
     for index, slot in enumerate(slots):
-        if index == 0 and not slot.unlocked_at:
+        if not slot.unlocked_at:
             slot.unlocked_at = now
             changed = True
         if slot.question_id in accepted_ids and not slot.completed_at:
@@ -159,7 +159,7 @@ def get_or_create_module_assignment(student, module, difficulty=Question.Difficu
                 assignment=assignment,
                 question=question,
                 order=index,
-                unlocked_at=timezone.now() if index == 1 else None,
+                unlocked_at=timezone.now(),
             )
     sync_assignment_completion(assignment)
     return assignment

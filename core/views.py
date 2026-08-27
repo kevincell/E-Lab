@@ -651,8 +651,8 @@ def question_detail(request, question_id):
     if not request.user.is_faculty_like:
         assignment = get_or_create_module_assignment(request.user, question.module, question.difficulty)
         slot = assignment.assigned_questions.filter(question=question).first()
-        if not slot or not slot.unlocked_at:
-            messages.error(request, "Solve your current unlocked question before opening the next one.")
+        if not slot:
+            messages.error(request, "This question is not assigned to you.")
             return redirect("module_level_detail", question.module_id, question.difficulty)
     record_attendance(request.user, question.module)
     latest = Submission.objects.filter(student=request.user, question=question).first()
