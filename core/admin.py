@@ -114,7 +114,7 @@ class ProgressAdmin(admin.ModelAdmin):
 
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
-    list_display = ("student", "semester", "completion_percentage", "issued_at")
+    list_display = ("student", "course", "completion_percentage", "issued_at")
     search_fields = ("student__username", "student__usn", "verification_hash")
 
 

@@ -436,7 +436,7 @@ def dashboard(request):
             if module.category in ["placement_training", "advanced_placement_training"]:
                 module_total = min(7, module_questions.count())
             else:
-                module_total = min(15, module_questions.count())
+                module_total = min(12, module_questions.count())
             assigned_qs = AssignedQuestion.objects.filter(
                 assignment__student=request.user, assignment__module=module
             )
@@ -564,7 +564,14 @@ def module_detail(request, module_id):
                 total = assignment.assigned_questions.count()
                 completed = assignment.assigned_questions.filter(completed_at__isnull=False).count()
             else:
-                total = min(5, questions.count())
+                if value == Question.Difficulty.EASY:
+                    total = min(5, questions.count())
+                elif value == Question.Difficulty.MEDIUM:
+                    total = min(4, questions.count())
+                elif value == Question.Difficulty.HARD:
+                    total = min(3, questions.count())
+                else:
+                    total = min(5, questions.count())
                 completed = questions.filter(
                     submissions__student=request.user,
                     submissions__status=Submission.Status.ACCEPTED,
@@ -596,7 +603,17 @@ def module_level_detail(request, module_id, difficulty):
         assigned_slots = []
         current_slot = None
     else:
-        assignment_count = 7 if module.category in ["placement_training", "advanced_placement_training"] else 5
+        if module.category in ["placement_training", "advanced_placement_training"]:
+            assignment_count = 7
+        else:
+            if difficulty == Question.Difficulty.EASY:
+                assignment_count = 5
+            elif difficulty == Question.Difficulty.MEDIUM:
+                assignment_count = 4
+            elif difficulty == Question.Difficulty.HARD:
+                assignment_count = 3
+            else:
+                assignment_count = 5
         assignment = get_or_create_module_assignment(request.user, module, difficulty, count=assignment_count)
         assigned_slots = sync_assignment_completion(assignment)
         questions = [slot.question for slot in assigned_slots]
@@ -707,24 +724,36 @@ def manual_accept_submission(request, submission_id):
 
 @login_required
 def certificate_create(request):
-    is_eligible, pct = certificate_eligible(request.user)
+    course_id = request.session.get("student_last_course")
+    if course_id:
+        course = get_object_or_404(Course, id=course_id)
+    else:
+        # Fallback to C programming if no course is selected
+        course = Course.objects.filter(slug='c-programming').first()
+        
+    if not course or course.slug in ["placement-training", "advanced-technical-placement-training"]:
+        messages.error(request, "Certificates are not available for this course.")
+        return redirect("dashboard")
+
+    is_eligible, pct = certificate_eligible(request.user, course)
     if not is_eligible:
         messages.error(request, "You are not yet eligible for a certificate. Complete the required modules (60% threshold & mandatory questions) first.")
         return redirect("dashboard")
 
-    cert = Certificate.objects.filter(student=request.user).first()
-    approved_req = CertificateRequest.objects.filter(student=request.user, status=CertificateRequest.Status.APPROVED).first()
+    cert = Certificate.objects.filter(student=request.user, course=course).first()
+    approved_req = CertificateRequest.objects.filter(student=request.user, course=course, status=CertificateRequest.Status.APPROVED).first()
 
     if cert or approved_req:
         if not cert:
-            cert = generate_certificate(request.user)
+            cert = generate_certificate(request.user, course)
         messages.success(request, "Your official certificate is ready!")
         return redirect("certificate_detail", cert.pk)
 
-    req = CertificateRequest.objects.filter(student=request.user).order_by("-updated_at").first()
+    req = CertificateRequest.objects.filter(student=request.user, course=course).order_by("-updated_at").first()
     if req and req.status == CertificateRequest.Status.REJECTED:
         has_new_work = Submission.objects.filter(
             student=request.user,
+            question__module__course=course,
             status=Submission.Status.ACCEPTED,
             submitted_at__gt=req.updated_at
         ).exists()
@@ -734,17 +763,19 @@ def certificate_create(request):
 
         req = CertificateRequest.objects.create(
             student=request.user,
+            course=course,
             status=CertificateRequest.Status.PENDING_FACULTY,
             completion_percentage=pct,
         )
-        notify_faculty_of_eligible_student(request.user, is_reapplication=True)
+        notify_faculty_of_eligible_student(request.user, course, is_reapplication=True)
     elif not req:
         req = CertificateRequest.objects.create(
             student=request.user,
+            course=course,
             status=CertificateRequest.Status.PENDING_FACULTY,
             completion_percentage=pct,
         )
-        notify_faculty_of_eligible_student(request.user, is_reapplication=False)
+        notify_faculty_of_eligible_student(request.user, course, is_reapplication=False)
 
     return render(request, "certificates/under_review.html", {
         "request_obj": req,

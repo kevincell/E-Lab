@@ -285,7 +285,10 @@ def evaluate_submission(submission_id):
 
 def update_progress(student, module):
     questions = Question.objects.filter(module=module, is_active=True)
-    total = min(15, questions.count())
+    if module.category in ["placement_training", "advanced_placement_training"]:
+        total = min(7, questions.count())
+    else:
+        total = min(12, questions.count())
     attempted = questions.filter(submissions__student=student).distinct().count()
     completed = questions.filter(submissions__student=student, submissions__status=Submission.Status.ACCEPTED).distinct().count()
     completed = min(completed, total)
@@ -324,12 +327,15 @@ def _student_primary_category(student):
     return "c_programming"
 
 
-def overall_percentage(student):
-    category = _student_primary_category(student)
-    target_modules = Module.objects.filter(is_active=True, category=category)
+def overall_percentage(student, course=None):
+    if course:
+        target_modules = Module.objects.filter(course=course, is_active=True)
+    else:
+        category = _student_primary_category(student)
+        target_modules = Module.objects.filter(is_active=True, category=category)
     active_modules = target_modules.count()
     
-    total = active_modules * 15
+    total = active_modules * 12
     if total == 0:
         return 0
 
@@ -349,10 +355,18 @@ def overall_percentage(student):
     return min(100.0, (completed / total * 100))
 
 
-def certificate_eligible(student):
-    pct = overall_percentage(student)
-    category = _student_primary_category(student)
-    target_modules = Module.objects.filter(is_active=True, category=category)
+def certificate_eligible(student, course=None):
+    if course:
+        target_modules = Module.objects.filter(course=course, is_active=True)
+        if target_modules.exists() and target_modules.first().category in ["placement_training", "advanced_placement_training"]:
+            return False, 0
+    else:
+        category = _student_primary_category(student)
+        target_modules = Module.objects.filter(is_active=True, category=category)
+        if category in ["placement_training", "advanced_placement_training"]:
+            return False, 0
+            
+    pct = overall_percentage(student, course)
     
     mandatory_questions = Question.objects.filter(module__in=target_modules, is_active=True, is_mandatory=True)
     mandatory_total = mandatory_questions.count()
@@ -407,20 +421,22 @@ def get_faculty_coordinator_for_student(student):
     return None
 
 
-def generate_certificate(student):
+def generate_certificate(student, course=None):
     from django.conf import settings as django_settings
 
-    eligible, pct = certificate_eligible(student)
+    eligible, pct = certificate_eligible(student, course)
     if not eligible:
         return None
 
-    semester = Certificate.current_semester_label()
-    verification_hash = Certificate.make_hash(student, semester, pct)
+    if not course:
+        return None
+
+    verification_hash = Certificate.make_hash(student, course, pct)
     cert, created = Certificate.objects.get_or_create(
         verification_hash=verification_hash,
         defaults={
             "student": student,
-            "semester": semester,
+            "course": course,
             "completion_percentage": pct,
         },
     )
@@ -441,12 +457,12 @@ def generate_certificate(student):
         pdf_bytes = generate_certificate_pdf(
             student=student,
             percentage=pct,
-            semester=semester,
+            semester=course.name,
             issued_date=issued_date,
             verify_url=verify_url,
         )
         name_usn = student.usn or student.username
-        cert.pdf.save(f"{name_usn}_{semester.replace(' ', '_')}.pdf", ContentFile(pdf_bytes), save=False)
+        cert.pdf.save(f"{name_usn}_{course.slug}.pdf", ContentFile(pdf_bytes), save=False)
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"PDF generation failed for {student.username}: {e}")
@@ -460,16 +476,16 @@ def notify_certificate(student, certificate):
     if student.email:
         send_mail(
             subject=f"{settings.SITE_NAME} - Certificate Generated",
-            message=f"Congratulations! Your certificate for {certificate.semester} is ready.",
+            message=f"Congratulations! Your certificate for {certificate.course.name} is ready.",
             from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
             recipient_list=[student.email],
             fail_silently=True,
         )
 
 
-def notify_faculty_of_eligible_student(student, is_reapplication=False):
+def notify_faculty_of_eligible_student(student, course=None, is_reapplication=False):
     """Create a notification for all faculty members when a student applies for certificate verification."""
-    eligible, pct = certificate_eligible(student)
+    eligible, pct = certificate_eligible(student, course)
     if not eligible:
         return
 

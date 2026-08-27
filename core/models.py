@@ -294,7 +294,7 @@ class Progress(models.Model):
 
 class Certificate(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificates")
-    semester = models.CharField(max_length=32)
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name="certificates", default=1)
     completion_percentage = models.FloatField()
     verification_hash = models.CharField(max_length=96, unique=True)
     pdf = models.FileField(upload_to="certificates/pdf/", blank=True)
@@ -305,11 +305,11 @@ class Certificate(models.Model):
         ordering = ["-issued_at"]
 
     def __str__(self):
-        return f"{self.student} - {self.semester}"
+        return f"{self.student} - {self.course}"
 
     @classmethod
-    def make_hash(cls, student, semester, percentage):
-        data = f"{student.pk}:{student.usn}:{semester}:{percentage:.2f}"
+    def make_hash(cls, student, course, percentage):
+        data = f"{student.pk}:{student.usn}:{course.pk}:{percentage:.2f}"
         return hmac.new(
             settings.CERTIFICATE_SIGNING_KEY.encode(),
             data.encode(),
@@ -431,6 +431,9 @@ class CertificateRequest(models.Model):
 
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificate_requests"
+    )
+    course = models.ForeignKey(
+        'Course', on_delete=models.CASCADE, related_name="certificate_requests", null=True
     )
     requested_by_faculty = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
