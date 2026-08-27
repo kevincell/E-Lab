@@ -138,6 +138,10 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             <span>Run Sample Tests</span>
           </button>
+          <button class="secondary reset-button" type="button" id="reset-code-btn" style="min-height: 44px; padding: 0 24px; font-size: 14px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+            <span>Reset</span>
+          </button>
           <button class="primary submit-button-inline" type="submit" data-submit-button>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
             <span>Submit Solution</span>
@@ -715,6 +719,22 @@ public class Main {
           runCustomBtn.disabled = false;
           if (runCustomLabel) runCustomLabel.textContent = "Run";
         });
+      });
+    }
+
+    const resetCodeBtn = document.getElementById("reset-code-btn");
+    if (resetCodeBtn) {
+      resetCodeBtn.addEventListener("click", function() {
+        if (confirm("Are you sure you want to reset your code to the original starter template? This will erase your current solution!")) {
+          const langSelect = document.getElementById("language-select");
+          const val = langSelect ? langSelect.value : "{{ question.language_id|default:'50' }}";
+          const sample = getSampleCode(val);
+          if (typeof editor !== 'undefined' && editor) {
+            editor.setValue(sample);
+          } else if (textarea) {
+            textarea.value = sample;
+          }
+        }
       });
     }
 
