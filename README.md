@@ -181,19 +181,31 @@ Populates faculty, students, sample submissions, and student progress records:
 docker compose exec app python manage.py seed_demo
 ```
 
-### Import Question Bank
+### Course & Curriculum Seeding
+Populate the database with predefined courses, modules, and questions:
 ```bash
-# Import first-year questions (default C programming)
+# Seed Course Catalog (C, Python, Java, C++, Placement Training, Advanced Placement Training)
+docker compose exec app python manage.py seed_courses
+
+# Import first-year questions (C Programming - default)
 docker compose exec app python manage.py import_questions
 
-# Import second-year questions (placement training)
+# Seed Java Programming course (Lab manual & RAG generated pool)
+docker compose exec -T app python manage.py shell < scripts/reseed_java.py
+
+# Seed C++ Programming course (15 modules + LeetCode pool bypass)
+docker compose exec -T app python manage.py shell < scripts/reseed_cpp.py
+docker compose exec app python scripts/seed_leetcode_cpp.py
+
+# Seed Python Programming course (15 modules + LeetCode pool bypass)
+docker compose exec app python scripts/reseed_python.py
+docker compose exec app python scripts/seed_leetcode_python.py
+
+# Import second-year placement questions
 docker compose exec app python manage.py seed_placement_training
 
-# Import third-year questions (advanced placement training)
-docker compose exec app python manage.py seed_advanced_placement_training
-
-# Seed Java Programming course
-docker compose exec -T app python manage.py shell < scripts/reseed_java.py
+# Import third-year advanced placement questions
+docker compose exec app python manage.py advanced_seed_placement_training
 ```
 
 ### Generate Student Certificates
@@ -239,11 +251,13 @@ docker compose exec app python manage.py enrich_test_cases --dry-run
 docker compose exec app python manage.py enrich_test_cases --target 10
 ```
 
-### Seed Course Catalog
+### Clean & Format Test Cases
 ```bash
-# Creates 6 courses: C, Python, Java, C++, Placement Training, Advanced Placement Training
-docker compose exec app python manage.py seed_courses
+# Clean up LeetCode JSON test cases (removes commas and brackets to match standard competitive programming formats)
+docker compose exec app python scripts/clean_testcases.py
 ```
+
+
 
 ### Semester Management
 ```bash

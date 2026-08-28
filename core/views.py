@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.cache import cache
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import connection
 from django.db.models import Count, Q, Sum, Value
 from django.db.models.functions import Coalesce
@@ -2145,8 +2145,7 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         question = serializer.validated_data["question"]
         if not can_submit(self.request.user, question):
-            raise PermissionDenied("Please wait 10 seconds before submitting again.")
-
+            raise Throttled(detail="Please wait 10 seconds before submitting again.")
         session_key = f"violations_{self.request.user.id}_{question.id}"
         violations = self.request.session.get(session_key, 0)
         self.request.session[session_key] = 0
