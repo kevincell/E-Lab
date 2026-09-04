@@ -60,6 +60,12 @@ LANGUAGES = {
         "compile": ["javac", "__SOURCE__"],
         "run": ["java", "__CLASS__"],
     },
+    "sql": {
+        "monaco": "sql",
+        "filename": "main.sql",
+        "compile": ["sh", "-c", "cat input.txt __SOURCE__ > combined.sql"],
+        "run": ["sqlite3", "-batch", "test.db", ".read combined.sql"],
+    },
 }
 
 # Maps the Question/Submission `language_id` to a language
@@ -69,6 +75,7 @@ LANGUAGE_ID_MAP = {
     54: "cpp",
     62: "java",
     71: "python",
+    82: "sql",
 }
 
 

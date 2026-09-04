@@ -80,7 +80,7 @@ class AppLoginView(LoginView):
         user = self.request.user
         if user.is_authenticated and user.role == User.Role.HOD:
             return reverse_lazy("role_select")
-        return super().get_success_url() or reverse_lazy("onboarding_overview")
+        return reverse_lazy("onboarding_overview")
 
 
 class AppLogoutView(LogoutView):
@@ -606,14 +606,7 @@ def module_level_detail(request, module_id, difficulty):
         if module.category in ["placement_training", "advanced_placement_training"]:
             assignment_count = 7
         else:
-            if difficulty == Question.Difficulty.EASY:
-                assignment_count = 5
-            elif difficulty == Question.Difficulty.MEDIUM:
-                assignment_count = 4
-            elif difficulty == Question.Difficulty.HARD:
-                assignment_count = 3
-            else:
-                assignment_count = 5
+            assignment_count = 5
         assignment = get_or_create_module_assignment(request.user, module, difficulty, count=assignment_count)
         assigned_slots = sync_assignment_completion(assignment)
         questions = [slot.question for slot in assigned_slots]
@@ -1338,13 +1331,17 @@ def _module_for_import(filename, category="c_programming", module_name=None, ord
 
     # Auto-link module to its Course (create if needed)
     COURSE_META = {
-        "c_programming": "C Programming",
-        "python_programming": "Python Programming",
+        "c_programming": ("c-programming", "C Programming"),
+        "python_programming": ("python-programming", "Python Programming"),
+        "java_programming": ("java-programming", "Java Programming"),
+        "cpp_programming": ("c-programming-advanced", "C++ Programming"),
+        "placement_training": ("technical-placement-training", "Technical Placement Training"),
+        "advanced_placement_training": ("advanced-technical-placement-training", "Advanced Technical Placement Training"),
     }
-    course_name = COURSE_META.get(category, category.replace("_", " ").title())
+    meta = COURSE_META.get(category, (category, category.replace("_", " ").title()))
     course, _ = Course.objects.get_or_create(
-        slug=category,
-        defaults={"name": course_name, "is_active": True},
+        slug=meta[0],
+        defaults={"name": meta[1], "is_active": True},
     )
     if module.course_id != course.pk:
         module.course = course
@@ -2085,14 +2082,35 @@ def faculty_send_cert_request(request, student_id):
         messages.warning(request, f"A request for {student.display_name} already exists ({existing.get_status_display()}).")
         return redirect("faculty_cert_requests")
 
+    # Update existing PENDING_FACULTY request if it exists, otherwise create new
+    cert_req = CertificateRequest.objects.filter(student=student, status=CertificateRequest.Status.PENDING_FACULTY).order_by('-updated_at').first()
     notes = request.POST.get("notes", "").strip()
-    cert_req = CertificateRequest.objects.create(
-        student=student,
-        requested_by_faculty=request.user,
-        status=CertificateRequest.Status.PENDING_HOD,
-        faculty_notes=notes,
-        completion_percentage=pct,
-    )
+    
+    if cert_req:
+        cert_req.status = CertificateRequest.Status.PENDING_HOD
+        cert_req.requested_by_faculty = request.user
+        cert_req.faculty_notes = notes
+        cert_req.completion_percentage = pct
+        cert_req.save()
+    else:
+        # Infer course if not exists
+        from .services import _student_primary_category
+        cat = _student_primary_category(student)
+        slug = cat.replace('_', '-') # basic fallback
+        if cat == "placement_training": slug = "technical-placement-training"
+        elif cat == "advanced_placement_training": slug = "advanced-technical-placement-training"
+        elif cat == "cpp_programming": slug = "c-programming-advanced"
+        
+        course = Course.objects.filter(slug__icontains=slug).first()
+        
+        cert_req = CertificateRequest.objects.create(
+            student=student,
+            course=course,
+            requested_by_faculty=request.user,
+            status=CertificateRequest.Status.PENDING_HOD,
+            faculty_notes=notes,
+            completion_percentage=pct,
+        )
     notify_hod_of_cert_request(cert_req)
     messages.success(request, f"Approval request sent to HoD for {student.display_name}.")
     return redirect("faculty_cert_requests")
