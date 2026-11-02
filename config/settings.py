@@ -1,4 +1,5 @@
 import os
+from celery.schedules import crontab
 import warnings
 from pathlib import Path
 
@@ -31,7 +32,19 @@ SECRET_KEY = _secret_key
 
 DEBUG = env("DEBUG", "false").lower() == "true"
 
-ALLOWED_HOSTS = ["*"]
+def _host_of(url):
+    from urllib.parse import urlparse
+    return urlparse(url).hostname or ""
+
+
+# Explicit hosts from ALLOWED_HOSTS, plus every host already trusted for CSRF
+# and BASE_URL, so existing deployments keep working without a wildcard.
+ALLOWED_HOSTS = sorted(
+    {h.strip() for h in env("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()}
+    | {_host_of(o) for o in env("CSRF_TRUSTED_ORIGINS", "").split(",") if _host_of(o.strip())}
+    | ({_host_of(env("BASE_URL", ""))} - {""})
+    | {"localhost", "127.0.0.1"}
+)
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
@@ -48,6 +61,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "core",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -176,9 +190,30 @@ if env("SECURE_COOKIES", str(not DEBUG)).lower() == "true":
 # ---------------------------------------------------------------------------
 # Celery
 # ---------------------------------------------------------------------------
+CELERY_BEAT_SCHEDULE = {
+    "auto-advance-semesters": {
+        "task": "core.tasks_semester.auto_advance_semesters_task",
+        "schedule": crontab(hour=2, minute=0),  # Daily at 2 AM
+    },
+}
+
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", env("REDIS_URL", "redis://elab-redis:6379/1"))
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://elab-redis:6379/2")
 CELERY_TASK_ALWAYS_EAGER = env("CELERY_TASK_ALWAYS_EAGER", "false").lower() == "true"
+# Run "Run code" requests on a Celery worker instead of the web container, so
+# the web container doesn't need the Docker socket (audit F2).
+SANDBOX_VIA_WORKER = env("SANDBOX_VIA_WORKER", "true").lower() == "true"
+
+# CPU-only LLM work gets its own queue so a burst of hint/question generation
+# can never delay submission judging (see docker-compose worker-llm service).
+CELERY_TASK_ROUTES = {
+    "core.tasks.generate_hint_set_task": {"queue": "llm"},
+    "core.tasks.generate_llm_hint_task": {"queue": "llm"},
+    "core.tasks.generate_questions_task": {"queue": "llm"},
+    "core.tasks.embed_document_task": {"queue": "llm"},
+    "core.tasks.embed_index_task": {"queue": "llm"},
+}
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # ---------------------------------------------------------------------------
 # REST Framework
@@ -202,7 +237,7 @@ REST_FRAMEWORK = {
 SITE_NAME = env("SITE_NAME", "CCE e-Lab")
 SITE_BASE_URL = env("SITE_BASE_URL", "http://localhost")
 CERTIFICATE_SIGNING_KEY = env("CERTIFICATE_SIGNING_KEY", SECRET_KEY)
-CERTIFICATE_THRESHOLD = int(env("CERTIFICATE_THRESHOLD", "60"))
+CERTIFICATE_THRESHOLD = int(env("CERTIFICATE_THRESHOLD", "80"))
 
 EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = env("EMAIL_HOST", "smtp.gmail.com")

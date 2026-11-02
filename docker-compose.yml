@@ -3,26 +3,30 @@ services:
     build: .
     container_name: elab-app
     restart: unless-stopped
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 16 --threads 4 --worker-class gthread --max-requests 2000 --max-requests-jitter 200 --timeout 120 --keep-alive 5 --log-level info --preload
     env_file: .env
+    # No Docker socket here (audit F2): code runs on the Celery workers, so a
+    # compromise of the web process doesn't hand out root on the host.
     volumes:
       - .:/app
       - media:/app/media
       - staticfiles:/app/staticfiles
-      - ./sandbox_data:/var/elab-sandbox
-      - ${DOCKER_SOCK:-/home/kevin/.docker/desktop/docker.sock}:/var/run/docker.sock
     depends_on:
       - elab-db
       - elab-redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 30s
+    # Memory budget for the 16 GB, CPU-only server (audit F10) — see README "Capacity".
     deploy:
       resources:
         limits:
-          cpus: "2"
+          cpus: "6"
+          memory: 2560M
+        reservations:
           memory: 1G
     networks:
       - elab-network
@@ -31,21 +35,63 @@ services:
     build: .
     container_name: elab-worker
     restart: unless-stopped
-    command: celery -A config worker -l info --concurrency 4
+    # 12 concurrent judge/run jobs: each sandbox container gets 0.5 CPU, so 12 saturate
+    # an 8-core i7; 32 only queued inside Docker and multiplied worst-case memory.
+    command: celery -A config worker -Q celery -l info --concurrency 12 --pool=prefork --max-tasks-per-child 200 --max-memory-per-child 512000
     env_file: .env
     volumes:
       - .:/app
       - media:/app/media
       - ./sandbox_data:/var/elab-sandbox
-      - ${DOCKER_SOCK:-/home/kevin/.docker/desktop/docker.sock}:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - elab-db
       - elab-redis
+      - ollama
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+    networks:
+      - elab-network
+
+  # CPU-only LLM jobs (hint sets, question generation). One at a time: on a
+  # CPU, parallel generations just split the same cores and all get slower.
+  worker-llm:
+    build: .
+    container_name: elab-worker-llm
+    restart: unless-stopped
+    command: celery -A config worker -Q llm -l info --concurrency 1 --pool=prefork --max-tasks-per-child 50
+    env_file: .env
+    volumes:
+      - .:/app
+      - ./sandbox_data:/var/elab-sandbox
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - elab-db
+      - elab-redis
+      - ollama
     deploy:
       resources:
         limits:
           cpus: "2"
           memory: 1G
+    networks:
+      - elab-network
+
+  beat:
+    build: .
+    container_name: elab-beat
+    restart: unless-stopped
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file: .env
+    volumes:
+      - .:/app
+      - media:/app/media
+    depends_on:
+      - elab-db
+      - elab-redis
     networks:
       - elab-network
 
@@ -58,17 +104,45 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_MAX_CONNECTIONS: "500"
+      POSTGRES_SHARED_BUFFERS: "256MB"
+      POSTGRES_WORK_MEM: "4MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "64MB"
+    command: postgres -c max_connections=500 -c shared_buffers=256MB -c work_mem=4MB -c maintenance_work_mem=64MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     networks:
       - elab-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elab -d elab_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   elab-redis:
     image: redis:7-alpine
     container_name: elab-redis
     restart: unless-stopped
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --timeout 300 --tcp-keepalive 60
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 768M
     networks:
       - elab-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   nginx:
     image: nginx:1.27-alpine
@@ -82,13 +156,46 @@ services:
       - media:/var/www/media
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 256M
     networks:
       - elab-network
+
+  # CPU-only inference (no GPU on the server). One generation at a time: on a
+  # CPU, parallel requests split the same cores and every request gets slower.
+  # Holds the hint/question model (qwen3.5:4b, ~3.5 GB) + nomic-embed-text (~0.4 GB).
+  ollama:
+    image: ollama/ollama:latest
+    container_name: elab-ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=2
+      # Smaller, faster KV cache for the shared 6k context (OLLAMA_NUM_CTX).
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KV_CACHE_TYPE=q8_0
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - elab-network
+    deploy:
+      resources:
+        limits:
+          cpus: "6"
+          memory: 5G
+        reservations:
+          memory: 4G
 
 volumes:
   postgres_data:
   media:
   staticfiles:
+  redis_data:
+  ollama_data:
 
 networks:
   elab-network:

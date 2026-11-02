@@ -36,7 +36,7 @@ echo "🗃️  Running database migrations..."
 docker compose exec web python manage.py migrate
 
 echo "👤 Creating HOD user..."
-docker compose exec web python manage.py create_hod
+docker compose exec web python manage.py create_hod --password "$HOD_PASSWORD"
 
 echo "📚 Importing questions..."
 docker compose exec web python manage.py import_questions
@@ -45,10 +45,7 @@ echo "🎯 Setup complete!"
 echo ""
 echo "📋 Next steps:"
 echo "  1. Access the application at http://localhost"
-echo "  2. Log in with HOD credentials:"
-echo "     - Username: hod"
-echo "     - Password: hodpassword"
-echo "  3. IMPORTANT: Change the default HOD password immediately!"
+echo "  2. Log in as the HOD: username 'hod', password = HOD_PASSWORD from .env"
 echo ""
 echo "💡 Need help? Check the README.md file or run:"
 echo "  docker-compose logs  # View container logs"

@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .models import (
+    GeneratedHintSet,
+    PointsLedger,
+    ProctoringEvent,
     AssignedQuestion,
     Attendance,
     Certificate,
@@ -17,7 +20,10 @@ from .models import (
     Quiz,
     QuizAttempt,
     QuizQuestion,
+    StudentQuestionHint,
     Submission,
+    SubQuestion,
+    SubQuestionTestCase,
     TestCase,
     User,
 )
@@ -41,8 +47,8 @@ class TestCaseInline(admin.TabularInline):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "year", "semester", "is_active")
-    list_filter = ("year", "is_active")
+    list_display = ("name", "slug", "year", "semester", "proctoring_enabled", "is_active")
+    list_filter = ("year", "proctoring_enabled", "is_active")
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name", "slug")
 
@@ -55,8 +61,8 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ("title", "module", "difficulty", "language_id", "is_mandatory", "is_active")
-    list_filter = ("module", "difficulty", "is_mandatory", "is_active")
+    list_display = ("title", "module", "difficulty", "language_id", "is_mandatory", "proctoring_enabled", "is_active")
+    list_filter = ("module", "difficulty", "is_mandatory", "proctoring_enabled", "is_active")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [TestCaseInline]
 
@@ -114,7 +120,7 @@ class ProgressAdmin(admin.ModelAdmin):
 
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
-    list_display = ("student", "semester", "completion_percentage", "issued_at")
+    list_display = ("student", "course", "completion_percentage", "issued_at")
     search_fields = ("student__username", "student__usn", "verification_hash")
 
 
@@ -158,3 +164,62 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     list_filter = ("quiz",)
     search_fields = ("student__username", "student__usn")
 
+
+@admin.register(StudentQuestionHint)
+class StudentQuestionHintAdmin(admin.ModelAdmin):
+    list_display = ("student", "question", "hint_number", "hint_type", "unlocked_at")
+    list_filter = ("hint_number", "hint_type")
+    search_fields = ("student__username", "student__usn", "question__title")
+
+
+class SubQuestionTestCaseInline(admin.TabularInline):
+    model = SubQuestionTestCase
+    extra = 1
+
+
+@admin.register(SubQuestion)
+class SubQuestionAdmin(admin.ModelAdmin):
+    list_display = ("title", "main_question", "type", "difficulty", "language_id", "is_mandatory", "proctoring_enabled", "is_active")
+    list_filter = ("main_question__module", "type", "difficulty", "is_mandatory", "proctoring_enabled", "is_active")
+    prepopulated_fields = {"slug": ("title",)}
+    inlines = [SubQuestionTestCaseInline]
+
+
+@admin.register(SubQuestionTestCase)
+class SubQuestionTestCaseAdmin(admin.ModelAdmin):
+    list_display = ("subquestion", "stdin", "expected_output", "is_sample", "order")
+    list_filter = ("is_sample",)
+    search_fields = ("subquestion__title",)
+
+
+
+
+@admin.register(ProctoringEvent)
+class ProctoringEventAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "student", "question", "kind", "reason", "submission")
+    list_filter = ("kind",)
+    search_fields = ("student__username", "student__usn", "question__title")
+    raw_id_fields = ("student", "question", "submission")
+
+
+@admin.register(PointsLedger)
+class PointsLedgerAdmin(admin.ModelAdmin):
+    list_display = ("awarded_at", "student", "question", "difficulty", "base_points", "wrong_attempts", "points")
+    list_filter = ("difficulty", "formula_version")
+    search_fields = ("student__username", "student__usn", "question__title")
+    raw_id_fields = ("student", "question", "subquestion", "submission")
+
+
+@admin.register(GeneratedHintSet)
+class GeneratedHintSetAdmin(admin.ModelAdmin):
+    """Faculty can review and edit LLM hints before/after students see them."""
+    list_display = ("question", "language", "difficulty", "model_name", "prompt_version", "created_at")
+    list_filter = ("language", "difficulty", "model_name", "prompt_version")
+    search_fields = ("question__title",)
+    raw_id_fields = ("question",)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        from django.core.cache import cache
+        from . import llm_hints
+        cache.set(llm_hints.cache_key(obj.question, obj.language, obj.code_hash), obj.hints, llm_hints.CACHE_TTL)

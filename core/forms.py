@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.template.defaultfilters import slugify
 from typing import ClassVar
 
-from .models import Course, Module, OpenEndedQuestion, Question, Quiz, Submission, TestCase, User
+from .models import Course, Module, OpenEndedQuestion, Question, Quiz, Submission, TestCase, User, SubQuestion
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -21,8 +22,13 @@ class MultipleFileField(forms.FileField):
         return [single_clean(data, initial)]
 
 
+SEMESTER_CHOICES = [(n, f"Semester {n}") for n in range(1, 9)]
+
+
 class StudentSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
+    department = forms.ChoiceField(label="Branch", choices=[("", "Choose your branch")] + list(User.Branch.choices))
+    semester = forms.TypedChoiceField(choices=SEMESTER_CHOICES, coerce=int, initial=1)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,6 +42,7 @@ class StudentSignUpForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = User.Role.STUDENT
+        user.year = (user.semester + 1) // 2
         if not user.usn:
             user.usn = user.username
         if commit:
@@ -44,12 +51,35 @@ class StudentSignUpForm(UserCreationForm):
 
 
 class SubmissionForm(forms.ModelForm):
+    subquestion = forms.ModelChoiceField(
+        queryset=SubQuestion.objects.none(),  # Will be set in __init__
+        required=False,
+        widget=forms.HiddenInput()
+    )
+
     class Meta:
         model = Submission
-        fields = ("code",)
+        fields = ("code", "subquestion")
         widgets: ClassVar[dict] = {
             "code": forms.Textarea(attrs={"rows": 25, "spellcheck": "false", "class": "code-editor"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        # Extract custom parameters
+        question = kwargs.pop('question', None)
+        subquestion_id = kwargs.pop('subquestion_id', None)
+        super().__init__(*args, **kwargs)
+        
+        # If we have a question, set the subquestion queryset to its subquestions
+        if question:
+            self.fields['subquestion'].queryset = question.subquestions.filter(is_active=True)
+            # If we have a specific subquestion_id, set it as initial
+            if subquestion_id:
+                try:
+                    subquestion = question.subquestions.get(id=subquestion_id, is_active=True)
+                    self.fields['subquestion'].initial = subquestion
+                except SubQuestion.DoesNotExist:
+                    pass
 
 
 class ModuleForm(forms.ModelForm):
@@ -65,12 +95,28 @@ class CSVQuestionUploadForm(forms.Form):
     )
 
 
+QUESTION_LANGUAGE_CHOICES = [
+    (50, "C (GCC)"),
+    (54, "C++ (G++)"),
+    (62, "Java 17"),
+    (71, "Python 3"),
+    (82, "SQL (DBMS modules)"),
+]
+
+
 class QuestionForm(forms.ModelForm):
+    language_id = forms.TypedChoiceField(choices=QUESTION_LANGUAGE_CHOICES, coerce=int, initial=50, label="Language")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["module"].empty_label = "Choose a module"
+        self.fields["module"].queryset = Module.objects.select_related("course").order_by("course__name", "order", "name")
         self.fields["title"].widget.attrs.update({"placeholder": "Longest substring without repeating characters"})
+        self.fields["slug"].required = False
+        self.fields["slug"].help_text = "Leave blank to build it from the title."
         self.fields["slug"].widget.attrs.update({"placeholder": "longest-substring"})
+        self.fields["csv_level"].label = "Level"
+        self.fields["csv_level"].help_text = "Order within the difficulty (1 = first)."
         self.fields["description"].widget.attrs.update(
             {
                 "placeholder": (
@@ -95,6 +141,20 @@ class QuestionForm(forms.ModelForm):
         self.fields["time_limit"].help_text = "Seconds allowed for each test case."
         self.fields["memory_limit_kb"].help_text = "Memory limit in KB. 128000 is usually enough for C basics."
 
+    def clean(self):
+        cleaned = super().clean()
+        module = cleaned.get("module")
+        slug = slugify(cleaned.get("slug") or cleaned.get("title") or "")[:170] or "question"
+        if module:
+            taken = Question.objects.filter(module=module)
+            if self.instance.pk:
+                taken = taken.exclude(pk=self.instance.pk)
+            base, counter = slug, 1
+            while taken.filter(slug=slug).exists():
+                slug, counter = f"{base}-{counter}", counter + 1
+        cleaned["slug"] = slug
+        return cleaned
+
     class Meta:
         model = Question
         fields = (
@@ -104,14 +164,15 @@ class QuestionForm(forms.ModelForm):
             "description",
             "difficulty",
             "csv_level",
-            "level_range",
             "sample_input",
             "sample_output",
             "starter_code",
             "language_id",
+            "allow_multiple_languages",
             "time_limit",
             "memory_limit_kb",
             "is_mandatory",
+            "proctoring_enabled",
             "is_active",
         )
         widgets: ClassVar[dict] = {
@@ -119,6 +180,7 @@ class QuestionForm(forms.ModelForm):
             "starter_code": forms.Textarea(attrs={"rows": 15, "class": "code-editor"}),
             "sample_input": forms.Textarea(attrs={"rows": 4}),
             "sample_output": forms.Textarea(attrs={"rows": 4}),
+            "csv_level": forms.NumberInput(attrs={"min": 1}),
         }
 
 
@@ -183,9 +245,15 @@ class OpenEndedQuestionForm(forms.ModelForm):
 class QuizForm(forms.ModelForm):
     class Meta:
         model = Quiz
-        fields = ("course", "title", "description", "duration_minutes", "start_time", "end_time", "is_active", "show_results")
+        fields = ("course", "title", "description", "duration_minutes", "passing_score", "start_time", "end_time", "is_active", "show_results")
         widgets: ClassVar[dict] = {
             "description": forms.Textarea(attrs={"rows": 4}),
             "start_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "end_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            if field != 'description' and field != 'is_active' and field != 'show_results':
+                self.fields[field].required = True

@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load custom_filters %}
 {% block title %}{{ quiz.title }}{% endblock %}
 {% block content %}
 <section class="toolbar">
   <div>
     <h1>{{ quiz.title }}</h1>
-    <p class="muted">Time limit: {{ quiz.duration_minutes }} minutes</p>
+    <p class="muted">Time limit: {{ quiz.duration_minutes }} minutes{% if remaining_seconds is not None and not attempt.finished_at %} · <span id="quiz-timer" role="timer" aria-live="off" data-remaining="{{ remaining_seconds }}">Time left: --:--</span>{% endif %}</p>
   </div>
 </section>
 
@@ -16,30 +17,25 @@
       <a href="{% url 'student_quiz_results' quiz.id %}" class="btn primary">View Results</a>
     </div>
   {% else %}
-    <form method="post" class="stack">
+    <form method="post" class="stack" id="quiz-form">
       {% csrf_token %}
       {% for qq in questions %}
       <div class="profile-card" style="margin-bottom: 24px;">
         <div class="card-header">
           <h3>Question {{ forloop.counter }} <span class="muted" style="font-size: 13px; font-weight: normal; margin-left: 8px;">({{ qq.points }} points)</span></h3>
         </div>
-        <div class="prose-dark" style="margin-bottom: 16px;">
-          {{ qq.question.description|safe|linebreaks }}
+        <div class="prose-dark" style="margin-bottom: 20px; font-size: 15px;">
+          {{ qq.text|safe_html|linebreaks }}
         </div>
         
-        <!-- Simplified options for demo -->
-        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-          <input type="radio" name="q_{{ qq.id }}" value="A"> Option A
-        </label>
-        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-          <input type="radio" name="q_{{ qq.id }}" value="B"> Option B
-        </label>
-        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-          <input type="radio" name="q_{{ qq.id }}" value="C"> Option C
-        </label>
-        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-          <input type="radio" name="q_{{ qq.id }}" value="D"> Option D
-        </label>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for opt_val, opt_text in qq.shuffled_options %}
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+            <input type="radio" id="q_{{ qq.id }}_{{ opt_val }}" name="q_{{ qq.id }}" value="{{ opt_val }}" required style="width: 20px !important; height: 20px !important; margin: 0 !important; flex-shrink: 0; appearance: auto !important; position: static !important; transform: none !important;">
+            <label for="q_{{ qq.id }}_{{ opt_val }}" style="margin: 0 !important; cursor: pointer; flex: 1; text-align: left; display: block; font-size: 15px; font-weight: 500; color: #e2e8f0;">{{ opt_text }}</label>
+          </div>
+          {% endfor %}
+        </div>
       </div>
       {% endfor %}
       
@@ -49,4 +45,35 @@
     </form>
   {% endif %}
 </section>
+{% if remaining_seconds is not None and not attempt.finished_at %}
+<script>
+  // Countdown from the server's remaining time; at zero the answers given so far
+  // are submitted automatically (the server accepts them within a short grace period).
+  (function() {
+    const timer = document.getElementById("quiz-timer");
+    const form = document.getElementById("quiz-form");
+    if (!timer || !form) return;
+    const endsAt = Date.now() + Number(timer.dataset.remaining) * 1000;
+    let submitted = false;
+    form.addEventListener("submit", function() { submitted = true; });
+    function fmt(totalSeconds) {
+      const m = Math.floor(totalSeconds / 60), s = totalSeconds % 60;
+      return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+    function tick() {
+      const left = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
+      timer.textContent = "Time left: " + fmt(left);
+      if (left === 60) timer.setAttribute("aria-live", "polite");  // announce the last minute once
+      if (left === 0 && !submitted) {
+        submitted = true;
+        timer.textContent = "Time is up — submitting your answers…";
+        form.submit();  // bypasses `required`, so unanswered questions just score 0
+        return;
+      }
+      if (left > 0) setTimeout(tick, 1000);
+    }
+    tick();
+  })();
+</script>
+{% endif %}
 {% endblock %}

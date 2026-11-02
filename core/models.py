@@ -14,10 +14,29 @@ class User(AbstractUser):
         HOD = "hod", "HoD"
         ADMIN = "admin", "Admin"
 
+    class Branch(models.TextChoices):
+        CSE = "CSE", "Computer Science & Engineering"
+        CCE = "CCE", "Computer & Communication Engineering"
+        ISE = "ISE", "Information Science & Engineering"
+        AIML = "AIML", "Artificial Intelligence & Machine Learning"
+        AIDS = "AIDS", "Artificial Intelligence & Data Science"
+        CSE_CS = "CSE-CS", "Computer Science & Engineering (Cyber Security)"
+        ECE = "ECE", "Electronics & Communication Engineering"
+        EVL = "EVL", "Electronics Engineering (VLSI Design & Technology)"
+        EEE = "EEE", "Electrical & Electronics Engineering"
+        RAI = "RAI", "Robotics & Artificial Intelligence"
+        ME = "ME", "Mechanical Engineering"
+        CV = "CV", "Civil Engineering"
+        BT = "BT", "Biotechnology"
+
     usn = models.CharField(max_length=32, blank=True, unique=True, null=True)
     role = models.CharField(max_length=16, choices=Role.choices, default=Role.STUDENT)
-    department = models.CharField(max_length=80, blank=True)
+    department = models.CharField("Branch", max_length=80, blank=True, choices=Branch.choices)
     semester = models.PositiveSmallIntegerField(default=1)
+    year = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Academic year (1-4). Auto-updated on semester transitions.",
+    )
     bio = models.TextField(blank=True, max_length=500)
     managed_modules = models.ManyToManyField(
         "Module",
@@ -65,7 +84,15 @@ class Course(models.Model):
     description = models.TextField(blank=True)
     year = models.PositiveSmallIntegerField(default=1, help_text="Target year (1st, 2nd, etc.)")
     semester = models.PositiveSmallIntegerField(null=True, blank=True)
+    available_from_semester = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Minimum semester a student must be in to access this course.",
+    )
     is_active = models.BooleanField(default=True)
+    proctoring_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable or disable proctoring monitoring for questions in this course.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -73,6 +100,10 @@ class Course(models.Model):
 
     def __str__(self):
         return self.name
+
+    def is_accessible_to(self, student_semester):
+        """Check if this course is accessible to a student in the given semester."""
+        return student_semester >= self.available_from_semester
 
 
 class Module(models.Model):
@@ -118,6 +149,10 @@ class Question(models.Model):
     starter_codes = models.JSONField(default=dict, blank=True)
     is_mandatory = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
+    proctoring_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable or disable proctoring monitoring for this question.",
+    )
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -130,6 +165,15 @@ class Question(models.Model):
 
     def get_absolute_url(self):
         return reverse("question_detail", args=[self.pk])
+
+    @property
+    def is_proctoring_active(self):
+        """Returns True if proctoring is enabled on this question and its course."""
+        if not self.proctoring_enabled:
+            return False
+        if self.module and self.module.course and not self.module.course.proctoring_enabled:
+            return False
+        return True
 
 
 class TestCase(models.Model):
@@ -160,6 +204,14 @@ class Submission(models.Model):
 
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="submissions")
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="submissions")
+    subquestion = models.ForeignKey(
+        'SubQuestion',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="submissions",
+        help_text="The sub-question this submission is for (if applicable)",
+    )
     code = models.TextField()
     language_id = models.PositiveIntegerField(default=50)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.PENDING)
@@ -265,7 +317,7 @@ class Progress(models.Model):
 
 class Certificate(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificates")
-    semester = models.CharField(max_length=32)
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name="certificates", default=1)
     completion_percentage = models.FloatField()
     verification_hash = models.CharField(max_length=96, unique=True)
     pdf = models.FileField(upload_to="certificates/pdf/", blank=True)
@@ -276,11 +328,11 @@ class Certificate(models.Model):
         ordering = ["-issued_at"]
 
     def __str__(self):
-        return f"{self.student} - {self.semester}"
+        return f"{self.student} - {self.course}"
 
     @classmethod
-    def make_hash(cls, student, semester, percentage):
-        data = f"{student.pk}:{student.usn}:{semester}:{percentage:.2f}"
+    def make_hash(cls, student, course, percentage):
+        data = f"{student.pk}:{student.usn}:{course.pk}:{percentage:.2f}"
         return hmac.new(
             settings.CERTIFICATE_SIGNING_KEY.encode(),
             data.encode(),
@@ -290,8 +342,14 @@ class Certificate(models.Model):
     @classmethod
     def current_semester_label(cls):
         now = timezone.localtime()
-        term = "Odd" if now.month >= 7 else "Even"
-        return f"{now.year}-{str(now.year + 1)[-2:]} {term}"
+        month = now.month
+        year = now.year
+        if month >= 7:
+            # July-December: Odd semester of current academic year
+            return f"{year}-{str(year + 1)[-2:]} Odd"
+        else:
+            # January-June: Even semester of previous academic year
+            return f"{year - 1}-{str(year)[-2:]} Even"
 
 
 class Notification(models.Model):
@@ -301,6 +359,7 @@ class Notification(models.Model):
         CERT_HOD_APPROVED = "cert_hod_approved", "HoD Approved Certificate"
         CERT_HOD_REJECTED = "cert_hod_rejected", "HoD Rejected Certificate"
         FACULTY_NOTE = "faculty_note", "Message from Faculty"
+        QUIZ_ALERT = "quiz_alert", "New Quiz Available"
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
@@ -339,6 +398,9 @@ class Notification(models.Model):
                 if req:
                     return reverse("hod_review_request", args=[req.id])
             return reverse("hod_dashboard")
+        elif self.notification_type == self.Type.CERT_HOD_APPROVED and self.recipient_id == self.related_student_id:
+            cert = Certificate.objects.filter(student_id=self.recipient_id).order_by("-issued_at").first()
+            return reverse("certificate_detail", args=[cert.id]) if cert else reverse("dashboard")
         elif self.notification_type in [self.Type.CERT_HOD_APPROVED, self.Type.CERT_HOD_REJECTED]:
             return reverse("dashboard")
         return reverse("notifications_list")
@@ -376,7 +438,7 @@ class Notification(models.Model):
 
         elif self.recipient.role == "student":
             if req.status == CertificateRequest.Status.APPROVED:
-                cert = Certificate.objects.filter(student=self.related_student).first()
+                cert = Certificate.objects.filter(student=self.related_student, course=req.course).first()
                 url = reverse("certificate_detail", args=[cert.id]) if cert else reverse("certificate_create")
                 return {"label": "📥 View Diploma ↗", "open": True, "url": url}
             elif req.status == CertificateRequest.Status.REJECTED:
@@ -396,6 +458,9 @@ class CertificateRequest(models.Model):
 
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificate_requests"
+    )
+    course = models.ForeignKey(
+        'Course', on_delete=models.CASCADE, related_name="certificate_requests", null=True
     )
     requested_by_faculty = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -460,6 +525,7 @@ class Quiz(models.Model):
         null=True, blank=True, related_name="created_quizzes",
     )
     duration_minutes = models.PositiveIntegerField(default=60)
+    passing_score = models.PositiveIntegerField(default=10)
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=False)
@@ -497,18 +563,23 @@ class Quiz(models.Model):
 
 
 class QuizQuestion(models.Model):
-    """Through-model linking a Quiz to a Question with ordering and points."""
+    """An MCQ question for a specific quiz."""
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="quiz_questions")
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="quiz_slots")
+    text = models.TextField(default="Question text")
+    option_a = models.CharField(max_length=255, default="Option A")
+    option_b = models.CharField(max_length=255, default="Option B")
+    option_c = models.CharField(max_length=255, default="Option C")
+    option_d = models.CharField(max_length=255, default="Option D")
+    correct_option = models.CharField(max_length=1, choices=[("A","A"),("B","B"),("C","C"),("D","D")], default="A")
     order = models.PositiveSmallIntegerField(default=1)
     points = models.PositiveSmallIntegerField(default=10)
 
     class Meta:
         ordering = ["order"]
-        unique_together = [("quiz", "question"), ("quiz", "order")]
+        unique_together = [("quiz", "order")]
 
     def __str__(self):
-        return f"{self.quiz} — Q{self.order}: {self.question}"
+        return f"{self.quiz.title} — Q{self.order}"
 
 
 class QuizAttempt(models.Model):
@@ -534,9 +605,319 @@ class QuizAttempt(models.Model):
         return (self.total_score / self.max_score * 100) if self.max_score else 0
 
     @property
+    def time_taken_mins(self):
+        if self.started_at and self.finished_at:
+            delta = self.finished_at - self.started_at
+            return round(delta.total_seconds() / 60)
+        return 0
+
+    @property
     def is_timed_out(self):
         if not self.finished_at and self.quiz.duration_minutes:
             from datetime import timedelta
             deadline = self.started_at + timedelta(minutes=self.quiz.duration_minutes)
             return timezone.now() > deadline
         return False
+
+
+class StudentQuestionHint(models.Model):
+    """
+    Stores progressive hints unlocked by a student on unsuccessful attempts.
+    Strictly capped at maximum 3 unique hints per student per question.
+    """
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="unlocked_hints",
+    )
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name="student_hints",
+    )
+    submission = models.ForeignKey(
+        Submission,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hints",
+    )
+    hint_number = models.PositiveSmallIntegerField(
+        help_text="1, 2, or 3 (maximum 3 unique hints per question)"
+    )
+    hint_text = models.TextField()
+    hint_type = models.CharField(
+        max_length=32,
+        default="local_llm",
+        help_text="local_llm or diagnostic",
+    )
+    language = models.CharField(
+        max_length=16, blank=True, default="", help_text="Language the hint was written for (c, cpp, python, java)."
+    )
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["hint_number"]
+        unique_together = [("student", "question", "hint_number")]
+
+    def __str__(self):
+        return f"Hint #{self.hint_number} for {self.student.username} on {self.question.title}"
+
+
+class SubQuestion(models.Model):
+    """Sub-questions for a main question, specifically for DBMS modules with SELECT/INSERT/UPDATE types."""
+    class Type(models.TextChoices):
+        SELECT = "select", "SELECT"
+        INSERT = "insert", "INSERT"
+        UPDATE = "update", "UPDATE"
+
+    main_question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name="subquestions",
+        help_text="The main question this sub-question belongs to"
+    )
+    type = models.CharField(
+        max_length=10,
+        choices=Type.choices,
+        help_text="Type of sub-question: SELECT, INSERT, or UPDATE"
+    )
+    title = models.CharField(max_length=160)
+    slug = models.SlugField(max_length=180)
+    description = models.TextField()
+    difficulty = models.CharField(max_length=16, choices=Question.Difficulty.choices, default=Question.Difficulty.EASY)
+    csv_level = models.PositiveSmallIntegerField(default=1)
+    level_range = models.CharField(max_length=32, blank=True)
+    sample_input = models.TextField(blank=True)
+    sample_output = models.TextField(blank=True)
+    starter_code = models.TextField(blank=True)
+    language_id = models.PositiveIntegerField(default=50, help_text="Language id. 50 is C (GCC).")
+    time_limit = models.FloatField(default=2.0)
+    memory_limit_kb = models.PositiveIntegerField(default=128000)
+    allow_multiple_languages = models.BooleanField(default=False)
+    starter_codes = models.JSONField(default=dict, blank=True)
+    is_mandatory = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    proctoring_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable or disable proctoring monitoring for this sub-question.",
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["main_question__title", "type"]
+        unique_together = [("main_question", "type")]
+
+    def __str__(self):
+        return f"{self.main_question.title} - {self.get_type_display()}"
+
+    @property
+    def is_proctoring_active(self):
+        """Returns True if proctoring is enabled on this sub-question and its course."""
+        if not self.proctoring_enabled:
+            return False
+        if self.main_question and self.main_question.module and self.main_question.module.course and not self.main_question.module.course.proctoring_enabled:
+            return False
+        return True
+
+
+class SubQuestionTestCase(models.Model):
+    """Test cases for sub-questions."""
+    subquestion = models.ForeignKey(SubQuestion, on_delete=models.CASCADE, related_name="test_cases")
+    stdin = models.TextField(blank=True)
+    expected_output = models.TextField()
+    is_sample = models.BooleanField(default=False)
+    order = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        label = "sample" if self.is_sample else "hidden"
+        return f"{self.subquestion} ({label} #{self.order})"
+
+
+
+class PointsLedger(models.Model):
+    """
+    One row per (student, question[, sub-question]) first solve. Points are
+    computed server-side from difficulty and prior failed attempts; the stored
+    breakdown lets students see why they got their score and lets the formula
+    be recalculated later (see `manage.py recalculate_points`).
+    """
+
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="points_ledger")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="points_ledger")
+    subquestion = models.ForeignKey(
+        "SubQuestion", on_delete=models.CASCADE, null=True, blank=True, related_name="points_ledger"
+    )
+    submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name="points_award")
+    difficulty = models.CharField(max_length=16, choices=Question.Difficulty.choices)
+    base_points = models.PositiveSmallIntegerField()
+    wrong_attempts = models.PositiveIntegerField(default=0)
+    decay_percent = models.PositiveSmallIntegerField(default=0)
+    points = models.PositiveSmallIntegerField()
+    formula_version = models.PositiveSmallIntegerField(default=1)
+    awarded_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-awarded_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "question"],
+                condition=models.Q(subquestion__isnull=True),
+                name="uniq_points_per_question",
+            ),
+            models.UniqueConstraint(
+                fields=["student", "question", "subquestion"],
+                condition=models.Q(subquestion__isnull=False),
+                name="uniq_points_per_subquestion",
+            ),
+        ]
+        indexes = [models.Index(fields=["student", "awarded_at"])]
+
+    def __str__(self):
+        return f"{self.student} +{self.points} for {self.question}"
+
+
+class ProctoringEvent(models.Model):
+    """
+    Server-side proctoring log. Violations are attached to the next submission
+    for that question; focus-mode/read-problem events are recorded for audit
+    only so reviewers can tell "opened focus mode" apart from "switched tabs".
+    """
+
+    class Kind(models.TextChoices):
+        VIOLATION = "violation", "Violation"
+        FOCUS_ENTER = "focus_enter", "Entered focus mode"
+        FOCUS_EXIT = "focus_exit", "Exited focus mode"
+        PROBLEM_OPEN = "problem_open", "Opened Read Problem panel"
+        PROBLEM_CLOSE = "problem_close", "Closed Read Problem panel"
+
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="proctoring_events")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="proctoring_events")
+    submission = models.ForeignKey(
+        Submission, on_delete=models.SET_NULL, null=True, blank=True, related_name="proctoring_events"
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    reason = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["student", "question", "submission"])]
+
+    def __str__(self):
+        return f"{self.student} {self.kind} on {self.question_id} at {self.created_at:%H:%M:%S}"
+
+
+class GeneratedHintSet(models.Model):
+    """
+    Three validated, leak-checked LLM hints for one (question, language,
+    difficulty, student-code hash). Durable second-level cache behind Redis so
+    pre-generated hints survive cache eviction and restarts.
+    """
+
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="generated_hint_sets")
+    language = models.CharField(max_length=16)
+    difficulty = models.CharField(max_length=16)
+    code_hash = models.CharField(max_length=16, default="-")
+    prompt_version = models.PositiveSmallIntegerField(default=1)
+    model_name = models.CharField(max_length=80)
+    hints = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["question", "language", "difficulty", "code_hash", "prompt_version"],
+                name="uniq_hint_set",
+            )
+        ]
+
+    def __str__(self):
+        return f"Hints for {self.question_id} ({self.language})"
+
+
+class RagDocument(models.Model):
+    """A source document for question generation: the bundled DSA corpus or faculty-uploaded study material."""
+
+    class Source(models.TextChoices):
+        CORPUS = "corpus", "Bundled DSA corpus"
+        UPLOAD = "upload", "Faculty upload"
+
+    source = models.CharField(max_length=16, choices=Source.choices)
+    title = models.CharField(max_length=255)
+    topic = models.CharField(max_length=120, blank=True)
+    path = models.CharField(max_length=500, blank=True, help_text="Corpus-relative path or original upload filename")
+    content_hash = models.CharField(max_length=64)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["source", "path"], name="uniq_rag_document_path")]
+
+    def __str__(self):
+        return f"{self.title} ({self.source})"
+
+
+class RagChunk(models.Model):
+    """Structure-aware chunk of a RagDocument with its embedding (tagged with model + dimension)."""
+
+    document = models.ForeignKey(RagDocument, on_delete=models.CASCADE, related_name="chunks")
+    index = models.PositiveIntegerField()
+    heading = models.CharField(max_length=300, blank=True)
+    text = models.TextField()
+    content_hash = models.CharField(max_length=64)
+    embedding = models.JSONField(null=True, blank=True)
+    embed_model = models.CharField(max_length=80, blank=True)
+    embed_dim = models.PositiveIntegerField(default=0)
+    embed_version = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["document_id", "index"]
+        constraints = [models.UniqueConstraint(fields=["document", "index"], name="uniq_rag_chunk_index")]
+        indexes = [models.Index(fields=["embed_model", "embed_version"])]
+
+    @property
+    def ref(self):
+        return f"D{self.document_id}C{self.index}"
+
+    def __str__(self):
+        return self.ref
+
+
+class QuestionEmbedding(models.Model):
+    """Cached embedding of an existing question, for semantic de-duplication of generated questions."""
+
+    question = models.OneToOneField(Question, on_delete=models.CASCADE, related_name="embedding")
+    text_hash = models.CharField(max_length=64)
+    embed_model = models.CharField(max_length=80)
+    vector = models.JSONField()
+
+
+class GenerationJob(models.Model):
+    """Asynchronous LLM question-generation request (runs on the CPU 'llm' Celery queue)."""
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="generation_jobs")
+    params = models.JSONField(default=dict)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.QUEUED)
+    progress = models.CharField(max_length=200, blank=True)
+    result = models.JSONField(default=dict, blank=True)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Job {self.pk} ({self.status})"
